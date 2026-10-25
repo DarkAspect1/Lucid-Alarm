@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Lucid" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+        The ringing screen can wake and show over a locked device, so its window must be opaque
+        dark from the first frame. The app theme is a light Material theme, which flashed white
+        before Compose drew the dark background.
+    -->
+    <style name="Theme.Lucid.Ringing" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorBackground">@android:color/black</item>
+    </style>
+</resources>
