@@ -1,12 +1,12 @@
 package com.lucid.alarm.ui.components
 
+import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -24,10 +24,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -53,6 +54,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -68,15 +70,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -84,6 +89,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.compose.ui.zIndex
+import androidx.core.view.WindowCompat
 import com.lucid.alarm.data.prefs.ClockDateFont
 import com.lucid.alarm.data.prefs.GradientDirection
 import com.lucid.alarm.data.prefs.RingingBackgroundStyle
@@ -100,7 +108,6 @@ import java.util.Calendar
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-/** Immutable snapshot of every per-alarm appearance override ("" and negative sentinels = inherit). */
 data class AlarmAppearance(
     val backgroundUri: String = "",
     val backgroundStyle: String = "",
@@ -151,13 +158,6 @@ data class AlarmAppearance(
     val dismissTextColor: Long = 0L
 )
 
-/**
- * Per-alarm appearance editor: a full-screen, immersive copy of
- * [com.lucid.alarm.ui.screens.AlarmCustomizationScreen] that persists its overrides onto the
- * alarm's own entity columns (background style/image/video, clock face/font/Color/placement/size
- * and the decoupled date's font/placement/scale). Blank fields inherit the global ringing setting
- * so the ringing screen renders exactly what this editor previews.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AlarmAppearanceEditor(
@@ -171,7 +171,6 @@ fun AlarmAppearanceEditor(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
-    // ---- Global (inherited) settings used for preview + fallback ----
     val globalBackground by settingsDataStore.ringingBackgroundFlow.collectAsState(
         initial = RingingBackgroundStyle.STARFIELD
     )
@@ -259,7 +258,6 @@ fun AlarmAppearanceEditor(
     )
     val is24Hour = timeFormat.is24Hour
 
-    // ---- Local per-alarm override state ----
     var backgroundUri by remember { mutableStateOf(initial.backgroundUri) }
     var backgroundStyle by remember { mutableStateOf(initial.backgroundStyle) }
     var videoUri by remember { mutableStateOf(initial.videoUri) }
@@ -298,7 +296,6 @@ fun AlarmAppearanceEditor(
     var dateGradient by remember { mutableStateOf(initial.dateGradient) }
     var dateGradientDir by remember { mutableStateOf(initial.dateGradientDir) }
 
-    // Per-alarm overrides for AM/PM, label and the snooze/dismiss buttons (null/""/0 = inherit).
     var ovShowAmPm by remember { mutableStateOf(initial.showAmPm) }
     var ovAmPmFont by remember { mutableStateOf(initial.amPmFont) }
     var ovAmPmFontPath by remember { mutableStateOf(initial.amPmFontPath) }
@@ -316,7 +313,6 @@ fun AlarmAppearanceEditor(
     var ovDismissContainerColor by remember { mutableLongStateOf(initial.dismissContainerColor) }
     var ovDismissTextColor by remember { mutableLongStateOf(initial.dismissTextColor) }
 
-    // ---- Measured sizes / drag state ----
     var isDragging by remember { mutableStateOf(false) }
     var snapX by remember { mutableStateOf(false) }
     var snapY by remember { mutableStateOf(false) }
@@ -327,9 +323,10 @@ fun AlarmAppearanceEditor(
     var clockH by remember { mutableFloatStateOf(0f) }
     var dateH by remember { mutableFloatStateOf(0f) }
     var rootH by remember { mutableIntStateOf(0) }
-    var resizeBaseW by remember { mutableFloatStateOf(0f) }
-    var resizeBaseH by remember { mutableFloatStateOf(0f) }
-    var resizeAccum by remember { mutableFloatStateOf(0f) }
+    val globalClockScale by settingsDataStore.clockContainerScaleFlow.collectAsState(initial = 1f)
+    var clockScale by remember { mutableFloatStateOf(globalClockScale) }
+    var clockResizeBase by remember { mutableFloatStateOf(1f) }
+    var clockResizeAccum by remember { mutableFloatStateOf(0f) }
     var dateResizeBase by remember { mutableFloatStateOf(1f) }
     var dateResizeAccum by remember { mutableFloatStateOf(0f) }
 
@@ -346,7 +343,6 @@ fun AlarmAppearanceEditor(
         }
     }
 
-    // ---- Resolve effective (per-alarm â†’ global) appearance for the preview ----
     val effectiveBackgroundStyle = backgroundStyle
         .takeIf { it.isNotBlank() }
         ?.let { raw -> runCatching { RingingBackgroundStyle.valueOf(raw) }.getOrNull() }
@@ -388,7 +384,6 @@ fun AlarmAppearanceEditor(
     val dateGapPx = with(density) { 14.dp.toPx() }
     val dateTopMarginPx = with(density) { 64.dp.toPx() }
 
-    // ---- Effective clock / date appearance (per-alarm override â†’ global) ----
     val effClockColorLong = clockColor.takeIf { it != 0L } ?: globalClockColor
     val effClockBase = effClockColorLong.takeIf { it != 0L }?.let { Color(it) } ?: Color.White
     val effClockGradient = if (clockColor != 0L) clockGradient else globalClockGradient
@@ -527,9 +522,35 @@ fun AlarmAppearanceEditor(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        val isDarkAppearanceBackground = when (effectiveBackgroundStyle) {
+            RingingBackgroundStyle.SOLID_COLOR -> (effSolidColorLong.takeIf { it != 0L }?.let { Color(it) } ?: Color(0xFF101014)).luminance() <= 0.5f
+            else -> true
+        }
+        val view = LocalView.current
+        DisposableEffect(view, isDarkAppearanceBackground) {
+            val dialogWindow = (view.parent as? DialogWindowProvider)?.window
+                ?: (view.context as? Activity)?.window
+            val insetsController = dialogWindow?.let { WindowCompat.getInsetsController(it, dialogWindow.decorView) }
+            val prevLightStatus = insetsController?.isAppearanceLightStatusBars
+            if (insetsController != null) {
+                insetsController.isAppearanceLightStatusBars = !isDarkAppearanceBackground
+            }
+            onDispose {
+                if (insetsController != null && prevLightStatus != null) {
+                    insetsController.isAppearanceLightStatusBars = prevLightStatus
+                }
+            }
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Transparent
+        ) {
             AlarmLockBackground(
                 style = effectiveBackgroundStyle,
                 imageUri = effectiveImageUri,
@@ -542,10 +563,9 @@ fun AlarmAppearanceEditor(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .statusBarsPadding()
                         .navigationBarsPadding()
                 ) {
-                    // Draggable / resizable clock + freely draggable decoupled date.
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -554,121 +574,99 @@ fun AlarmAppearanceEditor(
                     ) {
                         Box(
                             modifier = Modifier
-                                .then(
-                                    if (hasBox) {
-                                        Modifier
-                                            .requiredWidth(with(density) { boxWidth.toDp() })
-                                            .requiredHeight(with(density) { boxHeight.toDp() })
-                                    } else {
-                                        Modifier
-                                    }
-                                )
                                 .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                                .wrapContentSize(Alignment.Center, unbounded = true)
                                 .onSizeChanged {
                                     clockW = it.width.toFloat()
                                     clockH = it.height.toFloat()
+                                    boxWidth = clockW
+                                    boxHeight = clockH
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            val clockScale = 1f
                             val handleRadius = (22f * clockScale).dp
+                            AlarmClockBox(
+                                calendar = nowCalendar,
+                                style = clockStyle,
+                                fontFamily = fontFamily,
+                                is24Hour = is24Hour,
+                                showAmPm = effShowAmPm,
+                                amPmFontFamily = LocalAppFont.current,
+                                amPmBrush = null,
+                                contentColor = effClockBase,
+                                textBrush = clockBrush,
+                                removeLeadingZero = globalRemoveLeadingZero,
+                                fontSize = (clockFontSize * clockScale).sp,
+                                autoFit = false,
+                                showContainerBorder = false,
+                                clockScale = clockScale,
+                                clockFont = effectiveClockFontEnum,
+                                customFontPath = effectiveClockFontPath,
+                                modifier = Modifier
+                                    .wrapContentSize(Alignment.Center, unbounded = true)
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(onTap = { showClockSheet = true })
+                                    }
+                                    .pointerInput(Unit) {
+                                        detectDragGestures(
+                                            onDragStart = {
+                                                isDragging = true
+                                                snapX = false
+                                                snapY = false
+                                            },
+                                            onDragEnd = {
+                                                if (snapX) offsetX = 0f
+                                                if (snapY) offsetY = 0f
+                                                isDragging = false
+                                                snapX = false
+                                                snapY = false
+                                            },
+                                            onDragCancel = {
+                                                isDragging = false
+                                                snapX = false
+                                                snapY = false
+                                            }
+                                        ) { change, dragAmount ->
+                                            change.consume()
+                                            offsetX += dragAmount.x
+                                            offsetY += dragAmount.y
+                                            snapX = abs(offsetX) < snapThresholdPx
+                                            snapY = abs(offsetY) < snapThresholdPx
+                                        }
+                                    }
+                            )
+
                             Box(
                                 modifier = Modifier
-                                    .then(
-                                        if (hasBox) Modifier.fillMaxSize()
-                                        else Modifier.wrapContentSize(Alignment.Center)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                AlarmClockBox(
-                                    calendar = nowCalendar,
-                                    style = clockStyle,
-                                    fontFamily = fontFamily,
-                                    is24Hour = is24Hour,
-                                    showAmPm = effShowAmPm,
-                                    amPmFontFamily = LocalAppFont.current,
-                                    amPmBrush = null,
-                                    contentColor = effClockBase,
-                                    textBrush = clockBrush,
-                                    removeLeadingZero = globalRemoveLeadingZero,
-                                    fontSize = clockFontSize.sp,
-                                    autoFit = hasBox,
-                                    showContainerBorder = false,
-                                    clockFont = effectiveClockFontEnum,
-                                    customFontPath = effectiveClockFontPath,
-                                    modifier = Modifier
-                                        .then(
-                                            if (hasBox) Modifier.fillMaxSize() else Modifier
-                                        )
-                                        .pointerInput(Unit) {
-                                            detectTapGestures(onTap = { showClockSheet = true })
-                                        }
-                                        .pointerInput(Unit) {
-                                            detectDragGestures(
-                                                onDragStart = {
-                                                    isDragging = true
-                                                    snapX = false
-                                                    snapY = false
-                                                },
-                                                onDragEnd = {
-                                                    if (snapX) offsetX = 0f
-                                                    if (snapY) offsetY = 0f
-                                                    isDragging = false
-                                                    snapX = false
-                                                    snapY = false
-                                                },
-                                                onDragCancel = {
-                                                    isDragging = false
-                                                    snapX = false
-                                                    snapY = false
-                                                }
-                                            ) { change, dragAmount ->
-                                                change.consume()
-                                                offsetX += dragAmount.x
-                                                offsetY += dragAmount.y
-                                                snapX = abs(offsetX) < snapThresholdPx
-                                                snapY = abs(offsetY) < snapThresholdPx
+                                    .align(Alignment.BottomEnd)
+                                    .size(handleRadius * 2f)
+                                    .pointerInput(Unit) {
+                                        detectDragGestures(
+                                            onDragStart = {
+                                                clockResizeBase = clockScale
+                                                clockResizeAccum = 0f
                                             }
+                                        ) { change, dragAmount ->
+                                            change.consume()
+                                            clockResizeAccum += (dragAmount.x + dragAmount.y) / 2f
+                                            val ref = with(density) { 180.dp.toPx() }
+                                            clockScale = (clockResizeBase * (1f + clockResizeAccum / ref))
+                                                .coerceAtLeast(SettingsDataStore.CLOCK_SCALE_MIN)
                                         }
-                                )
-
-                                // White arc grip sitting on the same bordered box's bottom-right
-                                // corner so it reads as part of the clock outline.
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .size(handleRadius * 2f)
-                                        .pointerInput(Unit) {
-                                            detectDragGestures(
-                                                onDragStart = {
-                                                    resizeBaseW = if (boxWidth > 0f) boxWidth else clockW
-                                                    resizeBaseH = if (boxHeight > 0f) boxHeight else clockH
-                                                    resizeAccum = 0f
-                                                }
-                                            ) { change, dragAmount ->
-                                                change.consume()
-                                                resizeAccum += (dragAmount.x + dragAmount.y) / 2f
-                                                val ref = with(density) { 160.dp.toPx() }
-                                                val factor =
-                                                    (1f + resizeAccum / ref).coerceAtLeast(0.05f)
-                                                boxWidth = (resizeBaseW * factor).coerceAtLeast(1f)
-                                                boxHeight = (resizeBaseH * factor).coerceAtLeast(1f)
-                                            }
-                                        }
-                                ) {
-                                    Canvas(modifier = Modifier.fillMaxSize()) {
-                                        val stroke = 4.dp.toPx()
-                                        val radius = handleRadius.toPx()
-                                        drawArc(
-                                            color = Color.White,
-                                            startAngle = 0f,
-                                            sweepAngle = 90f,
-                                            useCenter = false,
-                                            topLeft = Offset.Zero,
-                                            size = Size(radius * 2f, radius * 2f),
-                                            style = Stroke(width = stroke, cap = StrokeCap.Round)
-                                        )
                                     }
+                            ) {
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    val stroke = 4.dp.toPx()
+                                    val radius = handleRadius.toPx()
+                                    drawArc(
+                                        color = Color.White,
+                                        startAngle = 0f,
+                                        sweepAngle = 90f,
+                                        useCenter = false,
+                                        topLeft = Offset.Zero,
+                                        size = Size(radius * 2f, radius * 2f),
+                                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                                    )
                                 }
                             }
                         }
@@ -684,6 +682,7 @@ fun AlarmAppearanceEditor(
                                                 .roundToInt()
                                         )
                                     }
+                                    .wrapContentSize(Alignment.Center, unbounded = true)
                                     .onSizeChanged { dateH = it.height.toFloat() }
                                     .pointerInput(Unit) {
                                         detectTapGestures(onTap = { showClockSheet = true })
@@ -733,7 +732,7 @@ fun AlarmAppearanceEditor(
                                         vertical = 6.dp
                                     )
                                 )
-                                // Corner handle: uniform date scale (grow/shrink only).
+
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.BottomEnd)
@@ -750,10 +749,7 @@ fun AlarmAppearanceEditor(
                                                     (dragAmount.x + dragAmount.y) / 2f
                                                 val ref = with(density) { 160.dp.toPx() }
                                                 dateScale = (dateResizeBase * (1f + dateResizeAccum / ref))
-                                                    .coerceIn(
-                                                        SettingsDataStore.DATE_SCALE_MIN,
-                                                        SettingsDataStore.DATE_SCALE_MAX
-                                                    )
+                                                    .coerceAtLeast(SettingsDataStore.DATE_SCALE_MIN)
                                             }
                                         }
                                 ) {
@@ -775,7 +771,6 @@ fun AlarmAppearanceEditor(
                         }
                     }
 
-                    // Axis guide lines while snapping.
                     if ((isDragging && (snapX || snapY)) ||
                         (isDraggingDate && (dateSnapX || dateSnapY))
                     ) {
@@ -801,11 +796,34 @@ fun AlarmAppearanceEditor(
                         }
                     }
 
-                    // Top action header: background chooser + Done.
+                    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                    val statusShadowColor = when (effectiveBackgroundStyle) {
+                        RingingBackgroundStyle.SOLID_COLOR -> effSolidColorLong.takeIf { it != 0L }?.let { Color(it) } ?: Color(0xFF101014)
+                        else -> Color.Black
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(statusBarTop + 32.dp)
+                            .align(Alignment.TopCenter)
+                            .zIndex(4f)
+                            .pointerInput(Unit) {}
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        statusShadowColor.copy(alpha = 0.65f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    )
+
                     Row(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .fillMaxWidth()
+                            .zIndex(5f)
+                            .statusBarsPadding()
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -895,7 +913,6 @@ fun AlarmAppearanceEditor(
                         )
                     }
 
-                    // Bottom preview pills (non-destructive).
                     Column(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -956,6 +973,7 @@ fun AlarmAppearanceEditor(
                     FilterChip(
                         selected = backgroundStyle.isBlank(),
                         colors = selectedChipColors(),
+                        shape = SelectionChipShape,
                         onClick = {
                             backgroundStyle = ""
                             backgroundUri = ""
@@ -967,6 +985,7 @@ fun AlarmAppearanceEditor(
                         FilterChip(
                             selected = backgroundStyle == option.name,
                             colors = selectedChipColors(),
+                            shape = SelectionChipShape,
                             onClick = {
                                 backgroundStyle = option.name
                                 if (option != RingingBackgroundStyle.CUSTOM_IMAGE) backgroundUri = ""
@@ -989,7 +1008,7 @@ fun AlarmAppearanceEditor(
                         onClick = { imagePicker.launch(arrayOf("image/*")) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Choose imageâ€¦")
+                        Text("Choose image\u2026")
                     }
                 }
                 if (backgroundStyle == RingingBackgroundStyle.VIDEO.name ||
@@ -1004,7 +1023,7 @@ fun AlarmAppearanceEditor(
                         onClick = { videoPicker.launch(arrayOf("video/*")) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Choose videoâ€¦")
+                        Text("Choose video\u2026")
                     }
                     if (effectiveVideoUri.isNotBlank()) {
                         Text(
@@ -1081,7 +1100,15 @@ fun AlarmAppearanceEditor(
                         FilterChip(
                             selected = clockStyle == option,
                             colors = selectedChipColors(),
-                            onClick = { clockStyle = option },
+                            shape = SelectionChipShape,
+                            onClick = {
+                                if (clockStyle != option) {
+                                    boxWidth = 0f
+                                    boxHeight = 0f
+                                    clockScale = 1f
+                                }
+                                clockStyle = option
+                            },
                             label = { Text(option.label) }
                         )
                     }
@@ -1097,6 +1124,7 @@ fun AlarmAppearanceEditor(
                     FilterChip(
                         selected = clockFont.isBlank(),
                         colors = selectedChipColors(),
+                        shape = SelectionChipShape,
                         onClick = { clockFont = ""; clockFontPath = "" },
                         label = { Text("Inherit") }
                     )
@@ -1104,6 +1132,7 @@ fun AlarmAppearanceEditor(
                         FilterChip(
                             selected = clockFont == font.name,
                             colors = selectedChipColors(),
+                            shape = SelectionChipShape,
                             onClick = {
                                 clockFont = font.name
                                 if (font != RingingClockFont.CUSTOM_FILE) clockFontPath = ""
@@ -1117,7 +1146,7 @@ fun AlarmAppearanceEditor(
                         onClick = { pickClockFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font fileâ€¦")
+                        Text(".ttf / .otf font file\u2026")
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(clockFontPath)) {
@@ -1148,6 +1177,7 @@ fun AlarmAppearanceEditor(
                     FilterChip(
                         selected = dateFont.isBlank(),
                         colors = selectedChipColors(),
+                        shape = SelectionChipShape,
                         onClick = { dateFont = ""; dateFontPath = "" },
                         label = { Text("Inherit") }
                     )
@@ -1155,6 +1185,7 @@ fun AlarmAppearanceEditor(
                         FilterChip(
                             selected = dateFont == font.name,
                             colors = selectedChipColors(),
+                            shape = SelectionChipShape,
                             onClick = {
                                 dateFont = font.name
                                 if (font != ClockDateFont.CUSTOM_FILE) dateFontPath = ""
@@ -1168,7 +1199,7 @@ fun AlarmAppearanceEditor(
                         onClick = { pickDateFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Date font file (.ttf / .otf / .apk)â€¦")
+                        Text("Date font file (.ttf / .otf / .apk)\u2026")
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(dateFontPath)) {
@@ -1193,6 +1224,11 @@ fun AlarmAppearanceEditor(
                     inheritEnabled = true,
                     inherited = dateColor == 0L,
                     onInherit = { dateColor = 0L }
+                )
+                Text(
+                    text = "Drag the corner handle on the date to grow/shrink it uniformly.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 AppearanceColorEditor(
@@ -1242,10 +1278,16 @@ fun AlarmAppearanceEditor(
                     onClick = {
                         boxWidth = 0f
                         boxHeight = 0f
+                        clockScale = 1f
+                        offsetX = 0f
+                        offsetY = 0f
+                        dateScale = 1f
+                        dateOffsetX = 0f
+                        dateOffsetY = 0f
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Reset size")
+                    Text("Reset date/clock")
                 }
 
                 Button(
@@ -1277,6 +1319,7 @@ fun AlarmAppearanceEditor(
                     FilterChip(
                         selected = ovSnoozeFont.isBlank(),
                         colors = selectedChipColors(),
+                        shape = SelectionChipShape,
                         onClick = {
                             ovSnoozeFont = ""
                             ovSnoozeFontPath = ""
@@ -1287,6 +1330,7 @@ fun AlarmAppearanceEditor(
                         FilterChip(
                             selected = ovSnoozeFont == font.name,
                             colors = selectedChipColors(),
+                            shape = SelectionChipShape,
                             onClick = {
                                 ovSnoozeFont = font.name
                                 if (font != RingingClockFont.CUSTOM_FILE) ovSnoozeFontPath = ""
@@ -1300,7 +1344,7 @@ fun AlarmAppearanceEditor(
                         onClick = { pickSnoozeFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font fileâ€¦")
+                        Text(".ttf / .otf font file\u2026")
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(ovSnoozeFontPath)) {
@@ -1357,6 +1401,7 @@ fun AlarmAppearanceEditor(
                     FilterChip(
                         selected = ovDismissFont.isBlank(),
                         colors = selectedChipColors(),
+                        shape = SelectionChipShape,
                         onClick = {
                             ovDismissFont = ""
                             ovDismissFontPath = ""
@@ -1367,6 +1412,7 @@ fun AlarmAppearanceEditor(
                         FilterChip(
                             selected = ovDismissFont == font.name,
                             colors = selectedChipColors(),
+                            shape = SelectionChipShape,
                             onClick = {
                                 ovDismissFont = font.name
                                 if (font != RingingClockFont.CUSTOM_FILE) ovDismissFontPath = ""
@@ -1380,7 +1426,7 @@ fun AlarmAppearanceEditor(
                         onClick = { pickDismissFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font fileâ€¦")
+                        Text(".ttf / .otf font file\u2026")
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(ovDismissFontPath)) {
@@ -1417,7 +1463,6 @@ fun AlarmAppearanceEditor(
     }
 }
 
-/** Preview-only dismiss pill (identical chrome to the customization screen). */
 @Composable
 private fun PreviewDismissPill(
     containerColor: Color = MaterialTheme.colorScheme.errorContainer,
@@ -1450,7 +1495,6 @@ private fun PreviewDismissPill(
     }
 }
 
-/** Preview-only snooze pill (`[-] Snooze N mins [+]`). */
 @Composable
 private fun PreviewSnoozePill(
     snoozeMinutes: Int,

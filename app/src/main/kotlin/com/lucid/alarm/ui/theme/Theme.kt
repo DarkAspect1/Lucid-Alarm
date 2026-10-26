@@ -12,7 +12,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -22,7 +21,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.core.view.WindowCompat
 import com.lucid.alarm.data.prefs.AccentColor
-import com.lucid.alarm.data.prefs.AppBackgroundStyle
 import com.lucid.alarm.data.prefs.AppFontStyle
 import com.lucid.alarm.data.prefs.BackgroundPalette
 import com.lucid.alarm.data.prefs.RingingClockFont
@@ -30,15 +28,8 @@ import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.ui.FontManager
 import com.lucid.alarm.ui.LocalAppFont
 import com.lucid.alarm.ui.LocalClockFont
-import com.lucid.alarm.ui.components.InteractiveBackground
-import com.lucid.alarm.ui.components.InteractiveBackgroundKind
-import com.lucid.alarm.ui.components.defaultMeshColors
-import com.lucid.alarm.ui.components.interactiveColorsOf
 import kotlinx.coroutines.flow.flowOf
 
-/**
- * Standard One UI background rendering for Dark Mode (Picture 1) and Light Mode (Pictures 3 & 4).
- */
 @Composable
 fun OneUiAppBackground(
     dark: Boolean,
@@ -47,9 +38,9 @@ fun OneUiAppBackground(
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
         if (dark) {
-            // Base canvas color: #020205
+
             drawRect(color = Color(0xFF020205))
-            // Radial gradient dynamically tinted with active accentColor
+
             drawRect(
                 brush = Brush.radialGradient(
                     0.00f to lerp(Color(0xFF040408), accentColor, 0.25f),
@@ -62,9 +53,9 @@ fun OneUiAppBackground(
                 )
             )
         } else {
-            // Base fill: Soft luminous alabaster (#F8F9FD)
+
             drawRect(color = Color(0xFFF8F9FD))
-            // Top-left & top-center: Warm pastel blush/peach (#FCE8EC)
+
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(Color(0xFFFCE8EC), Color.Transparent),
@@ -72,7 +63,7 @@ fun OneUiAppBackground(
                     radius = size.maxDimension * 0.55f
                 )
             )
-            // Middle-left: Soft ice-mint/cyan (#E2F5F4)
+
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(Color(0xFFE2F5F4), Color.Transparent),
@@ -80,7 +71,7 @@ fun OneUiAppBackground(
                     radius = size.maxDimension * 0.50f
                 )
             )
-            // Center / mid-right: Soft pastel lavender-periwinkle (#EAECFA)
+
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(Color(0xFFEAECFA), Color.Transparent),
@@ -88,7 +79,7 @@ fun OneUiAppBackground(
                     radius = size.maxDimension * 0.55f
                 )
             )
-            // Bottom clean soft white fade (#F7F8FC)
+
             drawRect(
                 brush = Brush.verticalGradient(
                     0.7f to Color.Transparent,
@@ -99,13 +90,6 @@ fun OneUiAppBackground(
     }
 }
 
-/**
- * Whole-app theme driven by an [accentColor] and a [backgroundPalette] (see the "Look & Feel"
- * settings). The app UI font ([appFontStyle]) and the ringing clock font are resolved from
- * [settingsDataStore] and published through [LocalAppFont] / [LocalClockFont].
- *
- * [dark] selects between the dark palette (default) and the auto-lightened light variant.
- */
 @Composable
 fun LucidAlarmTheme(
     accentColor: AccentColor = AccentColor.DEFAULT,
@@ -121,8 +105,7 @@ fun LucidAlarmTheme(
         .collectAsState(initial = RingingClockFont.SYSTEM_DEFAULT)
     val clockCustomFontPath by (settingsDataStore?.alarmClockCustomFontPathFlow ?: flowOf(""))
         .collectAsState(initial = "")
-    // Stored custom Colors behind AccentColor.CUSTOM / BackgroundPalette.CUSTOM; resolved into
-    // the scheme + root brush so a user-picked Color themes the whole app like any preset.
+
     val customAccentArgb by (settingsDataStore?.accentCustomColorFlow ?: flowOf(AccentColor.DEFAULT.argb))
         .collectAsState(initial = AccentColor.DEFAULT.argb)
     val customBackgroundArgb by (settingsDataStore?.backgroundCustomColorFlow ?: flowOf(BackgroundPalette.OBSIDIAN.argb))
@@ -160,7 +143,9 @@ fun LucidAlarmTheme(
             @Suppress("DEPRECATION")
             window.navigationBarColor = android.graphics.Color.TRANSPARENT
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                @Suppress("DEPRECATION")
                 window.isStatusBarContrastEnforced = false
+                @Suppress("DEPRECATION")
                 window.isNavigationBarContrastEnforced = false
             }
         }

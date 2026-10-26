@@ -11,37 +11,23 @@ import androidx.compose.ui.graphics.luminance
 import com.lucid.alarm.data.prefs.AccentColor
 import com.lucid.alarm.data.prefs.BackgroundPalette
 
-/** Converts the persisted packed [AccentColor.argb] into a Compose [Color]. */
 fun AccentColor.toColor(): Color = Color(argb)
 
-/** Converts the persisted packed [BackgroundPalette.argb] into a Compose [Color]. */
 fun BackgroundPalette.toColor(): Color = Color(argb)
 
-/** Picks a high-contrast foreground (near-black or white) for [color]. */
 fun onColorFor(color: Color): Color =
-    if (color.luminance() > 0.45f) Color(0xFF14171A) else Color.White
+    if (color.luminance() > 0.40f) Color(0xFF14171A) else Color.White
 
-/** Near-black primary text used across light-mode cards for maximum legibility on white. */
 private val LightOnSurface = Color(0xFF111318)
 
-/** Muted secondary text for light-mode cards. */
 private val LightOnSurfaceVariant = Color(0xFF4B5563)
 
-/**
- * Root background brush for [palette]. [BackgroundPalette.AURORA] renders its deep indigo → cyan
- * gradient; every other palette is painted as a solid Color. In light mode the background is pure
- * white (or the user's exact custom Color) — never washed toward white.
- *
- * [customArgb] supplies the packed Color for [BackgroundPalette.CUSTOM]; when it is null the
- * palette's own (fallback) [BackgroundPalette.argb] is used.
- */
 fun backgroundBrushFor(
     palette: BackgroundPalette,
     dark: Boolean = true,
     customArgb: Long? = null
 ): Brush {
-    // Light mode: pure white by default. If the user explicitly chose a custom light-mode
-    // background Color, render that EXACT raw Color (alpha = 1.0f) — never washed toward white.
+
     if (!dark) {
         return if (palette == BackgroundPalette.CUSTOM && customArgb != null) {
             SolidColor(Color(customArgb))
@@ -71,15 +57,6 @@ fun backgroundBrushFor(
     return SolidColor(solid)
 }
 
-/**
- * Builds the whole-app [ColorScheme] from the selected [accent] and [background] palette.
- *
- * Dark mode derives every surface / container tone from the (deep) background Color so the accent
- * always reads clearly. Light mode auto-lightens the palette and switches to dark foregrounds.
- *
- * [customAccentArgb] / [customBackgroundArgb] supply the stored Colors for
- * [AccentColor.CUSTOM] / [BackgroundPalette.CUSTOM]; when null the enum's fallback [argb] is used.
- */
 fun appColorSchemeFor(
     accent: AccentColor,
     background: BackgroundPalette,
@@ -102,19 +79,16 @@ fun appColorSchemeFor(
     return if (dark) {
         darkScheme(accentColor, bgColor)
     } else {
-        // Light mode: the user's accent is used VERBATIM (byte-for-byte, no darkening/mixing) and
-        // every surface is pure white with a transparent surfaceTint so Material 3 never overlays a
-        // tonal grey wash on top of cards.
+
         lightScheme(accentColor)
     }
 }
 
 private fun darkScheme(accentColor: Color, bg: Color): ColorScheme {
     val onBg = onColorFor(bg)
-    // Near-black palettes (AMOLED / Onyx) would otherwise render surface containers identical to
-    // the background, hiding every card, row and box — lift the container tones so they stay visible.
+
     val lift = if (bg.luminance() < 0.02f) 0.10f else 0f
-    // Containers tint toward the foreground so they always contrast with the background.
+
     val containerTint = onBg
 
     val primaryContainer = lerp(bg, accentColor, 0.28f)
@@ -159,8 +133,7 @@ private fun darkScheme(accentColor: Color, bg: Color): ColorScheme {
 }
 
 private fun lightScheme(accentColor: Color): ColorScheme {
-    // The user's chosen accent is used VERBATIM — never darkened, desaturated or alpha-reduced —
-    // so its hex/RGB brightness and saturation are byte-for-byte identical in Light and Dark mode.
+
     val onAccent = if (accentColor.luminance() > 0.6f) Color(0xFF111318) else Color.White
     return androidx.compose.material3.lightColorScheme(
         primary = accentColor,
@@ -178,8 +151,7 @@ private fun lightScheme(accentColor: Color): ColorScheme {
         onTertiaryContainer = onAccent,
         background = Color(0xFFFFFFFF),
         onBackground = LightOnSurface,
-        // Every surface resolves to pure white: cards, lists, sheets and dialogs all share one bright
-        // fill, so no surface is left dimmed or tinted grey in light mode.
+
         surface = Color(0xFFFFFFFF),
         onSurface = LightOnSurface,
         surfaceVariant = Color(0xFFFFFFFF),

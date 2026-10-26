@@ -17,14 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-/**
- * A high-contrast, rounded selection indicator used across the alarm list, recycle bin and world
- * clock list.
- *
- * Selected rows in those lists are painted with the solid [MaterialTheme.colorScheme.primary]
- * accent, so the checked box is drawn in the inverse ([onPrimary] fill + [primary] tick) to stay
- * legible on the accent surface. Unchecked boxes are a bold rounded outline.
- */
 @Composable
 fun SelectionCheckbox(
     checked: Boolean,

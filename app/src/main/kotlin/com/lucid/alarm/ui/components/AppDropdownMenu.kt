@@ -34,16 +34,12 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** A single entry in an [AppDropdownMenu]. */
 data class AppMenuItem(
     val label: String,
     val icon: ImageVector? = null,
     val onClick: () -> Unit
 )
 
-/**
- * Compact One UI styled frosted translucent popup menu with window behind-blur.
- */
 @Composable
 fun AppDropdownMenu(
     expanded: Boolean,
@@ -73,7 +69,7 @@ fun AppDropdownMenu(
         shadowElevation = 8.dp,
         border = null
     ) {
-        // Window behind-blur on Android 12+ (API 31+) with blurBehindRadius = 60
+
         val view = LocalView.current
         SideEffect {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

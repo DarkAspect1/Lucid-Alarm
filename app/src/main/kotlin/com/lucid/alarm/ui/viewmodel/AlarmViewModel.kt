@@ -39,10 +39,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         initialValue = emptyList()
     )
 
-    /**
-     * Repeating alarms the user switched off during this app session. Drives the transient
-     * "Turn back on for …" pill; it is intentionally not persisted.
-     */
     private val _recentlyDisabledRepeating = MutableStateFlow<Set<Int>>(emptySet())
     val recentlyDisabledRepeating: StateFlow<Set<Int>> = _recentlyDisabledRepeating.asStateFlow()
 
@@ -63,10 +59,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         return UpcomingConfig(enabled, minutes)
     }
 
-    /**
-     * Upcoming-notification lead for a specific alarm. Alarms without a custom choice inherit the
-     * global switch live, otherwise their own switch wins.
-     */
     private fun effectiveLeadMinutes(alarm: AlarmEntity, config: UpcomingConfig): Int {
         if (!alarm.effectiveUpcomingNotification(config.enabled)) return 0
         return if (alarm.upcomingNotificationLeadMinutes > 0) {
@@ -76,7 +68,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Re-applies the global awake-check / upcoming-notification choice to every live alarm. */
     fun rescheduleAllAlarms() {
         viewModelScope.launch {
             val config = upcomingConfig()
@@ -137,7 +128,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Swipe-to-delete: move to the recycle bin and cancel scheduling. */
     fun deleteAlarm(alarm: AlarmEntity) = moveToTrash(listOf(alarm.id))
 
     fun moveToTrash(ids: List<Int>) {
@@ -150,13 +140,8 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * Moves a mixed selection (whole [groupNames] plus individually-selected [alarmIds]) to the
-     * recycle bin. Selected groups are soft-deleted WITH their group identity intact so they
-     * reappear as restorable Group cards, while the individual alarms become standalone entries.
-     */
     fun moveSelectionToTrash(groupNames: Set<String>, alarmIds: Set<Int>) {
-        // "General" is the implicit catch-all bucket and can never be deleted as a group.
+
         val deletableGroups = groupNames.filterNot { it == AlarmEntity.DEFAULT_GROUP }.toSet()
         if (deletableGroups.isEmpty() && alarmIds.isEmpty()) return
         viewModelScope.launch {
@@ -192,7 +177,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Restores every alarm that was trashed together as part of [groupName]. */
     fun restoreGroupFromTrash(groupName: String) {
         if (groupName.isEmpty()) return
         viewModelScope.launch {
@@ -209,7 +193,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Permanently deletes every alarm trashed together as part of [groupName]. */
     fun deleteGroupPermanently(groupName: String) {
         if (groupName.isEmpty()) return
         viewModelScope.launch {
@@ -222,7 +205,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Permanently deletes everything currently in the recycle bin. */
     fun emptyRecycleBin() {
         viewModelScope.launch {
             val ids = trashedAlarms.value.map { it.id }
@@ -240,7 +222,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Renames [oldName] to [newName] across every live alarm in that group. */
     fun renameGroup(oldName: String, newName: String) {
         val target = newName.trim()
         if (target.isEmpty() || target == oldName) return
@@ -250,7 +231,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Deletes a group by moving every alarm in it to the recycle bin. */
     fun deleteGroup(groupName: String) {
         viewModelScope.launch {
             val ids = repository.trashGroup(groupName)
@@ -276,7 +256,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Duplicates the given alarms as new entries in the same group. */
     fun copyAlarms(ids: List<Int>) {
         if (ids.isEmpty()) return
         viewModelScope.launch {
@@ -301,13 +280,11 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Persists a manual drag-and-drop ordering (list position -> `sortOrder`). */
     fun reorderAlarms(orderedIds: List<Int>) {
         if (orderedIds.isEmpty()) return
         viewModelScope.launch { repository.persistOrder(orderedIds) }
     }
 
-    /** Persists the chosen list sort mode. */
     fun setSortMode(mode: com.lucid.alarm.data.prefs.AlarmSortMode) {
         viewModelScope.launch { settingsDataStore.setAlarmSortMode(mode) }
     }

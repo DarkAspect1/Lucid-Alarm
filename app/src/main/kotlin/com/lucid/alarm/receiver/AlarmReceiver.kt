@@ -28,13 +28,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 
-/**
- * Entry point from [android.app.AlarmManager].
- *
- * Firing path launches an explicit foreground [AlarmAudioService] which owns notification,
- * audio focus and lock-screen awakening. The receiver also reschedules repeating alarms so
- * weekly alarms keep firing.
- */
 class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -81,7 +74,6 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    /** The user confirmed they are awake: retire the prompt and its loud fallback. */
     private fun handleConfirmAwake(context: Context, alarmId: Int) {
         if (alarmId < 0) return
         val notificationManager =
@@ -103,11 +95,6 @@ class AlarmReceiver : BroadcastReceiver() {
         pendingIntent.cancel()
     }
 
-    /**
-     * Nobody confirmed the awake prompt in time: ring the original alarm again at maximum volume
-     * with a fresh notification and bring the ringing screen forward. The full-volume streak only
-     * ends when the user dismisses this re-ring (a new awake prompt may follow).
-     */
     private fun handleAwakeCheckTimeout(context: Context, alarmId: Int) {
         if (alarmId < 0) return
         val notificationManager =
@@ -134,6 +121,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     putExtra(EXTRA_VIBE_PRESET, alarm?.vibrationPattern)
                     putExtra(EXTRA_FORCE_MAX_VOLUME, true)
                     putExtra(EXTRA_ALARM_IS_24_HOUR, is24Hour)
+                    putExtra(EXTRA_IS_AWAKE_CHECK_ACTIVE, true)
                 }
                 try {
                     ContextCompat.startForegroundService(context, serviceIntent)
@@ -155,6 +143,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     putExtra(EXTRA_ALARM_HOUR, alarm?.hour ?: -1)
                     putExtra(EXTRA_ALARM_MINUTE, alarm?.minute ?: -1)
                     putExtra(EXTRA_FORCE_MAX_VOLUME, true)
+                    putExtra(EXTRA_IS_AWAKE_CHECK_ACTIVE, true)
                 }
                 try {
                     context.startActivity(ringingIntent)
@@ -212,10 +201,7 @@ class AlarmReceiver : BroadcastReceiver() {
             try {
                 ContextCompat.startForegroundService(context, serviceIntent)
             } catch (e: IllegalStateException) {
-                // API 31+ rejects background foreground-service starts (Doze/OEM policies) and
-                // throws ForegroundServiceStartNotAllowedException. Never crash the receiver:
-                // surface a fallback notification whose tap opens the ringing screen, which can
-                // legally start the service once it is visible.
+
                 Log.e(TAG, "Foreground service start rejected; posting fallback notification", e)
                 postRingingFallbackNotification(context, serviceIntent)
             } catch (e: SecurityException) {
@@ -226,7 +212,6 @@ class AlarmReceiver : BroadcastReceiver() {
             if (wakeLock.isHeld) wakeLock.release()
         }
 
-        // Reschedule repeating alarms off the main thread without blocking onReceive.
         if (alarmId == -1) return
         val pendingResult = goAsync()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -237,7 +222,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 val alarm = alarmDao.getAlarmById(alarmId) ?: return@launch
                 val scheduler = AlarmScheduler(context)
                 if (alarm.daysOfWeek.isEmpty()) {
-                    // One-shot alarm: disable it after it fires.
+
                     alarmDao.update(alarm.copy(isEnabled = false))
                     scheduler.cancelAlarm(alarmId)
                 } else {
@@ -251,11 +236,6 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    /**
-     * Last-resort notification for when the OS refuses the foreground-service start. Tapping it
-     * opens [AlarmRingingActivity], which is allowed to start the service from the foreground and
-     * sees [EXTRA_ENSURE_RINGING] so it knows to do so.
-     */
     private fun postRingingFallbackNotification(context: Context, serviceIntent: Intent) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -347,15 +327,15 @@ class AlarmReceiver : BroadcastReceiver() {
                 val alarm = alarmDao.getAlarmById(alarmId) ?: return@launch
 
                 if (alarm.daysOfWeek.isEmpty()) {
-                    // One-shot: skip today entirely.
+
                     alarmDao.update(alarm.copy(isEnabled = false))
                 } else {
-                    // Repeating: schedule the next valid weekday occurrence.
+
                     val settings = SettingsDataStore(context)
                     val leadMinutes = effectiveUpcomingLead(alarm, settings)
                     val next = nextValidTrigger(alarm.hour, alarm.minute, alarm.daysOfWeek)
                     scheduler.scheduleAlarm(alarm, leadMinutes)
-                    // next is verified for logging/consistency only.
+
                     android.util.Log.d(TAG, "Rescheduled repeating alarm $alarmId for $next")
                 }
             } finally {
@@ -364,10 +344,6 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    /**
-     * Pre-alarm lead for [alarm]: 0 when neither the alarm nor the inherited global switch wants an
-     * upcoming notification, the alarm's own lead when it defines one, otherwise the global lead.
-     */
     private suspend fun effectiveUpcomingLead(
         alarm: com.lucid.alarm.data.AlarmEntity,
         settings: SettingsDataStore
@@ -511,6 +487,7 @@ class AlarmReceiver : BroadcastReceiver() {
         const val EXTRA_SNOOZE_LIMIT = "extra_snooze_limit"
         const val EXTRA_FORCE_MAX_VOLUME = "extra_force_max_volume"
         const val EXTRA_ALARM_IS_24_HOUR = "extra_alarm_is_24_hour"
+        const val EXTRA_IS_AWAKE_CHECK_ACTIVE = "extra_is_awake_check_active"
         const val EXTRA_ENSURE_RINGING = "com.lucid.alarm.extra.EXTRA_ENSURE_RINGING"
 
         const val UPCOMING_CHANNEL_ID = "lucid_upcoming_alarm_channel"

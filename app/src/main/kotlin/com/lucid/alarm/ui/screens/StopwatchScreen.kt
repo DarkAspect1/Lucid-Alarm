@@ -2,7 +2,6 @@ package com.lucid.alarm.ui.screens
 
 import android.os.SystemClock
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
@@ -75,7 +73,6 @@ import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 
-
 @Composable
 fun StopwatchScreen(
     barsVisible: Boolean = true,
@@ -93,7 +90,6 @@ fun StopwatchScreen(
     val redColor = Color(0xFFEF4444)
     val neutralColor = if (dark) Color(0xFF6B7280) else Color(0xFF9CA3AF)
 
-    // Smooth live readout derived from the service-owned base clock.
     var liveMillis by remember(
         isRunning,
         startRealtime,
@@ -242,7 +238,7 @@ fun StopwatchScreen(
                                     },
                                 contentPadding = PaddingValues(top = 2.dp, bottom = 8.dp)
                             ) {
-                                itemsIndexed(laps) { index, lapTotal ->
+                                itemsIndexed(laps, key = { index, _ -> laps.size - index }) { index, lapTotal ->
                                     val lapNum = laps.size - index
                                     val diff = lapDiffs.getOrElse(index) { lapTotal }
                                     val rowColor = when {
@@ -403,7 +399,6 @@ fun StopwatchScreen(
     }
 }
 
-/** Analog dial: 60 radial ticks, a recessed inner dial and a single sweeping seconds hand. */
 @Composable
 private fun StopwatchDial(
     millis: Long,
@@ -457,7 +452,6 @@ private fun StopwatchDial(
                 style = Stroke(width = 1.dp.toPx())
             )
 
-            // Sweeping seconds hand from 12.dp behind center out to outerTickOuterRadius
             val angle = Math.toRadians((((millis % 60_000L) / 60_000.0) * 360.0) - 90.0)
             val cosA = cos(angle).toFloat()
             val sinA = sin(angle).toFloat()
@@ -508,7 +502,6 @@ private fun StopwatchDial(
     }
 }
 
-/** Digital page: large tabular readout with the most recent lap beneath it. */
 @Composable
 private fun StopwatchDigitalPage(
     millis: Long,

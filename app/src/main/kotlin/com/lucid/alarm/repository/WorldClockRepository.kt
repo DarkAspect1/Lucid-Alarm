@@ -10,7 +10,6 @@ class WorldClockRepository(private val zoneDao: ZoneDao) {
 
     val trashedZones: Flow<List<TrashedZone>> = zoneDao.getTrashedZones()
 
-    /** Moves [zoneIds] to the world-clock recycle bin (de-duplicated, keeps newest timestamp). */
     suspend fun trashZones(zoneIds: List<String>) = withContext(Dispatchers.IO) {
         if (zoneIds.isEmpty()) return@withContext
         val now = System.currentTimeMillis()
@@ -29,7 +28,6 @@ class WorldClockRepository(private val zoneDao: ZoneDao) {
         zoneDao.emptyTrash()
     }
 
-    /** Purges entries older than the retention window; returns the zone ids removed. */
     suspend fun purgeExpired(): List<String> = withContext(Dispatchers.IO) {
         val threshold = System.currentTimeMillis() - TrashedZone.RECYCLE_BIN_RETENTION_MILLIS
         val expired = zoneDao.getExpiredTrashedZones(threshold)

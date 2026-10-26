@@ -50,15 +50,6 @@ import java.util.Calendar
 import java.util.Locale
 import kotlin.math.roundToInt
 
-/**
- * Foreground service that owns the actual alarm playback.
- *
- * - Declared as `foregroundServiceType="mediaPlayback"`.
- * - Requests exclusive transient audio focus with [AudioAttributes.USAGE_ALARM] so it
- *   bypasses silent/vibrate device states.
- * - Honours the unified vs per-alarm volume policy from [SettingsDataStore].
- * - Posts a full-screen-intent notification so [AlarmRingingActivity] can wake the device.
- */
 class AlarmAudioService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -80,25 +71,17 @@ class AlarmAudioService : Service() {
     private var currentSnoozeCount: Int = 0
     private var currentSnoozeLimit: Int = -1
     private var forceMaxVolume: Boolean = false
+    private var isAwakeCheckActive: Boolean = false
 
-    /**
-     * Draws the accent-tinted squircle large icon for the Now Bar chip. Created lazily so a
-     * construction-time failure can never prevent the service from starting (and thus the alarm
-     * from ringing); every use site is additionally wrapped in [runCatching].
-     */
     private val nowBar: NowBarNotification by lazy { NowBarNotification(this) }
 
-    /** Effective accent color (packed ARGB) used for the Now Bar chip and colorized notification. */
     private var accentArgb: Int = 0xFFF7B500.toInt()
     private var isDark: Boolean = true
 
-    /** Non-null while the alarm is snoozed and a live countdown notification is ticking. */
     private var snoozeTickerJob: Job? = null
 
-    /** Epoch millis at which the current snooze fires; drives the live countdown text. */
     private var snoozeTriggerAtMillis: Long = 0L
 
-    /** True once the service has entered the snoozed foreground state. */
     private var isSnoozed: Boolean = false
 
     override fun onCreate() {
@@ -122,17 +105,19 @@ class AlarmAudioService : Service() {
                     AlarmReceiver.EXTRA_ALARM_ID,
                     currentAlarmId
                 )
-                // Stop playback first so the follow-up prompt is never bundled with a ringtone
-                // that is still playing. The service stays alive just long enough to post the
-                // standalone awake-check notification and schedule its exact timeout.
+                val wasAwakeCheck = intent.getBooleanExtra(
+                    AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE,
+                    false
+                ) || isAwakeCheckActive
+
                 stopOngoingPlayback()
                 sendBroadcast(Intent(ACTION_RINGING_DISMISSED).setPackage(packageName))
                 if (dismissedAlarmId >= 0) {
-                    serviceScope.launch {
-                        maybePostAwakeCheck(dismissedAlarmId)
-                        stopForeground(STOP_FOREGROUND_REMOVE)
-                        stopSelf()
+                    CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                        maybePostAwakeCheck(dismissedAlarmId, wasAwakeCheck)
                     }
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
                 } else {
                     stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
@@ -141,20 +126,17 @@ class AlarmAudioService : Service() {
             }
 
             ACTION_CANCEL_SNOOZE -> {
-                // The user dismissed the snoozed countdown: drop the pending snooze trigger so the
-                // alarm never rings again and shut the service down.
+
                 cancelSnooze()
                 return START_NOT_STICKY
             }
 
             ACTION_SNOOZE_ALARM -> {
-                // Respect the per-alarm snooze budget: once exhausted, a snooze tap is ignored so
-                // the alarm keeps ringing until it is explicitly dismissed.
+
                 if (currentSnoozeLimit >= 0 && currentSnoozeCount >= currentSnoozeLimit) {
                     return START_NOT_STICKY
                 }
-                // Fall back to the app-wide default (5 min) rather than a hard-coded interval, so
-                // every snooze entry point honours the same default as the rest of the app.
+
                 val snoozeMinutes = intent?.getIntExtra(
                     AlarmReceiver.EXTRA_SNOOZE_MINUTES,
                     SettingsDataStore.DEFAULT_SNOOZE_MINUTES
@@ -172,8 +154,7 @@ class AlarmAudioService : Service() {
                     snoozeCount = currentSnoozeCount + 1,
                     snoozeLimit = currentSnoozeLimit
                 )
-                // Stop playback and vibration, but keep the service in the foreground so a live
-                // "Snoozed" countdown remains visible in the Now Bar until it fires or is dismissed.
+
                 stopOngoingPlayback()
                 ensureSnoozeNotificationChannel()
                 enterSnoozedState(snoozeMinutes)
@@ -182,20 +163,17 @@ class AlarmAudioService : Service() {
 
             else -> {
                 if (intent == null || intent.action != ACTION_START_ALARM) {
-                    // Restarted by the system with no usable intent: without the alarm extras we
-                    // would be ringing with fabricated data, so stop instead of ringing.
+
                     stopAlarmAndSelf()
                     return START_NOT_STICKY
                 }
 
                 val incomingAlarmId = intent.getIntExtra(AlarmReceiver.EXTRA_ALARM_ID, -1)
-                // A fresh ring (including a snooze that just fired) retires any live countdown.
+
                 snoozeTickerJob?.cancel()
                 snoozeTickerJob = null
                 isSnoozed = false
-                // A previous alarm may still be ringing (this service is a singleton). When a new,
-                // different alarm fires, the newest one fully takes over: its appearance and its
-                // ringtone replace the ongoing alarm instead of layering on top of it.
+
                 val replacingOngoingAlarm =
                     currentAlarmId != -1 && incomingAlarmId != -1 && incomingAlarmId != currentAlarmId
                 if (replacingOngoingAlarm) {
@@ -211,8 +189,7 @@ class AlarmAudioService : Service() {
                     DateFormat.is24HourFormat(this)
                 )
                 val nowCal = Calendar.getInstance()
-                // Extras are only a display fallback for the notification that must be posted
-                // immediately; never show a hard-coded "7:00" when they are missing.
+
                 currentHour = intent.getIntExtra(AlarmReceiver.EXTRA_ALARM_HOUR, -1)
                     .takeIf { it in 0..23 } ?: nowCal.get(Calendar.HOUR_OF_DAY)
                 currentMinute = intent.getIntExtra(AlarmReceiver.EXTRA_ALARM_MINUTE, -1)
@@ -226,15 +203,19 @@ class AlarmAudioService : Service() {
                 currentVibrate = intent.getBooleanExtra(AlarmReceiver.EXTRA_VIBRATE, true)
                 forceMaxVolume =
                     intent.getBooleanExtra(AlarmReceiver.EXTRA_FORCE_MAX_VOLUME, false)
+                isAwakeCheckActive =
+                    intent.getBooleanExtra(AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE, false)
 
-                // The foreground-service contract on Android 14+ requires startForeground() to be
-                // called synchronously in onStartCommand(). Build a trivial, dependency-free
-                // notification first and enter the foreground immediately, so the alarm can never
-                // be lost to a later styling/DB/DataStore failure.
+                val richInitialNotification = runCatching {
+                    buildRingingNotification(currentAlarmId, currentLabel, currentHour, currentMinute)
+                }.getOrElse {
+                    buildSafeInitialNotification(currentLabel, currentHour, currentMinute)
+                }
+
                 try {
                     startForeground(
                         FOREGROUND_NOTIFICATION_ID,
-                        buildSafeInitialNotification(currentLabel, currentHour, currentMinute),
+                        richInitialNotification,
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                     )
                 } catch (e: RuntimeException) {
@@ -243,16 +224,9 @@ class AlarmAudioService : Service() {
                     return START_NOT_STICKY
                 }
 
-                // From here on the service is a legal foreground service and the alarm is
-                // guaranteed to play: everything below is best-effort decoration only.
-                // The rich alarm notification (with its full-screen intent) is always used so the
-                // ringing UI reliably takes over the lock screen.
-                refreshRingingNotification()
-
                 serviceScope.launch { startAudioAndVibration() }
                 if (replacingOngoingAlarm) {
-                    // The ringing screen is singleTop and may already be showing the old alarm;
-                    // hand it the new alarm's extras so its appearance swaps immediately.
+
                     bringRingingActivityForward()
                 }
                 refreshNotificationFromDatabase()
@@ -261,20 +235,11 @@ class AlarmAudioService : Service() {
         return START_NOT_STICKY
     }
 
-    /**
-     * The ring notification is built from intent extras so it can appear before the database read
-     * completes. Once the stored row is available, correct the time (and label) so a stale or
-     * missing extra can never leave a wrong time on screen.
-     */
     private fun refreshNotificationFromDatabase() {
         val alarmId = currentAlarmId
         if (alarmId == -1) return
         serviceScope.launch {
-            // Load the effective accent from the same key the Settings/Appearance screen writes so
-            // the Now Bar chip, its squircle badge tint and setColor() all match the equipped theme
-            // accent. The synchronous initial foreground notification can only use the hard-coded
-            // fallback, so as soon as the real accent is known we rebuild and repost — regardless of
-            // whether the Room read below succeeds.
+
             val loadedPrefs = runCatching {
                 SettingsDataStore(applicationContext).currentNowBarPreferences()
             }.getOrNull()
@@ -299,8 +264,6 @@ class AlarmAudioService : Service() {
             }
             currentIs24Hour = is24Hour
 
-            // While snoozed, the countdown ticker owns the notification. Re-tint it in place with the
-            // freshly loaded accent instead of rebuilding the ringing face.
             if (isSnoozed) {
                 if (loadedAccent != null) {
                     runCatching {
@@ -318,8 +281,6 @@ class AlarmAudioService : Service() {
                 return@launch
             }
 
-            // Repost whenever the accent was (re)loaded or the stored row/format changed so the
-            // notification never keeps the initial fallback accent.
             if (loadedAccent == null && stored == null && !formatChanged) return@launch
             refreshRingingNotification()
         }
@@ -327,8 +288,7 @@ class AlarmAudioService : Service() {
 
     private suspend fun startAudioAndVibration() {
         val settingsDataStore = SettingsDataStore(applicationContext)
-        // The ringtone must never be lost to a preferences read failure: fall back to the
-        // in-memory defaults so the alarm still plays at the requested volume.
+
         val volumePolicy = runCatching { settingsDataStore.volumePolicyFlow.first() }
             .getOrDefault(VolumePolicy.PER_ALARM)
         val unifiedVolume = runCatching { settingsDataStore.unifiedVolumeFlow.first() }
@@ -348,8 +308,7 @@ class AlarmAudioService : Service() {
         audioManager?.let { am ->
             val maxStreamVolume = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
             previousStreamVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
-            // The awake-check fallback must be impossible to miss, so it pins the alarm stream to
-            // the device maximum regardless of the configured alarm volume.
+
             val targetStreamVolume = if (forceMaxVolume) {
                 maxStreamVolume
             } else {
@@ -430,11 +389,6 @@ class AlarmAudioService : Service() {
         }
     }
 
-    /**
-     * Builds the bare-minimum notification used to satisfy the synchronous `startForeground()`
-     * contract. It deliberately touches no vectors, bitmaps, Now Bar extras, Room or DataStore, so
-     * it can never throw and leave the process in `startForeground` limbo on Android 14+.
-     */
     private fun buildSafeInitialNotification(
         label: String,
         hour: Int,
@@ -456,11 +410,6 @@ class AlarmAudioService : Service() {
             .build()
     }
 
-    /**
-     * Re-posts the current ringing notification. The rich, high-importance alarm notification with
-     * its full-screen intent is always used so the ringing UI reliably takes over the lock screen.
-     * Also enforces the FGS contract so the service stays legal across the swap.
-     */
     private fun refreshRingingNotification() {
         if (isSnoozed) return
         val notification = runCatching {
@@ -509,6 +458,7 @@ class AlarmAudioService : Service() {
         val stopIntent = Intent(this, AlarmAudioService::class.java).apply {
             action = ACTION_STOP_ALARM
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE, isAwakeCheckActive)
         }
         val stopPendingIntent = PendingIntent.getService(
             this,
@@ -538,8 +488,7 @@ class AlarmAudioService : Service() {
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(formattedTime)
-            // Accent-tinted squircle glyph, matching the Timer/Stopwatch Now Bar chip. Guarded so a
-            // bitmap/render failure can never take the whole notification (and the alarm) down.
+
             .also { if (safeLargeIcon != null) it.setLargeIcon(safeLargeIcon) }
             .setColor(accentArgb)
             .setColorized(true)
@@ -564,18 +513,14 @@ class AlarmAudioService : Service() {
                     stopPendingIntent
                 )
             )
-            // Swiping the ringing notification away snoozes the alarm instead of dismissing it,
-            // so an accidental swipe can never silently turn an alarm off.
+
             .setDeleteIntent(snoozePendingIntent)
 
-        // The Now Bar extras are a purely cosmetic promotion: a failure here must never stop the
-        // alarm from ringing, so the bundle is attached best-effort.
         runCatching { builder.addExtras(buildNowBarExtras(formattedTime)) }
             .onFailure { Log.w(TAG, "Unable to attach Now Bar extras to ringing notification", it) }
         return builder.build()
     }
 
-    /** Builds one Now Bar action button with a resource-backed icon and no UI launch. */
     private fun buildNowBarAction(
         iconRes: Int,
         title: String,
@@ -587,7 +532,7 @@ class AlarmAudioService : Service() {
         val actionBuilder = if (safeIcon != null) {
             NotificationCompat.Action.Builder(safeIcon, title, pendingIntent)
         } else {
-            // Fall back to a framework icon so the action still renders if the vector failed.
+
             @Suppress("DEPRECATION")
             NotificationCompat.Action.Builder(android.R.drawable.ic_lock_idle_alarm, title, pendingIntent)
         }
@@ -596,11 +541,6 @@ class AlarmAudioService : Service() {
             .build()
     }
 
-    /**
-     * Extras that promote the ringing notification into One UI's Now Bar / Live Notification chip
-     * while the device is unlocked. Mirrors the Timer/Stopwatch chip layout so a ringing alarm
-     * surfaces as an ongoing activity with a Snooze/Dismiss action pair and an alarm-clock icon.
-     */
     private fun buildNowBarExtras(formattedTime: String): Bundle = Bundle().apply {
         putBoolean(NOWBAR_REQUEST_PROMOTED_ONGOING, true)
         putString(NOWBAR_SHORT_CRITICAL_TEXT, formattedTime)
@@ -614,16 +554,11 @@ class AlarmAudioService : Service() {
             Icon.createWithBitmap(nowBar.largeIcon(NowBarNotification.Kind.ALARM, accentArgb, isDark))
         }.getOrNull()?.let { putParcelable(NOWBAR_CHIP_ICON, it) }
         putString(NOWBAR_CHIP_EXPANDED_TEXT, formattedTime)
-        // Must be 1 with actionPrimarySet = 0, otherwise One UI hides every Now Bar button.
+
         putInt(NOWBAR_ACTION_TYPE, 1)
         putInt(NOWBAR_ACTION_PRIMARY_SET, 0)
     }
 
-    /**
-     * Enters the SNOOZED foreground state: playback stops, but the service stays alive and posts a
-     * live countdown notification (updated every second) whose only action dismisses the pending
-     * snooze. This is what keeps a "Snoozed" chip visible in One UI's Now Bar after the user snoozes.
-     */
     private fun enterSnoozedState(snoozeMinutes: Int) {
         isSnoozed = true
         snoozeTriggerAtMillis = System.currentTimeMillis() + snoozeMinutes * 60_000L
@@ -642,7 +577,6 @@ class AlarmAudioService : Service() {
         startSnoozeTicker()
     }
 
-    /** Drives the once-per-second snooze countdown and posts the ticking notification. */
     private fun startSnoozeTicker() {
         snoozeTickerJob?.cancel()
         snoozeTickerJob = serviceScope.launch {
@@ -660,10 +594,6 @@ class AlarmAudioService : Service() {
         }
     }
 
-    /**
-     * The snoozed countdown notification. [remaining] drives the `MM:SS` primary info; pass the
-     * snooze length in minutes to render the initial "full" countdown.
-     */
     private fun buildSnoozedNotification(snoozeMinutes: Int): Notification =
         buildSnoozedNotification(snoozeMinutes * 60_000L)
 
@@ -674,9 +604,6 @@ class AlarmAudioService : Service() {
         val seconds = totalSeconds % 60L
         val countdown = String.format(Locale.US, "%02d:%02d", minutes, seconds)
 
-        // The live countdown is the hero text of the Now Bar chip; the exact target wake-up time
-        // (now + snooze duration) rides along as the secondary line so the user always knows when
-        // the alarm will actually ring again.
         val formattedSnoozeTargetTime = formatSnoozeTargetTime(snoozeTriggerAtMillis)
         val primary = countdown
         val secondary = "Snoozed until $formattedSnoozeTargetTime"
@@ -721,10 +648,6 @@ class AlarmAudioService : Service() {
         return builder.build()
     }
 
-    /**
-     * Formats the exact snooze target wake-up timestamp (epoch millis) as a wall-clock time honouring
-     * the user's 12h (no leading zero) / 24h preference, e.g. `"2:05 AM"` or `"14:05"`.
-     */
     private fun formatSnoozeTargetTime(triggerAtMillis: Long): String {
         val cal = java.util.Calendar.getInstance().apply { timeInMillis = triggerAtMillis }
         return formatNotificationTime(
@@ -735,7 +658,6 @@ class AlarmAudioService : Service() {
         )
     }
 
-    /** Now Bar extras for the snoozed countdown chip. */
     private fun buildSnoozeExtras(primary: String, secondary: String): Bundle = Bundle().apply {
         putBoolean(NOWBAR_REQUEST_PROMOTED_ONGOING, true)
         putString(NOWBAR_SHORT_CRITICAL_TEXT, primary)
@@ -753,7 +675,6 @@ class AlarmAudioService : Service() {
         putInt(NOWBAR_ACTION_PRIMARY_SET, 0)
     }
 
-    /** Ensures the low-importance channel the snoozed countdown lives on. */
     private fun ensureSnoozeNotificationChannel() {
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -773,7 +694,6 @@ class AlarmAudioService : Service() {
         )
     }
 
-    /** Cancels the pending snooze trigger and tears the snoozed service down. */
     private fun cancelSnooze() {
         snoozeTickerJob?.cancel()
         snoozeTickerJob = null
@@ -803,16 +723,17 @@ class AlarmAudioService : Service() {
         stopSelf()
     }
 
-    private suspend fun maybePostAwakeCheck(alarmId: Int) {
+    private suspend fun maybePostAwakeCheck(alarmId: Int, isAwakeCheckActive: Boolean = false) {
         val storedAlarm = withContext(Dispatchers.IO) {
             runCatching {
                 AppDatabase.getDatabase(applicationContext).alarmDao().getAlarmById(alarmId)
             }.getOrNull()
-        } ?: return
+        }
         val settingsDataStore = SettingsDataStore(applicationContext)
         val globalEnabled = settingsDataStore.awakeCheckEnabledFlow.first()
-        if (!storedAlarm.effectiveAreYouAwake(globalEnabled)) return
-        val minutes = if (storedAlarm.areYouAwakeMinutes > 0) {
+        val shouldCheck = isAwakeCheckActive || (storedAlarm != null && storedAlarm.effectiveAreYouAwake(globalEnabled))
+        if (!shouldCheck) return
+        val minutes = if (storedAlarm != null && storedAlarm.areYouAwakeMinutes > 0) {
             storedAlarm.areYouAwakeMinutes.coerceIn(1, 15)
         } else {
             settingsDataStore.awakeCheckMinutesFlow.first()
@@ -854,6 +775,7 @@ class AlarmAudioService : Service() {
         val timeoutIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_AWAKE_CHECK_TIMEOUT
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE, true)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             this,
@@ -884,6 +806,18 @@ class AlarmAudioService : Service() {
     private fun ensureAlarmNotificationChannel() {
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        runCatching {
+            notificationManager.deleteNotificationChannel("lucid_high_priority_alarm_channel")
+        }
+        if (notificationManager.getNotificationChannel(ALARM_CHANNEL_ID) != null) return
+
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
         val channel = NotificationChannel(
             ALARM_CHANNEL_ID,
             "Firing Alarms",
@@ -891,18 +825,14 @@ class AlarmAudioService : Service() {
         ).apply {
             description = "Critical channel for firing alarms and lock-screen wakeups"
             enableVibration(true)
+            vibrationPattern = longArrayOf(0, 500, 250, 500)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             setBypassDnd(true)
-            setSound(null, null)
+            setSound(alarmSound, audioAttributes)
         }
         notificationManager.createNotificationChannel(channel)
     }
 
-    /**
-     * Tears down the currently playing ringtone, vibration, audio focus and stream-volume change so
-     * a newly fired alarm can take over cleanly. The service itself stays alive: only the ongoing
-     * playback is discarded, so [stopAlarmAndSelf] is not used here (that would kill the service).
-     */
     private fun stopOngoingPlayback() {
         try {
             mediaPlayer?.let { player ->
@@ -931,11 +861,6 @@ class AlarmAudioService : Service() {
         previousStreamVolume = null
     }
 
-    /**
-     * Brings the ringing screen to the front with the new alarm's extras. Uses a distinct request
-     * code per alarm so the singleTop activity receives [AlarmRingingActivity.onNewIntent] and swaps
-     * its appearance to the newly fired alarm.
-     */
     private fun bringRingingActivityForward() {
         val alarmId = currentAlarmId
         if (alarmId == -1) return
@@ -1016,7 +941,7 @@ class AlarmAudioService : Service() {
         private const val TAG = "AlarmAudioService"
         private const val MIN_VOLUME = 0.05f
 
-        const val ALARM_CHANNEL_ID = "lucid_high_priority_alarm_channel"
+        const val ALARM_CHANNEL_ID = "lucid_high_priority_alarm_channel_v2"
         const val SNOOZE_CHANNEL_ID = "lucid_snoozed_alarm_channel"
         const val FOREGROUND_NOTIFICATION_ID = 1001
 
@@ -1026,7 +951,6 @@ class AlarmAudioService : Service() {
         const val ACTION_CANCEL_SNOOZE = "com.lucid.alarm.service.ACTION_CANCEL_SNOOZE"
         const val ACTION_RINGING_DISMISSED = "com.lucid.alarm.ACTION_RINGING_DISMISSED"
 
-        // One UI Now Bar / Live Notification extras shared with the Timer/Stopwatch chips.
         private const val NOWBAR_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
         private const val NOWBAR_SHORT_CRITICAL_TEXT = "android.shortCriticalText"
         private const val NOWBAR_STYLE = "android.ongoingActivityNoti.style"

@@ -41,18 +41,6 @@ import kotlinx.coroutines.flow.filter
 import java.util.Locale
 import kotlin.math.abs
 
-/**
- * Vertical wheel time picker with a strict 1:1 mapping between the centered drum item and the
- * value that is emitted.
- *
- * Why this has no off-by-one error:
- *  - [LazyColumn] uses a vertical `contentPadding` of exactly `itemHeight * (visibleCount / 2)`.
- *  - Therefore, when the fling settles, the item whose center aligns with the viewport center is
- *    always the item at `firstVisibleItemIndex` with a zero pixel offset.
- *  - The selected index is detected by choosing the visible item whose center is physically
- *    closest to the viewport center, then normalising with a non-negative modulo into `0 until size`.
- *  - The emitted hour/minute is the item value itself; nothing is ever decremented.
- */
 @Composable
 fun VerticalWheelTimePicker(
     initialHour: Int,
@@ -201,9 +189,6 @@ fun VerticalWheelTimePicker(
     }
 }
 
-/**
- * Simplified numeric wheel for use outside the time picker (e.g. the Timer screen).
- */
 @Composable
 fun NumberWheel(
     values: List<Int>,
@@ -266,8 +251,6 @@ fun <T> WheelColumn(
     val itemCount = items.size
     val totalCount = if (infiniteLoop) Int.MAX_VALUE else itemCount
 
-    // Start near the middle of Int.MAX_VALUE, aligned to an exact multiple of itemCount plus
-    // the initial index, so that (listIndex % itemCount) == initialIndex with zero pixel offset.
     val startScrollIndex = remember(itemCount, initialIndex, infiniteLoop) {
         if (infiniteLoop) {
             wheelScrollIndex(itemCount, initialIndex)

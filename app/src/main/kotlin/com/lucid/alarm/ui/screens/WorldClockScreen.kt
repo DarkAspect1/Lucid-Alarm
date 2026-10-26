@@ -1,14 +1,9 @@
 package com.lucid.alarm.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.AnimationState
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.MutatePriority
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -46,26 +41,30 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Sort
-import androidx.compose.material.icons.outlined.ViewAgenda
-import androidx.compose.material.icons.outlined.WbSunny
-import androidx.compose.material.icons.outlined.NightsStay
-import com.lucid.alarm.data.prefs.TemperatureUnit
+import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
@@ -105,31 +104,24 @@ import com.lucid.alarm.ui.components.AppDropdownMenu
 import com.lucid.alarm.ui.components.AppMenuItem
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.components.edgeFadeMask
-import com.lucid.alarm.ui.components.DayNightLandscapeBackground
-import com.lucid.alarm.ui.components.ScrollShadow
 import com.lucid.alarm.ui.components.SelectionCheckbox
-import com.lucid.alarm.ui.components.isDaytimeBrightPhase
 import com.lucid.alarm.ui.viewmodel.WorldClockViewModel
 import com.lucid.alarm.ui.amPmSuffix
 import com.lucid.alarm.ui.formatHourMinute
-import com.lucid.alarm.ui.theme.LocalBoxColors
 import com.lucid.alarm.ui.theme.onColorFor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** A single selectable world-clock city derived from a JVM [ZoneId]. */
 data class WorldCity(
     val zoneId: String,
     val city: String,
     val region: String
 )
 
-/** Every region/city [ZoneId] (i.e. "Continent/City"), de-duplicated and city-sorted Aâ€“Z. */
 private fun buildWorldCities(): List<WorldCity> =
     ZoneId.getAvailableZoneIds()
         .filter { it.contains("/") }
@@ -157,6 +149,7 @@ fun WorldClockScreen(
     onOpenRecycleBin: () -> Unit = {},
     onCanScrollChange: (Boolean) -> Unit = {},
     onScrollInProgressChange: (Boolean) -> Unit = {},
+    fabInteractive: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -167,11 +160,6 @@ fun WorldClockScreen(
     )
     val timeFormat by settingsDataStore.timeFormatFlow.collectAsState(
         initial = TimeFormat.TWELVE_HOUR
-    )
-    val showWeather by settingsDataStore.worldClockShowWeatherFlow.collectAsState(initial = true)
-    val tempUnit by settingsDataStore.worldClockTemperatureUnitFlow.collectAsState(initial = TemperatureUnit.CELSIUS)
-    val dayNightCards by settingsDataStore.dynamicDayNightWorldClockLandscapes.collectAsState(
-        initial = false
     )
     val nowMillis by produceState(initialValue = System.currentTimeMillis()) {
         while (true) {
@@ -229,15 +217,13 @@ fun WorldClockScreen(
         }
     }
 
-    // Reorder backing list (only meaningful in Custom order).
     val listZones = remember { mutableStateListOf<String>() }
     var draggingIndex by remember { mutableIntStateOf(-1) }
     var draggedDistance by remember { mutableFloatStateOf(0f) }
     var dragSettleJob by remember { mutableStateOf<Job?>(null) }
-    // True as soon as a drag seeds the custom list, before the async Custom-mode write lands.
+
     var customPending by remember { mutableStateOf(false) }
-    // Order that was just dropped. While set, the resync below ignores inconsistent source lists
-    // so the async sort-mode + persistence writes can never bounce the list back first.
+
     var pendingOrderIds by remember { mutableStateOf<List<String>?>(null) }
 
     LaunchedEffect(sortMode) {
@@ -373,8 +359,7 @@ fun WorldClockScreen(
             } else {
                 itemsIndexed(renderZones, key = { _, zoneId -> zoneId }) { index, zoneId ->
                         val isDragging = effectiveCustom && draggingIndex == index
-                        // Reordering engages only inside selection mode: outside it a long
-                        // press enters selection (handled by the card's combinedClickable).
+
                         val dragModifier = if (selectionActive) {
                             Modifier
                                 .zIndex(if (isDragging) 1f else 0f)
@@ -385,9 +370,7 @@ fun WorldClockScreen(
                                     detectDragGesturesAfterLongPress(
                                         onDragStart = {
                                             dragSettleJob?.cancel()
-                                            // Reordering always implies Custom order. If another
-                                            // sort is active, seed the custom order from what is on
-                                            // screen and switch to Custom.
+
                                             if (sortMode != WorldClockSortMode.CUSTOM) {
                                                 customPending = true
                                                 listZones.clear()
@@ -454,8 +437,7 @@ fun WorldClockScreen(
                                         },
                                         onDragEnd = {
                                             if (draggingIndex != -1) {
-                                                // Publish the order we already show so the async
-                                                // persistence write can never bounce the list back.
+
                                                 pendingOrderIds = listZones.toList()
                                                 scope.launch {
                                                     settingsDataStore.setWorldClockZones(
@@ -464,9 +446,7 @@ fun WorldClockScreen(
                                                 }
                                             }
                                             dragSettleJob?.cancel()
-                                            // Keep the card registered as dragging while it springs
-                                            // back into its slot, so the resync guard stays calm and
-                                            // no second placement animation fights the settle motion.
+
                                             dragSettleJob = scope.launch {
                                                 animate(
                                                     initialValue = draggedDistance,
@@ -496,16 +476,13 @@ fun WorldClockScreen(
                             zoneId = zoneId,
                             nowMillis = nowMillis,
                             is24Hour = timeFormat.is24Hour,
-                            showWeather = showWeather,
-                            tempUnit = tempUnit,
                             selectionMode = selectionActive,
                             isSelected = selectedZones.contains(zoneId),
                             onToggleSelect = {
                                 selectedZones = selectedZones.toggle(zoneId)
                             },
                             onLongClick = {
-                                // In selection mode a long press belongs to the reorder
-                                // gesture; outside it the press enters selection.
+
                                 if (!selectionActive) {
                                     selectionActive = true
                                     selectedZones = selectedZones + zoneId
@@ -565,9 +542,12 @@ fun WorldClockScreen(
         ) {
             val accentColor = MaterialTheme.colorScheme.primary
             SmallFloatingActionButton(
-                onClick = { showAddDialog = true },
+                onClick = {
+                    if (!fabInteractive) return@SmallFloatingActionButton
+                    showAddDialog = true
+                },
                 containerColor = accentColor,
-                contentColor = if (accentColor.luminance() > 0.55f) Color(0xFF111318) else Color.White,
+                contentColor = onColorFor(accentColor),
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp)
             ) {
@@ -594,32 +574,10 @@ fun WorldClockScreen(
                 onClick = {
                     scope.launch {
                         if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) return@launch
-                        val curIndex = listState.firstVisibleItemIndex
-                        val curOffset = listState.firstVisibleItemScrollOffset
-                        val avgHeight = if (listState.layoutInfo.visibleItemsInfo.isNotEmpty()) {
-                            listState.layoutInfo.visibleItemsInfo.map { it.size }.average().toFloat()
-                        } else 200f
-                        val totalDistance = curIndex * avgHeight + curOffset + 200f
-                        listState.scroll(MutatePriority.Default) {
-                            var prevValue = 0f
-                            val anim = AnimationState(initialValue = 0f)
-                            val duration = (totalDistance / 8f).toInt().coerceIn(300, 450)
-                            anim.animateTo(
-                                targetValue = totalDistance,
-                                animationSpec = tween(
-                                    durationMillis = duration,
-                                    easing = CubicBezierEasing(0.22f, 1.0f, 0.36f, 1.0f)
-                                )
-                            ) {
-                                val delta = value - prevValue
-                                prevValue = value
-                                scrollBy(-delta)
-                                if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) {
-                                    cancelAnimation()
-                                }
-                            }
+                        if (listState.firstVisibleItemIndex > 6) {
+                            listState.scrollToItem(6)
                         }
-                        listState.scrollToItem(0, 0)
+                        listState.animateScrollToItem(0, 0)
                     }
                 },
                 shape = CircleShape,
@@ -652,7 +610,10 @@ fun WorldClockScreen(
             val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
             Box {
                 SmallFloatingActionButton(
-                    onClick = { showOverflowMenu = true },
+                    onClick = {
+                        if (!fabInteractive) return@SmallFloatingActionButton
+                        showOverflowMenu = true
+                    },
                     containerColor = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
                     contentColor = if (isLight) Color(0xFF1E1E1E) else Color.White,
                     shape = CircleShape,
@@ -669,7 +630,7 @@ fun WorldClockScreen(
                     onDismissRequest = { showOverflowMenu = false },
                     items = listOf(
                         AppMenuItem("Select", Icons.Outlined.Checklist) { selectionActive = true },
-                        AppMenuItem("Sort", Icons.Outlined.Sort) { showSortDialog = true },
+                        AppMenuItem("Sort", Icons.AutoMirrored.Outlined.Sort) { showSortDialog = true },
                         AppMenuItem("Recycle Bin", Icons.Outlined.DeleteOutline) { onOpenRecycleBin() },
                         AppMenuItem("Settings", Icons.Outlined.Settings) { onOpenSettings() }
                     )
@@ -680,6 +641,8 @@ fun WorldClockScreen(
 
     if (showAddDialog) {
         AddWorldClockDialog(
+            is24Hour = timeFormat.is24Hour,
+            nowMillis = nowMillis,
             onDismiss = { showAddDialog = false },
             onAdd = { zoneId ->
                 scope.launch {
@@ -707,24 +670,6 @@ fun WorldClockScreen(
 
 private fun Set<String>.toggle(zoneId: String): Set<String> =
     if (contains(zoneId)) this - zoneId else this + zoneId
-
-@Composable
-private fun WorldClockHeader(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .zIndex(5f)
-            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "World Clock",
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1
-        )
-    }
-}
 
 @Composable
 private fun WorldClockSortDialog(
@@ -777,7 +722,7 @@ private fun WorldClockSelectionBar(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val lightMode = MaterialTheme.colorScheme.background.luminance() > 0.5f
-        // Floating accent "Cancel" pill hovering just above the compact action bar.
+
         Surface(
             color = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -805,7 +750,7 @@ private fun WorldClockSelectionBar(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        // Compact single-row action bar, matching the nav pill's surface and height.
+
         Surface(
             border = null,
             color = if (lightMode) {
@@ -876,8 +821,6 @@ private fun WorldClockCard(
     zoneId: String,
     nowMillis: Long,
     is24Hour: Boolean,
-    showWeather: Boolean,
-    tempUnit: TemperatureUnit,
     selectionMode: Boolean,
     isSelected: Boolean,
     onToggleSelect: () -> Unit,
@@ -890,11 +833,8 @@ private fun WorldClockCard(
         Instant.ofEpochMilli(nowMillis).atZone(zone)
     }
     val timeText = formatHourMinute(now.hour, now.minute, is24Hour)
-    val skySeed = zoneId.hashCode()
-    val isDaytime = now.hour in 6..18
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
-    // Frosted glass card matching One UI Picture 2
     val cardShape = RoundedCornerShape(28.dp)
     val containerColor = when {
         isSelected -> MaterialTheme.colorScheme.primary
@@ -909,7 +849,6 @@ private fun WorldClockCard(
     val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     val mutedColor = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
 
-    // Calculate day offset and time difference
     val localZone = remember { ZoneId.systemDefault() }
     val targetOffsetSec = remember(now) { now.offset.totalSeconds }
     val localOffsetSec = remember(nowMillis) { localZone.rules.getOffset(Instant.ofEpochMilli(nowMillis)).totalSeconds }
@@ -932,13 +871,6 @@ private fun WorldClockCard(
         else -> "Yesterday"
     }
     val subtitleText = "$dayText, $diffText"
-
-    val baseTempC = 14 + (kotlin.math.abs(skySeed) % 15)
-    val tempText = if (tempUnit == TemperatureUnit.FAHRENHEIT) {
-        "${baseTempC * 9 / 5 + 32}°"
-    } else {
-        "${baseTempC}°"
-    }
 
     FrostedBlurBox(
         modifier = modifier
@@ -973,7 +905,8 @@ private fun WorldClockCard(
                     text = subtitleText,
                     fontSize = 14.sp,
                     color = mutedColor,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -1003,39 +936,22 @@ private fun WorldClockCard(
                         checked = isSelected,
                         onToggle = onToggleSelect
                     )
-                } else if (showWeather) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isDaytime) Icons.Outlined.WbSunny else Icons.Outlined.NightsStay,
-                            contentDescription = "Weather",
-                            tint = if (isDaytime) Color(0xFFF59E0B) else mutedColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = tempText,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = mutedColor
-                        )
-                    }
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddWorldClockDialog(
+    is24Hour: Boolean,
+    nowMillis: Long,
     onDismiss: () -> Unit,
     onAdd: (String) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     val allCities = remember { buildWorldCities() }
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
     val filtered = remember(query, allCities) {
         if (query.isBlank()) {
@@ -1049,73 +965,272 @@ private fun AddWorldClockDialog(
         }
     }
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add City") },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text("Search city/timezone") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(280.dp),
-                    contentPadding = PaddingValues(vertical = 4.dp)
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+        if (dialogWindow != null) {
+            DisposableEffect(isLight) {
+                val insetsController = WindowCompat.getInsetsController(dialogWindow, dialogWindow.decorView)
+                insetsController.isAppearanceLightStatusBars = isLight
+                onDispose {}
+            }
+        }
+
+        FrostedBlurBox(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .widthIn(max = 440.dp)
+                .heightIn(min = 380.dp, max = 580.dp),
+            shape = RoundedCornerShape(28.dp),
+            tintColor = if (isLight) Color(0xF5FFFFFF) else Color(0xE61E1F27),
+            borderColor = null
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 20.dp)
+            ) {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (query.isBlank()) {
-                        val grouped = filtered.groupBy { it.city.first().uppercaseChar() }
-                        grouped.keys.sorted().forEach { letter ->
-                            item(key = "header_$letter") {
+                    Text(
+                        text = "Add City",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                color = if (isLight) Color(0x12000000) else Color(0x20FFFFFF),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(999.dp),
+                    color = if (isLight) Color(0x0C000000) else Color(0x18FFFFFF),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (query.isEmpty()) {
                                 Text(
-                                    text = letter.toString(),
-                                    style = MaterialTheme.typography.labelLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    text = "Search city, region or timezone",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    maxLines = 1
                                 )
                             }
-                            items(grouped[letter].orEmpty(), key = { it.zoneId }) { city ->
-                                TextButton(
-                                    onClick = { onAdd(city.zoneId) },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
+                            BasicTextField(
+                                value = query,
+                                onValueChange = { query = it },
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        if (query.isNotEmpty()) {
+                            IconButton(
+                                onClick = { query = "" },
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Close,
+                                    contentDescription = "Clear search",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (filtered.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No cities found",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentPadding = PaddingValues(vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (query.isBlank()) {
+                            val grouped = filtered.groupBy { it.city.first().uppercaseChar() }
+                            grouped.keys.sorted().forEach { letter ->
+                                item(key = "header_$letter") {
                                     Text(
-                                        text = city.city + "  ·  " + city.region,
-                                        modifier = Modifier.fillMaxWidth()
+                                        text = letter.toString(),
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp
+                                        ),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                                items(grouped[letter].orEmpty(), key = { it.zoneId }) { city ->
+                                    CityListItem(
+                                        city = city,
+                                        is24Hour = is24Hour,
+                                        nowMillis = nowMillis,
+                                        isLight = isLight,
+                                        onSelect = { onAdd(city.zoneId) }
                                     )
                                 }
                             }
-                        }
-                    } else {
-                        items(filtered, key = { it.zoneId }) { city ->
-                            TextButton(
-                                onClick = { onAdd(city.zoneId) },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = city.city + "  ·  " + city.region +
-                                        "  (" + city.zoneId + ")",
-                                    modifier = Modifier.fillMaxWidth()
+                        } else {
+                            items(filtered, key = { it.zoneId }) { city ->
+                                CityListItem(
+                                    city = city,
+                                    is24Hour = is24Hour,
+                                    nowMillis = nowMillis,
+                                    isLight = isLight,
+                                    onSelect = { onAdd(city.zoneId) }
                                 )
                             }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
-    )
+    }
 }
 
+@Composable
+private fun CityListItem(
+    city: WorldCity,
+    is24Hour: Boolean,
+    nowMillis: Long,
+    isLight: Boolean,
+    onSelect: () -> Unit
+) {
+    val cityTime = remember(city.zoneId, nowMillis, is24Hour) {
+        runCatching {
+            val zone = ZoneId.of(city.zoneId)
+            val zdt = Instant.ofEpochMilli(nowMillis).atZone(zone)
+            formatHourMinute(zdt.hour, zdt.minute, is24Hour) + if (!is24Hour) " " + amPmSuffix(zdt.hour, is24Hour) else ""
+        }.getOrDefault("")
+    }
+
+    Surface(
+        onClick = onSelect,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = city.city,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${city.region} \u00B7 ${city.zoneId}",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (cityTime.isNotBlank()) {
+                    Text(
+                        text = cityTime,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+    }
+}

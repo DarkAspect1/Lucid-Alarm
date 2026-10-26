@@ -31,13 +31,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-/**
- * Foreground service that owns the running Stopwatch.
- *
- * Exactly like [TimerService] this is a **specialUse** foreground service: no `MediaSession`, no
- * `MediaStyle`, no transport controls. The ongoing notification is a native notification that One UI
- * promotes into its "Ongoing Activity" Now Bar chip.
- */
 class StopwatchService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -46,12 +39,6 @@ class StopwatchService : Service() {
     private lateinit var nowBar: NowBarNotification
     private lateinit var settings: SettingsDataStore
 
-    /**
-     * Last known appearance, owned by *this* service.
-     *
-     * The accent is refreshed from the persisted preference on every tick instead of living in a
-     * shared/static holder, so a simultaneously running Timer cannot overwrite it.
-     */
     @Volatile
     private var preferences = SettingsDataStore.NowBarPreferences(
         accentArgb = AccentColor.DEFAULT.argb.toInt(),
@@ -68,16 +55,12 @@ class StopwatchService : Service() {
             getString(R.string.now_bar_channel_stopwatch),
             getString(R.string.now_bar_channel_stopwatch_description)
         )
-        // Seed the appearance early. The first notification may briefly use the default accent and
-        // is corrected by the first tick a moment later.
+
         scope.launch { preferences = settings.currentNowBarPreferences() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Promote to the foreground *immediately*, before any work. This posts the ongoing
-        // notification (and therefore the Now Bar / Live Update) from the very first moment the
-        // stopwatch is started, so it is already present when the user leaves the app or opens
-        // recents.
+
         ensureForeground()
 
         when (intent?.action) {
@@ -111,8 +94,6 @@ class StopwatchService : Service() {
             return START_NOT_STICKY
         }
 
-        // Paint the real state right away (the notification above used the pre-action snapshot)
-        // and keep it refreshed once per second for as long as the session lives.
         startTicker()
         return START_STICKY
     }
@@ -166,12 +147,6 @@ class StopwatchService : Service() {
         TimerStopwatchManager.addStopwatchLap(state.liveMillis)
     }
 
-    /**
-     * Keeps the ongoing notification live.
-     *
-     * The readout, lap subtitle, accent tint and One UI chip extras are re-posted once per second,
-     * so the notification can never drift away from the stopwatch state.
-     */
     private fun startTicker() {
         if (tickerJob?.isActive == true) return
         tickerJob = scope.launch {
@@ -182,7 +157,6 @@ class StopwatchService : Service() {
         }
     }
 
-    /** @return false when the session ended and the ticker should stop. */
     private suspend fun tick(): Boolean {
         if (!TimerStopwatchManager.stopwatch.value.hasSession) return false
         postNotification()
@@ -302,12 +276,6 @@ class StopwatchService : Service() {
         return builder.build()
     }
 
-    /**
-     * Builds a notification action with a real icon.
-     *
-     * One UI's SystemUI drops any action whose [IconCompat] is null (i.e. one added with
-     * `addAction(0, ...)`), so an icon resource is mandatory here.
-     */
     private fun buildNotificationAction(
         context: Context,
         @DrawableRes iconRes: Int,
@@ -322,7 +290,6 @@ class StopwatchService : Service() {
             .setShowsUserInterface(false)
             .build()
 
-    /** Extras that promote the notification into the Now Bar and label its buttons. */
     private fun buildNowBarExtras(
         formattedTime: String,
         subtitleText: String,
@@ -342,7 +309,7 @@ class StopwatchService : Service() {
             Icon.createWithBitmap(badgeBitmap)
         )
         putString("android.ongoingActivityNoti.chipExpandedText", formattedTime)
-        // Must be 1 with actionPrimarySet = 0, otherwise One UI hides every Now Bar button.
+
         putInt("android.ongoingActivityNoti.actionType", 1)
         putInt("android.ongoingActivityNoti.actionPrimarySet", 0)
     }
@@ -361,31 +328,26 @@ class StopwatchService : Service() {
 
         private const val TICK_INTERVAL_MS = 1_000L
 
-        /** Starts the stopwatch (or resumes a paused one). */
         fun start(context: Context) {
             val intent = Intent(context, StopwatchService::class.java).apply { action = ACTION_START }
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Stops the stopwatch and keeps the elapsed time. */
         fun stop(context: Context) {
             val intent = Intent(context, StopwatchService::class.java).apply { action = ACTION_STOP }
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Resumes a stopped stopwatch. */
         fun resume(context: Context) {
             val intent = Intent(context, StopwatchService::class.java).apply { action = ACTION_RESUME }
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Records a lap. */
         fun lap(context: Context) {
             val intent = Intent(context, StopwatchService::class.java).apply { action = ACTION_LAP }
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Resets the stopwatch and dismisses the ongoing notification. */
         fun cancel(context: Context) {
             val intent = Intent(context, StopwatchService::class.java).apply { action = ACTION_CANCEL }
             ContextCompat.startForegroundService(context, intent)

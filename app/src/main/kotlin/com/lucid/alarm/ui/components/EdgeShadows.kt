@@ -8,40 +8,50 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 
-/**
- * Erases the scrolling content itself at the bottom edge (and optionally top edge) instead of
- * painting a coloured band over it. Because the gradient is applied through [BlendMode.DstIn],
- * the app background stays untouched while cards dissolve cleanly into it.
- *
- * By default, [topFade] is false so that screen headers sitting at the top are 100% immune to
- * status bar shadows and render at full 100% brightness and contrast.
- */
+private val BottomFadeBrush = Brush.verticalGradient(
+    0.0f to Color.Black,
+    0.88f to Color.Black,
+    1.0f to Color.Transparent
+)
+
+private val TopFadeBrush = Brush.verticalGradient(
+    0.0f to Color.Transparent,
+    0.04f to Color.Transparent,
+    0.11f to Color.Black,
+    1.0f to Color.Black
+)
+
+private val BothFadeBrush = Brush.verticalGradient(
+    0.0f to Color.Transparent,
+    0.04f to Color.Transparent,
+    0.11f to Color.Black,
+    0.88f to Color.Black,
+    1.0f to Color.Transparent
+)
+
 fun Modifier.edgeFadeMask(
     topFade: Boolean = false,
     bottomFade: Boolean = true
-): Modifier = this
-    .graphicsLayer {
-        compositingStrategy = CompositingStrategy.Offscreen
+): Modifier {
+    if (!topFade && !bottomFade) return this
+
+    val brush = when {
+        topFade && bottomFade -> BothFadeBrush
+        topFade -> TopFadeBrush
+        else -> BottomFadeBrush
     }
-    .drawWithContent {
-        drawContent()
-        if (size.height <= 0f) return@drawWithContent
-        val stops = mutableListOf<Pair<Float, Color>>()
-        if (topFade) {
-            stops.add(0.0f to Color.Transparent)
-            stops.add(0.04f to Color.Transparent)
-            stops.add(0.11f to Color.Black)
-        } else {
-            stops.add(0.0f to Color.Black)
+
+    return this
+        .graphicsLayer {
+            compositingStrategy = CompositingStrategy.Offscreen
         }
-        if (bottomFade) {
-            stops.add(0.88f to Color.Black)
-            stops.add(1.0f to Color.Transparent)
-        } else {
-            stops.add(1.0f to Color.Black)
+        .drawWithContent {
+            drawContent()
+            if (size.height > 0f) {
+                drawRect(
+                    brush = brush,
+                    blendMode = BlendMode.DstIn
+                )
+            }
         }
-        drawRect(
-            brush = Brush.verticalGradient(*stops.toTypedArray()),
-            blendMode = BlendMode.DstIn
-        )
-    }
+}

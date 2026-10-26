@@ -13,7 +13,6 @@ class AlarmRepository(private val alarmDao: AlarmDao) {
 
     val trashedAlarms: Flow<List<AlarmEntity>> = alarmDao.getTrashedAlarms()
 
-    /** Live alarms filtered by enabled state and/or any of the supplied weekdays. */
     fun filterLiveAlarms(enabled: Boolean?, days: Set<Int>): Flow<List<AlarmEntity>> =
         alarmDao.getLiveAlarmsByEnabled(enabled).map { list ->
             if (days.isEmpty()) list
@@ -48,7 +47,6 @@ class AlarmRepository(private val alarmDao: AlarmDao) {
         alarmDao.renameGroup(oldName, newName)
     }
 
-    /** Moves every live alarm in [groupName] to the recycle bin; returns the affected ids. */
     suspend fun trashGroup(groupName: String): List<Int> = withContext(Dispatchers.IO) {
         val ids = alarmDao.idsInGroup(groupName)
         if (ids.isNotEmpty()) {
@@ -57,12 +55,6 @@ class AlarmRepository(private val alarmDao: AlarmDao) {
         ids
     }
 
-    /**
-     * Moves a mixed selection to the recycle bin: every alarm in [groupNames] is tagged with its
-     * group (so it shows up as one restorable Group card), and the individually-selected [ids] that
-     * do NOT belong to a selected group become standalone entries. Returns every affected alarm id
-     * so callers can cancel their PendingIntents.
-     */
     suspend fun trashSelection(
         groupNames: Set<String>,
         ids: List<Int>
@@ -84,7 +76,6 @@ class AlarmRepository(private val alarmDao: AlarmDao) {
         alarmDao.restoreFromTrash(ids)
     }
 
-    /** Restores every alarm trashed as part of [groupName]; returns the affected ids. */
     suspend fun restoreTrashedGroup(groupName: String): List<Int> = withContext(Dispatchers.IO) {
         val ids = alarmDao.trashedGroupIds(groupName)
         if (ids.isNotEmpty()) {
@@ -121,18 +112,12 @@ class AlarmRepository(private val alarmDao: AlarmDao) {
         alarmDao.updateSortOrder(id, order)
     }
 
-    /** Persists a full manual ordering where list position becomes the new `sortOrder`. */
     suspend fun persistOrder(orderedIds: List<Int>) = withContext(Dispatchers.IO) {
         orderedIds.forEachIndexed { index, id -> alarmDao.updateSortOrder(id, index) }
     }
 
-    /** Alias used by drag-and-drop reorder flows. */
     suspend fun reorderAlarms(orderedIds: List<Int>) = persistOrder(orderedIds)
 
-    /**
-     * Deletes every trashed alarm older than the retention window. Returns the ids removed so
-     * callers can cancel any lingering PendingIntents.
-     */
     suspend fun purgeExpiredTrash(): List<Int> = withContext(Dispatchers.IO) {
         val threshold = System.currentTimeMillis() - AlarmEntity.RECYCLE_BIN_RETENTION_MILLIS
         val expired = alarmDao.getExpiredTrashedAlarms(threshold)

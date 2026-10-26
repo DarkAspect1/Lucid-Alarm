@@ -13,13 +13,6 @@ import com.lucid.alarm.MainActivity
 import com.lucid.alarm.data.AlarmEntity
 import java.util.Calendar
 
-/**
- * Centralised AlarmManager wrapper.
- *
- * All trigger times are computed exclusively against the device's local time zone using
- * [Calendar.getInstance] with a default [java.util.TimeZone]. No manual UTC millisecond
- * arithmetic is performed anywhere, which eliminates the "one hour / one minute behind" bug.
- */
 class AlarmScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -32,11 +25,6 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
-    /**
-     * Android 14+ lets the user revoke the full-screen-intent grant. When it is missing, a
-     * notification with `setFullScreenIntent` is downgraded to a heads-up notification instead of
-     * launching over the lock screen, so callers must know whether the alarm UI can appear.
-     */
     fun canUseFullScreenIntent(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             val notificationManager =
@@ -47,10 +35,6 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
-    /**
-     * Settings screen where the user grants full-screen-intent access (Android 14+ only).
-     * Returns null when the platform has no such screen, so callers can skip the launch safely.
-     */
     fun requestFullScreenIntentPermissionIntent(): Intent? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return null
         val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
@@ -69,14 +53,6 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
-    /**
-     * Computes the next wall-clock trigger time in the local time zone.
-     *
-     * @param hour24 value in 0..23 exactly as displayed by the picker.
-     * @param minute value in 0..59 exactly as displayed by the picker.
-     * @param daysOfWeek Calendar.DAY_OF_WEEK constants (Sunday = 1 ... Saturday = 7).
-     *                   Empty set means "next occurrence of this time, one-shot".
-     */
     fun calculateTriggerTimeMillis(
         hour24: Int,
         minute: Int,
@@ -88,14 +64,14 @@ class AlarmScheduler(private val context: Context) {
             set(Calendar.MINUTE, minute.coerceIn(0, 59))
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-            // If today's time has already passed, roll forward to tomorrow.
+
             if (!after(now)) {
                 add(Calendar.DAY_OF_YEAR, 1)
             }
         }
 
         if (daysOfWeek.isNotEmpty()) {
-            // Walk forward at most 7 days until we land on an allowed weekday.
+
             var guard = 0
             while (guard < 8 && !daysOfWeek.contains(target.get(Calendar.DAY_OF_WEEK))) {
                 target.add(Calendar.DAY_OF_YEAR, 1)
@@ -142,7 +118,7 @@ class AlarmScheduler(private val context: Context) {
     ) {
         val upcomingAt = triggerAtMillis - leadMinutes * 60_000L
         if (upcomingAt <= System.currentTimeMillis()) {
-            // Too close to the fire time to post a heads-up; skip the pre-notification.
+
             cancelUpcoming(alarm.id)
             return
         }
@@ -162,7 +138,7 @@ class AlarmScheduler(private val context: Context) {
                     pendingIntent
                 )
             } else {
-                // Degrade gracefully when the user revoked exact-alarm access.
+
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     triggerAtMillis,
@@ -175,13 +151,6 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
-    /**
-     * Schedules a user-visible alarm with [AlarmManager.setAlarmClock]. Unlike the plain exact
-     * APIs this is treated as a first-class clock alarm by the OS: it is exempt from batching and
-     * appears in the status bar, and the [AlarmManager.AlarmClockInfo] carries the intent the
-     * system uses when the user taps that indicator. Falls back to [setExact] when exact-alarm
-     * access was revoked.
-     */
     private fun setAlarmClockExact(
         requestCode: Int,
         pendingIntent: PendingIntent,
@@ -221,10 +190,6 @@ class AlarmScheduler(private val context: Context) {
         alarmManager.cancel(buildUpcomingPendingIntentForCancel(alarmId))
     }
 
-    /**
-     * Schedules a one-shot snooze that fires after [snoozeMinutes]. Used by the ringing
-     * screen and the foreground audio service.
-     */
     fun scheduleSnooze(
         alarmId: Int,
         label: String,
@@ -345,11 +310,9 @@ class AlarmScheduler(private val context: Context) {
 
         const val SNOOZE_MINUTES = 9
 
-        // Stable, non-overlapping PendingIntent request-code ranges per alarm id.
         private const val RETURN_CODE_FIRE_BASE = 0
         private const val RETURN_CODE_UPCOMING_BASE = 100_000
 
-        /** Base request code for a per-alarm snooze trigger; shared with the audio service. */
         const val SNOOZE_REQUEST_BASE = 200_000
         private const val RETURN_CODE_SHOW_BASE = 300_000
 

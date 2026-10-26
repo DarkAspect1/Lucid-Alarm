@@ -44,21 +44,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * Foreground service that owns the running Timer.
- *
- * The service is the single source of truth for the countdown: it ticks, publishes the remaining
- * seconds through [TimerStopwatchManager] and renders the ongoing "Now Bar" notification.
- *
- * When the countdown reaches zero the service enters an explicit **ringing** state: it plays the
- * configured timer ringtone (looping) plus the configured vibration pattern and replaces the Now
- * Bar with a high-importance alert that can always be stopped, either through its "Dismiss" action,
- * its "+1 min" action or by swiping it away.
- *
- * It is deliberately **not** a media service: there is no `MediaSession`, no `MediaStyle` and no
- * transport controls, so Android/One UI can never present the countdown as a music or video
- * playback.
- */
 class TimerService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -73,12 +58,6 @@ class TimerService : Service() {
     private var ringtone: Ringtone? = null
     private val vibrator: Vibrator? by lazy { resolveVibrator() }
 
-    /**
-     * Last known appearance, owned by *this* service.
-     *
-     * The accent is refreshed from the persisted preference on every tick instead of living in a
-     * shared/static holder, so a simultaneously running Stopwatch cannot overwrite it.
-     */
     @Volatile
     private var preferences = SettingsDataStore.NowBarPreferences(
         accentArgb = AccentColor.DEFAULT.argb.toInt(),
@@ -96,23 +75,18 @@ class TimerService : Service() {
             getString(R.string.now_bar_channel_description)
         )
         ensureRingingChannel()
-        // Seed the appearance early. The first notification may briefly use the default accent and
-        // is corrected by the first tick a moment later.
+
         scope.launch { preferences = settings.currentNowBarPreferences() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
 
-        // Dismissing the expired timer is always the first thing that must happen: stop the sound
-        // immediately and never re-post anything.
         if (action == ACTION_DISMISS_TIMER) {
             dismissRinging()
             return START_NOT_STICKY
         }
 
-        // Promote to the foreground *immediately*, before any work, so the ongoing notification
-        // (and therefore the Now Bar / Live Update) exists from the very first moment.
         ensureForeground()
 
         when (action) {
@@ -148,8 +122,7 @@ class TimerService : Service() {
             }
 
             else -> {
-                // Restarted by the system without a usable intent: keep an existing session alive,
-                // otherwise shut down instead of posting a stale notification.
+
                 if (!TimerStopwatchManager.timer.value.hasSession) {
                     shutdown()
                     return START_NOT_STICKY
@@ -162,11 +135,8 @@ class TimerService : Service() {
             return START_NOT_STICKY
         }
 
-        // While ringing, the high-importance alert is already posted and the ticker is not needed.
         if (TimerStopwatchManager.timer.value.ringing) return START_STICKY
 
-        // Paint the real state right away (the notification above used the pre-action snapshot)
-        // and keep it refreshed once per second for as long as the session lives.
         startTicker()
         return START_STICKY
     }
@@ -189,7 +159,7 @@ class TimerService : Service() {
             secondsLeft = safe,
             endRealtime = SystemClock.elapsedRealtime() + safe * 1000L
         )
-        // Replace a still-visible expired alert with the fresh countdown immediately.
+
         promoteToForeground(buildNotification(preferences))
     }
 
@@ -224,7 +194,7 @@ class TimerService : Service() {
         val state = TimerStopwatchManager.timer.value
         if (deltaSeconds == 0) return
         if (!state.hasSession) {
-            // Nothing is running yet: arm a paused countdown so the Now Bar shows the new session.
+
             val armed = deltaSeconds.coerceAtLeast(0)
             if (armed == 0) return
             TimerStopwatchManager.setTimer(
@@ -249,12 +219,6 @@ class TimerService : Service() {
         )
     }
 
-    /**
-     * Turns a ringing timer into a fresh countdown of [deltaSeconds] (the "+1 min" action).
-     *
-     * The alert is silenced immediately; the ticker then resumes so the notification goes back to
-     * its normal ongoing state.
-     */
     private fun extendExpiredTimer(deltaSeconds: Int) {
         stopRingAudio()
         val state = TimerStopwatchManager.timer.value
@@ -267,17 +231,11 @@ class TimerService : Service() {
             secondsLeft = newLeft,
             endRealtime = SystemClock.elapsedRealtime() + newLeft * 1000L
         )
-        // Re-post on the low-importance ongoing channel so the alert is replaced by the countdown.
+
         promoteToForeground(buildNotification(preferences))
         startTicker()
     }
 
-    /**
-     * Drives the countdown and the ongoing notification.
-     *
-     * The loop refreshes the notification once per second, so the readout, subtitle, accent and
-     * One UI extras stay live.
-     */
     private fun startTicker() {
         if (tickerJob?.isActive == true) return
         tickerJob = scope.launch {
@@ -288,7 +246,6 @@ class TimerService : Service() {
         }
     }
 
-    /** @return false when the session ended (or started ringing) and the ticker should stop. */
     private suspend fun tick(): Boolean {
         val state = TimerStopwatchManager.timer.value
         if (!state.hasSession) return false
@@ -323,10 +280,6 @@ class TimerService : Service() {
         }
     }
 
-    /**
-     * Switches the session to the ringing state: publishes it, starts the alert and promotes the
-     * high-importance "Time's up" notification (still with a Dismiss and a "+1 min" action).
-     */
     private suspend fun enterRinging() {
         TimerStopwatchManager.markTimerRinging()
         preferences = settings.currentNowBarPreferences()
@@ -393,12 +346,6 @@ class TimerService : Service() {
         promoteToForeground(builder.build())
     }
 
-    /**
-     * Stops the alert and ends the session.
-     *
-     * Called by the "Dismiss" action, by the swipe-to-dismiss delete intent and by the in-app
-     * "Dismiss" button.
-     */
     private fun dismissRinging() {
         stopRingAudio()
         TimerStopwatchManager.setTimer(
@@ -536,7 +483,7 @@ class TimerService : Service() {
                 description = getString(R.string.timer_ringing_channel_description)
                 setShowBadge(true)
                 enableVibration(true)
-                // The ringtone is played by this service, so the channel itself stays silent.
+
                 setSound(null, null)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
@@ -633,12 +580,6 @@ class TimerService : Service() {
         return builder.build()
     }
 
-    /**
-     * Builds a notification action with a real icon.
-     *
-     * One UI's SystemUI drops any action whose [IconCompat] is null (i.e. one added with
-     * `addAction(0, ...)`), so an icon resource is mandatory here.
-     */
     private fun buildNotificationAction(
         context: Context,
         @DrawableRes iconRes: Int,
@@ -653,7 +594,6 @@ class TimerService : Service() {
             .setShowsUserInterface(false)
             .build()
 
-    /** Extras that promote the notification into the Now Bar and label its buttons. */
     private fun buildNowBarExtras(
         formattedTime: String,
         subtitleText: String,
@@ -673,7 +613,7 @@ class TimerService : Service() {
             Icon.createWithBitmap(badgeBitmap)
         )
         putString("android.ongoingActivityNoti.chipExpandedText", formattedTime)
-        // Must be 1 with actionPrimarySet = 0, otherwise One UI hides every Now Bar button.
+
         putInt("android.ongoingActivityNoti.actionType", 1)
         putInt("android.ongoingActivityNoti.actionPrimarySet", 0)
     }
@@ -702,7 +642,6 @@ class TimerService : Service() {
         private const val RING_ADD_REQUEST = 9202
         private const val RING_DELETE_REQUEST = 9203
 
-        /** Starts (or restarts) a countdown of [seconds] seconds. */
         fun start(context: Context, seconds: Int) {
             val intent = Intent(context, TimerService::class.java).apply {
                 action = ACTION_START
@@ -711,19 +650,16 @@ class TimerService : Service() {
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Pauses the running countdown. */
         fun pause(context: Context) {
             val intent = Intent(context, TimerService::class.java).apply { action = ACTION_PAUSE }
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Resumes a paused countdown. */
         fun resume(context: Context) {
             val intent = Intent(context, TimerService::class.java).apply { action = ACTION_RESUME }
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Extends (or shortens) the countdown by [deltaSeconds]. */
         fun adjust(context: Context, deltaSeconds: Int) {
             val intent = Intent(context, TimerService::class.java).apply {
                 action = ACTION_ADJUST
@@ -732,13 +668,11 @@ class TimerService : Service() {
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Cancels the countdown and dismisses the ongoing notification. */
         fun cancel(context: Context) {
             val intent = Intent(context, TimerService::class.java).apply { action = ACTION_CANCEL }
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Silences the expired timer and clears its notification. */
         fun dismiss(context: Context) {
             val intent = Intent(context, TimerService::class.java).apply {
                 action = ACTION_DISMISS_TIMER
@@ -746,7 +680,6 @@ class TimerService : Service() {
             ContextCompat.startForegroundService(context, intent)
         }
 
-        /** Silences the expired timer and restarts it with one extra minute. */
         fun addOneMinute(context: Context) {
             val intent = Intent(context, TimerService::class.java).apply {
                 action = ACTION_ADD_ONE_MINUTE

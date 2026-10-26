@@ -10,13 +10,15 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- Alarm playback genuinely streams audio, so it keeps the mediaPlayback FGS type. -->
+
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <!-- Timer/Stopwatch are NOT media: they run as specialUse ongoing activities so One UI never
-         shows them as a music/video playback in the Now Bar. -->
+
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <!-- Lets the Timer/Stopwatch ongoing notification be promoted to Samsung's Now Bar chip. -->
+
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
 
     <application
         android:name=".AlarmApplication"
@@ -29,8 +31,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Lucid">
 
-        <!-- Samsung One UI: allow the Timer/Stopwatch ongoing notification to be promoted into the
-             "Ongoing Activity" Now Bar chip instead of a media transport card. -->
         <meta-data
             android:name="com.samsung.android.support.ongoing_activity"
             android:value="true" />
@@ -47,10 +47,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Runs in its own isolated task so waking the screen for a ringing alarm can NEVER pull
-             MainActivity's task stack to the foreground. singleInstance + taskAffinity="" keep it
-             alone; excludeFromRecents/noHistory keep it out of the recents list and off the back
-             stack once dismissed/snoozed. -->
         <activity
             android:name=".AlarmRingingActivity"
             android:exported="true"
@@ -72,7 +68,6 @@
             android:name=".receiver.AwakeCheckReceiver"
             android:exported="false" />
 
-        <!-- Handles Now Bar notification actions; never launches the app. -->
         <receiver
             android:name=".receiver.NowBarActionReceiver"
             android:exported="false" />

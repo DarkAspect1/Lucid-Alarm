@@ -20,10 +20,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,22 +38,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.lifecycleScope
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.data.AppDatabase
 import com.lucid.alarm.data.prefs.AccentColor
@@ -69,7 +64,6 @@ import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.data.prefs.ThemeMode
 import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.receiver.AlarmReceiver
-import com.lucid.alarm.receiver.AwakeCheckReceiver
 import com.lucid.alarm.service.AlarmAudioService
 import com.lucid.alarm.ui.LocalAppFont
 import com.lucid.alarm.ui.components.AlarmClockBox
@@ -84,7 +78,6 @@ import com.lucid.alarm.ui.components.resolveRingingFontFamily
 import com.lucid.alarm.ui.theme.LucidAlarmTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
@@ -96,6 +89,7 @@ class AlarmRingingActivity : ComponentActivity() {
     private var alarmLabel by mutableStateOf("")
     private var snoozeCount by mutableIntStateOf(0)
     private var snoozeLimit by mutableIntStateOf(-1)
+    private var isAwakeCheckActive by mutableStateOf(false)
 
     private val dismissReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -109,16 +103,16 @@ class AlarmRingingActivity : ComponentActivity() {
         configureLockScreenWakeup()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Match the main/customization screen: draw the alarm background under both system bars
-        // and keep the bars fully transparent instead of letting the OS paint a scrim behind the
-        // status-bar icons.
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         @Suppress("DEPRECATION")
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         @Suppress("DEPRECATION")
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
             window.isNavigationBarContrastEnforced = false
+            @Suppress("DEPRECATION")
             window.isStatusBarContrastEnforced = false
         }
 
@@ -158,9 +152,6 @@ class AlarmRingingActivity : ComponentActivity() {
                 initial = 0L
             )
 
-            // Status-bar icons must contrast with whatever ringing background is drawn behind
-            // them. Most styles are dark (light icons); only a bright solid color or the warm
-            // sunrise gradient needs dark icons.
             val ringingTopIsLight = when (ringingBackground) {
                 RingingBackgroundStyle.SOLID_COLOR ->
                     androidx.compose.ui.graphics.Color(ringingSolidColor).luminance() > 0.5f
@@ -200,6 +191,7 @@ class AlarmRingingActivity : ComponentActivity() {
                         val stopIntent = Intent(this, AlarmAudioService::class.java).apply {
                             action = AlarmAudioService.ACTION_STOP_ALARM
                             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+                            putExtra(AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE, isAwakeCheckActive)
                         }
                         startService(stopIntent)
                         finishAndRemoveTask()
@@ -211,28 +203,20 @@ class AlarmRingingActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // singleTop: a second alarm can arrive while this screen is still up. Adopt the new
-        // intent in place instead of recreating (recreation would flash and rebind the receiver).
+
         setIntent(intent)
         applyIntent(intent)
     }
 
-    /**
-     * Parses the launch intent defensively: every extra has a safe default, and a missing or stale
-     * alarm id is tolerated, so a notification tap can never crash the process.
-     */
     private fun applyIntent(intent: Intent?) {
         alarmId = intent?.getIntExtra(AlarmReceiver.EXTRA_ALARM_ID, -1) ?: -1
         alarmLabel = intent?.getStringExtra(AlarmReceiver.EXTRA_ALARM_LABEL).orEmpty()
         snoozeCount = intent?.getIntExtra(AlarmReceiver.EXTRA_SNOOZE_COUNT, 0) ?: 0
         snoozeLimit = intent?.getIntExtra(AlarmReceiver.EXTRA_SNOOZE_LIMIT, -1) ?: -1
+        isAwakeCheckActive = intent?.getBooleanExtra(AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE, false) ?: false
         ensureRingingIfRequested(intent)
     }
 
-    /**
-     * Fallback path only: the OS may refuse a background foreground-service start, so the
-     * notification opens this activity instead. Once visible we can legally start the service.
-     */
     private fun ensureRingingIfRequested(intent: Intent?) {
         if (intent == null) return
         if (!intent.getBooleanExtra(AlarmReceiver.EXTRA_ENSURE_RINGING, false)) return
@@ -258,11 +242,6 @@ class AlarmRingingActivity : ComponentActivity() {
             }
     }
 
-    /**
-     * Shows the ringing screen over the lock screen and turns the display on, but deliberately
-     * never dismisses the keyguard — the user must unlock the device themselves so the alarm can
-     * never bypass the lock screen security.
-     */
     private fun configureLockScreenWakeup() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
@@ -417,7 +396,6 @@ fun AlarmRingingScreen(
 
     var snoozeMinutes by remember(savedSnoozeMinutes) { mutableIntStateOf(savedSnoozeMinutes) }
 
-    // Per-alarm appearance override, applied only when the entity opts in.
     val appearance = alarmEntity?.takeIf { it.customAppearanceEnabled }
     val appearanceBackgroundStyle = appearance?.customBackgroundStyle
         ?.takeIf { it.isNotBlank() }
@@ -432,7 +410,7 @@ fun AlarmRingingScreen(
         ?: backgroundImageUri
     val effectiveVideoUri = appearance?.customVideoUri?.takeIf { it.isNotBlank() }
         ?: backgroundVideoUri
-    // Per-alarm interactive colours win over the global ringing colours when present.
+
     val effectiveInteractiveColors = appearance?.customBackgroundInteractiveColors
         ?.takeIf { it.isNotBlank() }
         ?.split(',')
@@ -500,7 +478,6 @@ fun AlarmRingingScreen(
         null
     }
 
-    // Re-seed the snooze stepper from the per-alarm interval once the entity loads.
     LaunchedEffect(alarmEntity) {
         val perAlarm = alarmEntity?.snoozeMinutes ?: 0
         if (perAlarm > 0) snoozeMinutes = perAlarm
@@ -535,7 +512,6 @@ fun AlarmRingingScreen(
     val is24Hour = timeFormat.is24Hour
     val hasBox = effectiveBoxWidth > 0f && effectiveBoxHeight > 0f
 
-    // Per-alarm AM/PM, label, snooze and dismiss appearance (override → global).
     val effShowAmPm = appearance?.customShowAmPm ?: showAmPm
     val amPmFontEnum = appearance?.customAmPmFont
         ?.takeIf { it.isNotBlank() }
@@ -589,7 +565,6 @@ fun AlarmRingingScreen(
         ?: globalSolidColor
     val solidColor = solidColorLong.takeIf { it != 0L }?.let { Color(it) }
 
-    // Measured sizes used to anchor the decoupled date just below the clock. Mirrors the editor.
     var clockH by remember { mutableFloatStateOf(0f) }
     var dateH by remember { mutableFloatStateOf(0f) }
     val dateGapPx = with(LocalDensity.current) { 14.dp.toPx() }
@@ -626,26 +601,17 @@ fun AlarmRingingScreen(
                 )
             }
 
-            // Clock + decoupled date, anchored exactly like AlarmCustomizationScreen so the saved
-            // per-alarm layout matches the editor pixel-for-pixel.
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
-                    modifier = (
-                        if (hasBox) {
-                            Modifier
-                                .width(with(LocalDensity.current) { effectiveBoxWidth.toDp() })
-                                .height(with(LocalDensity.current) { effectiveBoxHeight.toDp() })
-                        } else {
-                            Modifier
-                        }
-                    )
+                    modifier = Modifier
                         .offset {
                             IntOffset(effectiveOffsetX.roundToInt(), effectiveOffsetY.roundToInt())
                         }
+                        .wrapContentSize(Alignment.Center, unbounded = true)
                         .onSizeChanged { clockH = it.height.toFloat() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -660,13 +626,13 @@ fun AlarmRingingScreen(
                         contentColor = clockColor,
                         textBrush = effectiveClockBrush,
                         removeLeadingZero = effectiveRemoveLeadingZero,
-                        fontSize = clockFontSize.sp,
-                        autoFit = hasBox,
+                        fontSize = (clockFontSize * clockScale).sp,
+                        autoFit = false,
                         showContainerBorder = false,
                         clockFont = effectiveClockFont,
                         customFontPath = effectiveClockFontPath,
                         clockScale = clockScale,
-                        modifier = Modifier.scale(clockScale)
+                        modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true)
                     )
                 }
 
@@ -686,6 +652,7 @@ fun AlarmRingingScreen(
                                         .roundToInt()
                                 )
                             }
+                            .wrapContentSize(Alignment.Center, unbounded = true)
                             .onSizeChanged { dateH = it.height.toFloat() }
                     )
                 }

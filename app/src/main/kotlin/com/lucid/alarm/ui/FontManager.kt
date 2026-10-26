@@ -21,31 +21,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * Runtime `.ttf` / `.otf` ingestion, including the extraction of fonts bundled inside `.apk` / `.zip`
- * font packages.
- *
- * Compose cannot load a `content://` URI directly into a [FontFamily], so every picked font is
- * first streamed into app internal storage (`filesDir/custom_fonts/`) as a real file, the absolute
- * path is persisted in [com.lucid.alarm.data.prefs.SettingsDataStore], and the `FontFamily` is then
- * built from that file with `Font(File(path))`.
- *
- * When the picked file is actually a zip container (an `.apk` package or a plain `.zip`), the stream
- * is read as a [ZipInputStream] and the first `.ttf` / `.otf` entry found inside — commonly under
- * `assets/fonts/` in an APK — is extracted into the same folder and used directly.
- *
- * Each import is written to a **uniquely named** file (`<base>.<timestamp>.ttf`). This is the key to
- * instant, restart-free updates: the persisted path changes on every import, so `remember(path)`
- * invalidates and Compose re-reads the new font without caching the previous (stale) file.
- *
- * Two independent slots exist so the general app font and the alarm ringing clock font never
- * overwrite each other:
- *  - [APP_FONT_BASE]   -> [com.lucid.alarm.data.prefs.AppFontStyle.CUSTOM_FILE]
- *  - [CLOCK_FONT_BASE] -> [com.lucid.alarm.data.prefs.RingingClockFont.CUSTOM_FILE]
- */
 object FontManager {
 
-    /** MIME types accepted by the font picker (ttf, otf, apk/zip packages + octet-stream fallback). */
     val FONT_MIME_TYPES = arrayOf(
         "font/ttf",
         "font/otf",
@@ -76,14 +53,6 @@ object FontManager {
         return dir
     }
 
-    /**
-     * Imports the font backing [uri] into app internal storage and returns the absolute path of a
-     * freshly-versioned file. Any previous version in the same slot is deleted first.
-     *
-     * If the stream is a zip container (`.apk` / `.zip`), the first `.ttf` / `.otf` entry inside is
-     * extracted instead; otherwise the stream is treated as a raw font file. Returns `""` on
-     * failure.
-     */
     suspend fun importFontFromUri(context: Context, uri: Uri, baseName: String): String =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -101,7 +70,6 @@ object FontManager {
             }.getOrDefault("")
         }
 
-    /** Copies a non-archive stream verbatim into a versioned `.ttf` slot and returns its path. */
     private fun copyRawFont(
         input: InputStream,
         dir: File,
@@ -113,11 +81,6 @@ object FontManager {
         return if (destination.exists() && destination.length() > 0L) destination.absolutePath else ""
     }
 
-    /**
-     * Reads [input] as a [ZipInputStream] and extracts the first `.ttf` / `.otf` entry into [dir],
-     * preserving the original extension. Returns the extracted path, or `""` when the archive has no
-     * usable font.
-     */
     private fun extractFirstFontFromArchive(
         input: InputStream,
         dir: File,
@@ -148,11 +111,6 @@ object FontManager {
         return ""
     }
 
-    /**
-     * Peeks the first four bytes to decide whether [input] is a zip container. The stream must
-     * support mark/reset; [BufferedInputStream] does. Recognises the empty-archive and spanned
-     * signatures in addition to the standard local-file header.
-     */
     private fun isZipArchive(input: BufferedInputStream): Boolean {
         input.mark(4)
         val header = ByteArray(4)
@@ -167,10 +125,6 @@ object FontManager {
                 )
     }
 
-    /**
-     * Builds a [FontFamily] from an on-disk file path. Returns [FontFamily.Default] when the path is
-     * blank or the file is missing / unreadable, so a deleted font never crashes the UI.
-     */
     fun fontFamilyFromPath(fontPath: String?): FontFamily {
         if (fontPath.isNullOrBlank()) return FontFamily.Default
         val file = File(fontPath)
@@ -184,18 +138,6 @@ object FontManager {
         return file.exists() && file.isFile && file.length() > 0L
     }
 
-    /**
-     * Resolves the *real* platform [Typeface] that backs a ringing-clock font selection, so the
-     * vertical clock can measure true glyph ink bounds with an [android.graphics.Paint].
-     *
-     * Compose's [FontFamily] deliberately hides the underlying [Typeface], and decorative display
-     * fonts (e.g. `ROTHEFIGHT`) declare compressed em-box metrics while their outlines extend far
-     * beyond them — so we must reach the same `Typeface` the digits render with to measure them
-     * accurately.
-     *
-     * [fontFamily] is used only to disambiguate the built-in system families; the custom file path
-     * takes precedence whenever it points at a readable font.
-     */
     fun typefaceFor(
         font: RingingClockFont,
         customFontPath: String?,
@@ -221,16 +163,11 @@ object FontManager {
                 else -> Typeface.SANS_SERIF
             }
         }
-        // Apply the requested weight without discarding the resolved family/face.
+
         return runCatching { Typeface.create(base, style) }.getOrDefault(base)
     }
 }
 
-/**
- * Convenience wrapper: launches the [ActivityResultContracts.OpenDocument] font picker described in
- * [FontManager.FONT_MIME_TYPES], version-imports the picked file into the [baseName] slot, and
- * reports the resulting absolute path through [onFontImported].
- */
 @Composable
 fun rememberFontPicker(
     baseName: String,

@@ -7,7 +7,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -52,7 +50,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -67,7 +64,6 @@ import com.lucid.alarm.service.TimerSessionState
 import com.lucid.alarm.ui.components.NumberWheel
 import com.lucid.alarm.ui.components.wheelScrollIndex
 import com.lucid.alarm.ui.formatNotificationTime
-import com.lucid.alarm.ui.theme.onColorFor
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.PI
@@ -230,10 +226,6 @@ fun TimerScreen(
     }
 }
 
-/**
- * Shared round action button used by the Timer and Stopwatch screens: a text-only 98dp circle
- * filled with a translucent tint and a label blended toward white (dark) or black (light).
- */
 @Composable
 internal fun RoundActionButton(
     label: String,
@@ -379,10 +371,6 @@ private fun TimerWheelPicker(
     }
 }
 
-/**
- * Countdown dial: 60 radial dashes whose active (remaining) portion is drawn in the accent colour
- * while the elapsed portion stays dim, wrapped around a solid inner disc.
- */
 @Composable
 private fun TimerDial(
     secondsLeft: Int,

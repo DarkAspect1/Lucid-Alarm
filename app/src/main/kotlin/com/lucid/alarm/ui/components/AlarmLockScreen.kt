@@ -13,7 +13,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -38,7 +37,6 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,7 +71,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -92,12 +89,10 @@ import com.lucid.alarm.ui.formatHour
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.random.Random
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** Fixed palette for the alarm lock screen, intentionally independent of the app theme. */
 object AlarmLockPalette {
     val Content = Color.White
     val BorderStroke = Color.White.copy(alpha = 0.30f)
@@ -118,7 +113,6 @@ object AlarmLockPalette {
     )
 }
 
-/** Maps a built-in [RingingClockFont] to a render-safe system family (no bundled assets). */
 fun ringingClockFontFamily(font: RingingClockFont): FontFamily = when (font) {
     RingingClockFont.SYSTEM_DEFAULT -> FontFamily.SansSerif
     RingingClockFont.SERIF -> FontFamily.Serif
@@ -126,7 +120,6 @@ fun ringingClockFontFamily(font: RingingClockFont): FontFamily = when (font) {
     RingingClockFont.CUSTOM_FILE -> FontFamily.Default
 }
 
-/** Resolves the ringing font, loading the custom `.ttf` / `.otf` file when [RingingClockFont.CUSTOM_FILE]. */
 fun resolveRingingFontFamily(font: RingingClockFont, customFontPath: String?): FontFamily =
     if (font == RingingClockFont.CUSTOM_FILE) {
         FontManager.fontFamilyFromPath(customFontPath)
@@ -134,11 +127,6 @@ fun resolveRingingFontFamily(font: RingingClockFont, customFontPath: String?): F
         ringingClockFontFamily(font)
     }
 
-/**
- * Resolves the independent date-component font. [ClockDateFont.MATCH_CLOCK] mirrors the clock font;
- * [ClockDateFont.CUSTOM_FILE] loads its own dedicated import; the remaining built-ins map to the
- * same curated system families as the app font.
- */
 fun resolveDateFontFamily(
     dateFont: ClockDateFont,
     clockFont: RingingClockFont,
@@ -152,7 +140,6 @@ fun resolveDateFontFamily(
     ClockDateFont.CUSTOM_FILE -> FontManager.fontFamilyFromPath(dateCustomFontPath)
 }
 
-/** Gradient fallback used by the static (non-interactive, non-video) backgrounds. */
 fun ringingBackgroundBrush(style: RingingBackgroundStyle): Brush = when (style) {
     RingingBackgroundStyle.AMOLED_BLACK -> Brush.verticalGradient(
         listOf(Color.Black, Color.Black)
@@ -173,10 +160,6 @@ fun ringingBackgroundBrush(style: RingingBackgroundStyle): Brush = when (style) 
     )
 }
 
-/**
- * Builds a [Brush] for clock / date text from a base Color, an optional two-Color gradient and its
- * [direction]. When [gradientEnabled] is false the base Color is returned as a solid brush.
- */
 fun clockTextBrush(
     color: Color,
     gradientEnabled: Boolean,
@@ -314,7 +297,6 @@ fun AlarmLockBackground(
     }
 }
 
-/** Resolves the effective dim overlay alpha for [style] (uses [DEFAULT_DIM] when [dim] < 0). */
 private fun dimOverlayAlpha(style: RingingBackgroundStyle, dim: Float): Float {
     if (dim >= 0f) return dim.coerceIn(0f, 1f)
     return when (style) {
@@ -324,7 +306,6 @@ private fun dimOverlayAlpha(style: RingingBackgroundStyle, dim: Float): Float {
     }
 }
 
-/** Option A: animated multi-color radial "fluid / mesh" gradient with pulsating centres. */
 @Composable
 fun FluidGradientBackground(
     modifier: Modifier = Modifier,
@@ -385,9 +366,6 @@ fun FluidGradientBackground(
     }
 }
 
-
-
-/** Option B: true #000000 AMOLED black with a subtle neon ambient glow behind the clock. */
 @Composable
 fun AmoledGlowBackground(
     modifier: Modifier = Modifier,
@@ -429,7 +407,6 @@ fun AmoledGlowBackground(
     }
 }
 
-/** Looping, muted, fill-screen video wallpaper rendered behind [content]. */
 @Composable
 fun VideoWallpaperBackground(
     videoUri: String?,
@@ -454,15 +431,6 @@ fun VideoWallpaperBackground(
     }
 }
 
-/**
- * The movable/styled clock chip: a subtle bordered rounded rectangle containing only the styled
- * clock face. The former in-box "Alarm" tag has been removed â€” that label is now a decoupled
- * element owned by the host screens so its font and position stay independent of the clock.
- *
- * When [autoFit] is enabled and the box has a bounded size (i.e. it was resized via the corner
- * handles), the font size is recalculated so the digits fill the available space; analog styles
- * instead grow their dial to fill the box.
- */
 @Composable
 fun AlarmClockBox(
     calendar: java.util.Calendar,
@@ -479,9 +447,9 @@ fun AlarmClockBox(
     autoFit: Boolean = false,
     showContainerBorder: Boolean = true,
     clockScale: Float = 1f,
-    /** Ringing-clock font selection, used to resolve the true glyph [Typeface] for ink measuring. */
+
     clockFont: RingingClockFont = RingingClockFont.SYSTEM_DEFAULT,
-    /** Custom `.ttf`/`.otf` path backing [RingingClockFont.CUSTOM_FILE], if any. */
+
     customFontPath: String? = null,
     modifier: Modifier = Modifier
 ) {
@@ -497,7 +465,7 @@ fun AlarmClockBox(
 
     BoxWithConstraints(
         modifier = modifier
-            .wrapContentSize(Alignment.Center)
+            .wrapContentSize(Alignment.Center, unbounded = true)
             .padding(
                 horizontal = (18f * scale).dp,
                 vertical = (10f * scale).dp
@@ -541,18 +509,13 @@ fun AlarmClockBox(
             amPmBrush = amPmBrush,
             removeLeadingZero = removeLeadingZero,
             fontSize = resolvedFontSize,
-            dialDiameter = if (isAnalog && autoFit) dialDiameter * 0.94f else 150.dp,
+            dialDiameter = if (isAnalog && autoFit) dialDiameter * 0.94f else (150f * scale).dp,
             clockFont = clockFont,
             customFontPath = customFontPath
         )
     }
 }
 
-/**
- * Measures a representative time sample at a base size and scales it to fill the given pixel box,
- * reserving extra horizontal room when an AM/PM suffix is shown. Kept as a plain function so it can
- * run inside `remember` without recomposing on every frame.
- */
 private fun autoFitFontSize(
     measurer: TextMeasurer,
     style: RingingClockStyle,
@@ -586,31 +549,13 @@ private fun autoFitFontSize(
     return (baseSize * scale).coerceIn(10f, 500f).sp
 }
 
-/** Visual gap between the stacked hour and minute glyphs, in dp before [clockScale] is applied. */
 private const val VERTICAL_INK_GAP_DP = 10f
 
-/**
- * True visual ink bounds of the hour and minute strings, in pixels, measured against the actual
- * glyph outlines rather than the font's declared em-box metrics.
- *
- * [hourInkTopPx]/[hourInkBottomPx] and [minuteInkTopPx]/[minuteInkBottomPx] are offsets relative to
- * the top of a normal single-line layout box at the active font size, so a layout engine can place
- * the two lines with an exact, font-independent visual gap.
- */
 private data class VerticalInkMetrics(
     val hourInkBottomPx: Float,
     val minuteInkTopPx: Float
 )
 
-/**
- * Measures the real glyph ink boxes of [hourText] and [minuteText] using an Android [Paint] backed
- * by the same [Typeface] the digits are rendered with.
- *
- * A plain single-line text layout box is taller than the ink because it includes the font's
- * ascent/descent. `Paint.getTextBounds` returns the tight outline box (its `top`/`bottom` are
- * relative to the text baseline, negative above it), and `Paint.fontMetrics` gives the baseline
- * offset inside a normal layout box. Combining them yields the ink position within the layout box.
- */
 private fun measureVerticalInk(
     font: RingingClockFont,
     customFontPath: String?,
@@ -631,7 +576,7 @@ private fun measureVerticalInk(
     paint.getTextBounds(hourText, 0, hourText.length, hourBounds)
     val minuteBounds = Rect()
     paint.getTextBounds(minuteText, 0, minuteText.length, minuteBounds)
-    // Distance from the layout-box top to the baseline is -ascent.
+
     val baselineFromTop = -metrics.ascent
     return VerticalInkMetrics(
         hourInkBottomPx = baselineFromTop + hourBounds.bottom,
@@ -639,11 +584,6 @@ private fun measureVerticalInk(
     )
 }
 
-/**
- * Stacks the hour and minute [Text] lines using their measured ink bounds so the visible glyphs sit
- * exactly [gapPx] apart, regardless of how far a decorative font's outlines overflow its declared
- * metrics. Both lines are centre-aligned; an optional third child (AM/PM) is placed below.
- */
 @Composable
 private fun VerticalInkClock(
     hourText: String,
@@ -677,14 +617,8 @@ private fun VerticalInkClock(
             val minutePlaceable = measurables[1].measure(constraints)
             val gap = gapPx.coerceAtLeast(0f)
 
-            // Place the hour line at y = 0. Its visible ink then spans
-            // [hourInkTopPx, hourInkBottomPx]. Position the minute line so its own ink starts
-            // exactly `gap` below the hour ink's bottom: minuteY = hourInkBottomPx + gap -
-            // minuteInkTopPx. This is the crux of the fix â€” it uses true outline bounds, so a font
-            // whose glyphs overflow its declared em-box can never overlap or leave a huge gap.
             val rawMinuteY = hourInkBottomPx + gap - minuteInkTopPx
-            // Shift both lines down if the minute placement would land above the box top, so no
-            // line is ever placed at a negative y (which Compose would clip).
+
             val shift = if (rawMinuteY < 0f) -rawMinuteY else 0f
             val hourY = shift
             val minuteY = rawMinuteY + shift
@@ -708,10 +642,6 @@ private fun VerticalInkClock(
     }
 }
 
-/**
- * Independent, decoupled date component. Its font family, size and position are controlled
- * separately from the clock container so it can be dragged, scaled or hidden on its own.
- */
 @Composable
 fun ClockDateText(
     calendar: java.util.Calendar,
@@ -737,14 +667,10 @@ fun ClockDateText(
         color = if (textBrush != null) Color.Unspecified else contentColor.copy(alpha = 0.85f),
         maxLines = 1,
         softWrap = false,
-        modifier = modifier
+        modifier = modifier.wrapContentSize(Alignment.Center, unbounded = true)
     )
 }
 
-/**
- * Builds the digit [TextStyle]. Compose 1.10 splits [TextStyle] into a Color constructor and a
- * brush constructor, so the two are mutually exclusive and must be selected here.
- */
 private fun clockDigitStyle(
     fontFamily: FontFamily,
     fontWeight: FontWeight,
@@ -757,7 +683,6 @@ private fun clockDigitStyle(
     TextStyle(color = color, fontWeight = fontWeight, fontSize = fontSize, fontFamily = fontFamily)
 }
 
-/** Builds the AM/PM suffix text style honouring an optional custom font and brush/Color override. */
 private fun amPmTextStyle(
     fontFamily: FontFamily,
     weight: FontWeight,
@@ -789,7 +714,7 @@ fun RingingClockFace(
     clockFont: RingingClockFont = RingingClockFont.SYSTEM_DEFAULT,
     customFontPath: String? = null
 ) {
-    // Digits only â€” AM/PM is always rendered as a separate element to avoid duplication.
+
     val timeText = formatClockDigits(hour, minute, is24Hour, removeLeadingZero)
     val amPm = if (showAmPm) com.lucid.alarm.ui.amPmSuffix(hour, is24Hour) else ""
     val measurer = rememberTextMeasurer()
@@ -798,7 +723,7 @@ fun RingingClockFace(
 
     when (style) {
         RingingClockStyle.HORIZONTAL_DIGITAL -> {
-            Row {
+            Row(modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true)) {
                 Text(
                     text = timeText,
                     style = clockDigitStyle(fontFamily, FontWeight.Light, fontSize, digitColor, textBrush),
@@ -825,7 +750,7 @@ fun RingingClockFace(
         }
 
         RingingClockStyle.BOLD_HORIZONTAL -> {
-            Row {
+            Row(modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true)) {
                 Text(
                     text = timeText,
                     style = clockDigitStyle(fontFamily, FontWeight.Black, fontSize, digitColor, textBrush),
@@ -861,11 +786,6 @@ fun RingingClockFace(
             val hourText = formatHour(hour, is24Hour, removeLeadingZero)
             val minuteText = String.format(java.util.Locale.getDefault(), "%02d", minute)
 
-            // True visual ink metrics of both digit strings for the active font. Decorative
-            // display fonts (e.g. ROTHEFIGHT) declare a compressed em-box but their outlines
-            // reach far past it, so line-height/metric stacking overlaps the digits. Measuring
-            // the real glyph bounds lets us place the minute line exactly 8..12dp below the
-            // visual bottom of the hour glyph â€” never overlapping, never a huge empty gap.
             val ink = remember(fontFamily, clockFont, customFontPath, weight, fontSize, density) {
                 measureVerticalInk(
                     font = clockFont,
@@ -1037,7 +957,6 @@ fun RingingClockFace(
     }
 }
 
-/** Shared hour / minute / second hand rendering for the analog clock faces. */
 private fun DrawScope.drawAnalogHands(
     hour: Int,
     minute: Int,
@@ -1085,10 +1004,6 @@ private fun DrawScope.drawAnalogHands(
     drawCircle(color = contentColor, radius = 6.dp.toPx(), center = center)
 }
 
-/**
- * Elongated Material You action pill shared by the ringing screen and the editor preview, so the
- * dismiss control looks and falls back identically in both places.
- */
 @Composable
 fun RingingActionPill(
     text: String,
@@ -1124,7 +1039,6 @@ fun RingingActionPill(
     }
 }
 
-/** Snooze pill with `[-] Snooze N mins [+]`. Hold the +/- steppers to repeat with acceleration. */
 @Composable
 fun SnoozePill(
     snoozeMinutes: Int,
@@ -1170,7 +1084,6 @@ fun SnoozePill(
     }
 }
 
-/** Circular icon button whose action fires once on tap, then repeats with acceleration while held. */
 @Composable
 private fun RepeatIconButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -1193,10 +1106,6 @@ private fun RepeatIconButton(
     }
 }
 
-/**
- * Fires [onStep] immediately on press, then repeats it after a short hold with a gently accelerating
- * interval (never faster than [minIntervalMs]) until the pointer is released.
- */
 fun Modifier.holdToRepeat(
     initialDelayMs: Long = 400L,
     startIntervalMs: Long = 150L,

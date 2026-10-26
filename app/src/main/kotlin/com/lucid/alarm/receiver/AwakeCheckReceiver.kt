@@ -17,16 +17,6 @@ import com.lucid.alarm.AlarmRingingActivity
 import com.lucid.alarm.service.AlarmAudioService
 import java.util.Calendar
 
-/**
- * Post-dismiss "Are you awake?" pipeline.
- *
- *  1. [startAwakeCheck] fires right after the alarm is dismissed. It posts the confirmation
- *     notification immediately and schedules [ACTION_AWAKE_EMERGENCY] for the configured number of
- *     minutes later.
- *  2. [ACTION_MARK_AWAKE] cancels both the notification and the pending emergency.
- *  3. [ACTION_AWAKE_EMERGENCY] fires if the user never tapped "I'm Awake" — it removes the prompt
- *     and rings [AlarmAudioService] again at maximum volume.
- */
 class AwakeCheckReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -92,8 +82,7 @@ class AwakeCheckReceiver : BroadcastReceiver() {
     }
 
     private fun triggerEmergencyAlarm(context: Context, alarmId: Int) {
-        // The prompt has served its purpose once the fallback rings; drop it so the ringing screen
-        // is the only thing asking for attention.
+
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.cancel(alarmId + NOTIFICATION_ID_BASE)
 
@@ -115,11 +104,6 @@ class AwakeCheckReceiver : BroadcastReceiver() {
             }
     }
 
-    /**
-     * Shown only when the OS rejects the emergency foreground-service start. Tapping it opens the
-     * ringing screen with [AlarmReceiver.EXTRA_ENSURE_RINGING], which can start the service from
-     * the foreground.
-     */
     private fun postEmergencyFallbackNotification(context: Context, alarmId: Int) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -234,13 +218,8 @@ class AwakeCheckReceiver : BroadcastReceiver() {
         private const val REQUEST_MARK_AWAKE_BASE = 50_000
         private const val REQUEST_EMERGENCY_BASE = 70_000
 
-        /** Fallback delay when the stored value is missing or invalid. */
         const val EMERGENCY_DELAY_MINUTES = 3
 
-        /**
-         * Posts the "Are you awake?" prompt now and schedules the loud fallback [minutesFromNow]
-         * minutes later.
-         */
         fun startAwakeCheck(context: Context, alarmId: Int, minutesFromNow: Int) {
             if (alarmId < 0) return
             val intent = Intent(context, AwakeCheckReceiver::class.java).apply {

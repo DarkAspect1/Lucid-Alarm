@@ -1,29 +1,33 @@
 package com.lucid.alarm.ui.screens
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.view.View
+import android.view.ViewParent
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.AnimationState
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +40,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -44,22 +49,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -68,22 +73,23 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -91,13 +97,13 @@ import com.lucid.alarm.BackupManager
 import com.lucid.alarm.data.prefs.AccentColor
 import com.lucid.alarm.data.prefs.AppFontStyle
 import com.lucid.alarm.data.prefs.SettingsDataStore
-import com.lucid.alarm.data.prefs.TemperatureUnit
 import com.lucid.alarm.data.prefs.ThemeMode
 import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.data.prefs.TimerVibrationPattern
 import com.lucid.alarm.data.prefs.VolumePolicy
 import com.lucid.alarm.ui.FontManager
 import com.lucid.alarm.ui.components.CustomColorPickerDialog
+import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.theme.toColor
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -116,13 +122,11 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
-    // One UI background colors
     val screenBg = if (isLight) Color(0xFFF2F2F7) else Color(0xFF000000)
     val cardBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
     val cardBorder = if (isLight) Color(0xFFE5E7EB) else Color.Transparent
     val accentColor = MaterialTheme.colorScheme.primary
 
-    // General & Appearance
     val themeMode by settingsDataStore.themeModeFlow.collectAsState(initial = ThemeMode.SYSTEM)
     val timeFormat by settingsDataStore.timeFormatFlow.collectAsState(initial = TimeFormat.TWELVE_HOUR)
     val removeLeadingZero by settingsDataStore.removeLeadingZeroFlow.collectAsState(initial = true)
@@ -132,7 +136,6 @@ fun SettingsScreen(
     )
     val appFontStyle by settingsDataStore.appFontStyleFlow.collectAsState(initial = AppFontStyle.SYSTEM_DEFAULT)
 
-    // Volume & Sound
     val volumePolicy by settingsDataStore.volumePolicyFlow.collectAsState(initial = VolumePolicy.UNIFIED)
     val unifiedVolume by settingsDataStore.unifiedVolumeFlow.collectAsState(initial = 0.85f)
     val vibrateAlarmsAndTimers by settingsDataStore.vibrateAlarmsAndTimersFlow.collectAsState(initial = true)
@@ -141,7 +144,6 @@ fun SettingsScreen(
         initial = "System default"
     )
 
-    // Alarm Behavior
     val ringingSnoozeMinutes by settingsDataStore.ringingSnoozeMinutesFlow.collectAsState(initial = 5)
     val upcomingEnabled by settingsDataStore.upcomingAlarmEnabledFlow.collectAsState(initial = false)
     val upcomingMinutesRaw by settingsDataStore.rawUpcomingAlarmMinutesFlow.collectAsState(initial = 15)
@@ -150,13 +152,6 @@ fun SettingsScreen(
         initial = SettingsDataStore.DEFAULT_AWAKE_CHECK_MINUTES
     )
 
-    // World Clock
-    val worldClockShowWeather by settingsDataStore.worldClockShowWeatherFlow.collectAsState(initial = true)
-    val worldClockTempUnit by settingsDataStore.worldClockTemperatureUnitFlow.collectAsState(
-        initial = TemperatureUnit.CELSIUS
-    )
-
-    // Timer
     val timerSoundEnabled by settingsDataStore.timerSoundEnabledFlow.collectAsState(initial = true)
     val timerRingtoneTitle by settingsDataStore.timerRingtoneTitleFlow.collectAsState(
         initial = "Default Timer Sound"
@@ -167,9 +162,9 @@ fun SettingsScreen(
         initial = TimerVibrationPattern.TICK_TICK
     )
 
-    var showAccentDialog by remember { mutableStateOf(false) }
+    var showAccentMenu by remember { mutableStateOf(false) }
     var showCustomPicker by remember { mutableStateOf(false) }
-    var showAppFontDialog by remember { mutableStateOf(false) }
+    var showAppFontMenu by remember { mutableStateOf(false) }
 
     val appFontFilePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -188,7 +183,6 @@ fun SettingsScreen(
         }
     }
 
-    // Ringtone Pickers
     val timerRingtonePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -235,8 +229,7 @@ fun SettingsScreen(
         }
     }
 
-    // Granular backup / restore (Storage Access Framework)
-    var showBackupDialog by remember { mutableStateOf(false) }
+    var showBackupMenu by remember { mutableStateOf(false) }
     var backupMode by remember { mutableStateOf(BackupManager.BackupMode.EXPORT) }
     var backupSettings by remember { mutableStateOf(true) }
     var backupAlarms by remember { mutableStateOf(true) }
@@ -323,39 +316,47 @@ fun SettingsScreen(
 
     val showFloatingBack by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 48
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 140
         }
     }
+    val floatingBackAlpha by animateFloatAsState(
+        targetValue = if (showFloatingBack) 1f else 0f,
+        animationSpec = tween(180),
+        label = "floatingBackAlpha"
+    )
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(screenBg)
     ) {
-        // Floating Back Button: Appears only when scrolled and header disappears
-        AnimatedVisibility(
-            visible = showFloatingBack,
-            enter = fadeIn(animationSpec = tween(150)),
-            exit = fadeOut(animationSpec = tween(150)),
+
+        Box(
             modifier = Modifier
                 .padding(top = statusBarTop + 4.dp, start = 12.dp)
                 .zIndex(10f)
+                .graphicsLayer {
+                    alpha = floatingBackAlpha
+                }
         ) {
-            IconButton(
-                onClick = onNavigateBack,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = if (isLight) Color(0xCCFFFFFF) else Color(0xCC282932),
-                        shape = CircleShape
+            if (floatingBackAlpha > 0.01f) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    enabled = showFloatingBack,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            color = if (isLight) Color(0xCCFFFFFF) else Color(0xCC282932),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(22.dp)
                     )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(22.dp)
-                )
+                }
             }
         }
 
@@ -370,7 +371,7 @@ fun SettingsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header: < Clock settings
+
             item(key = "header") {
                 Row(
                     modifier = Modifier
@@ -399,7 +400,6 @@ fun SettingsScreen(
                 }
             }
 
-            // SECTION 1: General & Appearance
             item(key = "section_general") {
                 Surface(
                     shape = cardShape,
@@ -421,13 +421,12 @@ fun SettingsScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        // 1. Theme mode
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
                                     text = "Theme mode",
                                     fontSize = 16.sp,
@@ -437,27 +436,34 @@ fun SettingsScreen(
                                 Text(
                                     text = themeMode.label,
                                     fontSize = 13.sp,
-                                    color = accentColor
+                                    color = accentColor,
+                                    maxLines = 1
                                 )
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 ThemeMode.entries.forEach { mode ->
                                     val isSelected = themeMode == mode
                                     Box(
                                         modifier = Modifier
+                                            .weight(1f)
                                             .clip(RoundedCornerShape(50))
                                             .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
                                             .clickable {
                                                 scope.launch { settingsDataStore.setThemeMode(mode) }
                                             }
-                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            .padding(vertical = 10.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = mode.label.substringBefore(" "),
-                                            fontSize = 12.sp,
+                                            fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1
                                         )
                                     }
                                 }
@@ -469,7 +475,6 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 2. 24-hour format
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -505,7 +510,6 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 3. Remove leading zero
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -537,70 +541,151 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 4. Accent color picker
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { showAccentDialog = true }
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Accent color",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = if (currentAccent == AccentColor.CUSTOM) "Custom" else currentAccent.label,
-                                    fontSize = 13.sp,
-                                    color = accentColor
-                                )
-                            }
-                            Box(
+                        Box {
+                            Row(
                                 modifier = Modifier
-                                    .size(26.dp)
-                                    .clip(CircleShape)
-                                    .background(accentColor)
-                            )
-                        }
-
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                        )
-
-                        // 5. App font
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { showAppFontDialog = true }
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "App font",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = appFontStyle.label,
-                                    fontSize = 13.sp,
-                                    color = accentColor
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showAccentMenu = true }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Accent color",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = if (currentAccent == AccentColor.CUSTOM) "Custom" else currentAccent.label,
+                                        fontSize = 13.sp,
+                                        color = accentColor
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(26.dp)
+                                        .clip(CircleShape)
+                                        .background(accentColor)
                                 )
                             }
-                            Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+
+                            FrostedDropdownMenu(
+                                expanded = showAccentMenu,
+                                onDismissRequest = { showAccentMenu = false },
+                                modifier = Modifier.widthIn(min = 320.dp, max = 350.dp)
+                            ) {
+                                val presets = AccentColor.entries.filter { it != AccentColor.CUSTOM }
+                                presets.chunked(7).forEach { row ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        row.forEach { accent ->
+                                            val selected = currentAccent == accent
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(CircleShape)
+                                                    .background(accent.toColor())
+                                                    .clickable {
+                                                        scope.launch { settingsDataStore.setAccentColor(accent) }
+                                                        showAccentMenu = false
+                                                    },
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                if (selected) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Check,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(top = 10.dp, bottom = 8.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                                )
+
+                                val isCustomSelected = currentAccent == AccentColor.CUSTOM
+                                val customSource = remember { MutableInteractionSource() }
+                                val isCustomPressed by customSource.collectIsPressedAsState()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(
+                                            if (isCustomPressed) {
+                                                if (isLight) Color.Black.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.1f)
+                                            } else Color.Transparent
+                                        )
+                                        .clickable(
+                                            interactionSource = customSource,
+                                            indication = null
+                                        ) {
+                                            showAccentMenu = false
+                                            showCustomPicker = true
+                                        }
+                                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    Brush.sweepGradient(
+                                                        listOf(
+                                                            Color.Red, Color.Yellow, Color.Green,
+                                                            Color.Cyan, Color.Blue, Color.Magenta, Color.Red
+                                                        )
+                                                    )
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            if (isCustomSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.Check,
+                                                    contentDescription = null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = "Custom Color",
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (isLight) Color(0xFF111318) else Color.White
+                                            )
+                                            Text(
+                                                text = "HSV spectrum & Hex",
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Outlined.ChevronRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
                         }
 
                         HorizontalDivider(
@@ -608,7 +693,97 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 6. Alarm appearance
+                        Box {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showAppFontMenu = true }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "App font",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = appFontStyle.label,
+                                        fontSize = 13.sp,
+                                        color = accentColor
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Outlined.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            FrostedDropdownMenu(
+                                expanded = showAppFontMenu,
+                                onDismissRequest = { showAppFontMenu = false },
+                                modifier = Modifier.widthIn(min = 290.dp, max = 330.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    AppFontStyle.entries.forEach { style ->
+                                        val isSelected = appFontStyle == style
+                                        val interactionSource = remember { MutableInteractionSource() }
+                                        val isPressed by interactionSource.collectIsPressedAsState()
+                                        val itemBg = when {
+                                            isSelected -> accentColor.copy(alpha = 0.14f)
+                                            isPressed -> if (isLight) Color.Black.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.08f)
+                                            else -> Color.Transparent
+                                        }
+
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(itemBg)
+                                                .clickable(
+                                                    interactionSource = interactionSource,
+                                                    indication = null
+                                                ) {
+                                                    showAppFontMenu = false
+                                                    if (style == AppFontStyle.CUSTOM_FILE) {
+                                                        appFontFilePickerLauncher.launch(FontManager.FONT_MIME_TYPES)
+                                                    } else {
+                                                        scope.launch { settingsDataStore.setAppFontStyle(style) }
+                                                    }
+                                                }
+                                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = style.label,
+                                                fontSize = 15.sp,
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                                color = if (isSelected) accentColor else (if (isLight) Color(0xFF111318) else Color.White)
+                                            )
+                                            if (isSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.Check,
+                                                    contentDescription = null,
+                                                    tint = accentColor,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                        )
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -641,7 +816,6 @@ fun SettingsScreen(
                 }
             }
 
-            // SECTION 2: Audio & Volume Policy
             item(key = "section_audio") {
                 Surface(
                     shape = cardShape,
@@ -663,7 +837,6 @@ fun SettingsScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        // 1. Vibrate for alarms and timers
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -695,13 +868,12 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 2. Volume policy
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
                                     text = "Volume policy",
                                     fontSize = 16.sp,
@@ -711,34 +883,40 @@ fun SettingsScreen(
                                 Text(
                                     text = volumePolicy.label,
                                     fontSize = 13.sp,
-                                    color = accentColor
+                                    color = accentColor,
+                                    maxLines = 1
                                 )
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 VolumePolicy.entries.forEach { policy ->
                                     val isSelected = volumePolicy == policy
                                     Box(
                                         modifier = Modifier
+                                            .weight(1f)
                                             .clip(RoundedCornerShape(50))
                                             .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
                                             .clickable {
                                                 scope.launch { settingsDataStore.setVolumePolicy(policy) }
                                             }
-                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            .padding(vertical = 10.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = if (policy == VolumePolicy.UNIFIED) "Unified" else "Per-alarm",
-                                            fontSize = 12.sp,
+                                            fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1
                                         )
                                     }
                                 }
                             }
                         }
 
-                        // 3. Unified volume slider
                         if (volumePolicy == VolumePolicy.UNIFIED) {
                             var tempVolume by remember { mutableFloatStateOf(unifiedVolume) }
                             LaunchedEffect(unifiedVolume) { tempVolume = unifiedVolume }
@@ -776,7 +954,6 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 4. Default alarm sound
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -824,7 +1001,6 @@ fun SettingsScreen(
                 }
             }
 
-            // SECTION 3: Alarm Behavior
             item(key = "section_alarm_behavior") {
                 Surface(
                     shape = cardShape,
@@ -846,13 +1022,12 @@ fun SettingsScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        // 1. Snooze duration
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
                                     text = "Snooze duration",
                                     fontSize = 16.sp,
@@ -862,27 +1037,34 @@ fun SettingsScreen(
                                 Text(
                                     text = "$ringingSnoozeMinutes minutes",
                                     fontSize = 13.sp,
-                                    color = accentColor
+                                    color = accentColor,
+                                    maxLines = 1
                                 )
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 listOf(5, 10, 15, 20).forEach { min ->
                                     val isSelected = ringingSnoozeMinutes == min
                                     Box(
                                         modifier = Modifier
+                                            .weight(1f)
                                             .clip(RoundedCornerShape(50))
                                             .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
                                             .clickable {
                                                 scope.launch { settingsDataStore.setRingingSnoozeMinutes(min) }
                                             }
-                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            .padding(vertical = 10.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = "${min}m",
-                                            fontSize = 12.sp,
+                                            fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1
                                         )
                                     }
                                 }
@@ -894,7 +1076,6 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 2. Upcoming alarm notification
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -964,7 +1145,6 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 3. Are you awake? check
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1029,107 +1209,6 @@ fun SettingsScreen(
                 }
             }
 
-            // SECTION 4: World Clock
-            item(key = "section_world_clock") {
-                Surface(
-                    shape = cardShape,
-                    color = cardBg,
-                    border = null,
-                    shadowElevation = 2.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 18.dp)
-                    ) {
-                        Text(
-                            text = "World Clock",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = accentColor,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-
-                        // 1. Show weather
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Show weather",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Show temperature on city cards",
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = worldClockShowWeather,
-                                onCheckedChange = { checked ->
-                                    scope.launch { settingsDataStore.setWorldClockShowWeather(checked) }
-                                }
-                            )
-                        }
-
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                        )
-
-                        // 2. Temperature unit (°C / °F)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Temperature unit",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = worldClockTempUnit.label,
-                                    fontSize = 13.sp,
-                                    color = accentColor
-                                )
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                TemperatureUnit.entries.forEach { unit ->
-                                    val isSelected = worldClockTempUnit == unit
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(50))
-                                            .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
-                                            .clickable {
-                                                scope.launch { settingsDataStore.setWorldClockTemperatureUnit(unit) }
-                                            }
-                                            .padding(horizontal = 14.dp, vertical = 6.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = unit.symbol,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // SECTION 5: Timer & Stopwatch
             item(key = "section_timer") {
                 Surface(
                     shape = cardShape,
@@ -1151,7 +1230,6 @@ fun SettingsScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        // 1. Timer sound with picker
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1202,7 +1280,6 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
 
-                        // 2. Timer vibration
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1235,7 +1312,6 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                             )
 
-                            // 3. Vibration pattern
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -1273,12 +1349,12 @@ fun SettingsScreen(
                                                 .clickable {
                                                     scope.launch { settingsDataStore.setTimerVibrationPattern(pattern) }
                                                 }
-                                                .padding(vertical = 8.dp),
+                                                .padding(vertical = 10.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = pattern.label.substringBefore(" "),
-                                                fontSize = 12.sp,
+                                                fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1
@@ -1292,7 +1368,6 @@ fun SettingsScreen(
                 }
             }
 
-            // SECTION 6: Data & Storage
             item(key = "section_data") {
                 Surface(
                     shape = cardShape,
@@ -1314,37 +1389,178 @@ fun SettingsScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        // Backup & restore
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    backupMode = BackupManager.BackupMode.EXPORT
-                                    showBackupDialog = true
+                        Box {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showBackupMenu = true }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Backup & restore",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Export or restore clock data",
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Backup & restore",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Export or restore clock data",
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                Icon(
+                                    imageVector = Icons.Outlined.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+
+                            FrostedDropdownMenu(
+                                expanded = showBackupMenu,
+                                onDismissRequest = { showBackupMenu = false },
+                                modifier = Modifier.widthIn(min = 310.dp, max = 345.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    val exportSource = remember { MutableInteractionSource() }
+                                    val isExportPressed by exportSource.collectIsPressedAsState()
+                                    val hasSelection = backupSettings || backupAlarms || backupWorldClock || backupRecycleBin
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(
+                                                if (isExportPressed && hasSelection) {
+                                                    if (isLight) Color.Black.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.1f)
+                                                } else Color.Transparent
+                                            )
+                                            .clickable(
+                                                enabled = hasSelection,
+                                                interactionSource = exportSource,
+                                                indication = null
+                                            ) {
+                                                showBackupMenu = false
+                                                backupMode = BackupManager.BackupMode.EXPORT
+                                                exportLauncher.launch("lucid-clock-backup.json")
+                                            }
+                                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.FileUpload,
+                                            contentDescription = null,
+                                            tint = if (hasSelection) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "Export Backup (.json)",
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = if (hasSelection) (if (isLight) Color(0xFF111318) else Color.White) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                        )
+                                    }
+
+                                    val importSource = remember { MutableInteractionSource() }
+                                    val isImportPressed by importSource.collectIsPressedAsState()
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(
+                                                if (isImportPressed && hasSelection) {
+                                                    if (isLight) Color.Black.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.1f)
+                                                } else Color.Transparent
+                                            )
+                                            .clickable(
+                                                enabled = hasSelection,
+                                                interactionSource = importSource,
+                                                indication = null
+                                            ) {
+                                                showBackupMenu = false
+                                                backupMode = BackupManager.BackupMode.IMPORT
+                                                importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                                            }
+                                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.FileDownload,
+                                            contentDescription = null,
+                                            tint = if (hasSelection) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "Import Backup (.json)",
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = if (hasSelection) (if (isLight) Color(0xFF111318) else Color.White) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                        )
+                                    }
+
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 6.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                                    )
+
+                                    Text(
+                                        text = "Include in backup / restore:",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        CompactBackupPill(
+                                            label = "Settings",
+                                            checked = backupSettings,
+                                            onToggle = { backupSettings = !backupSettings },
+                                            accentColor = accentColor,
+                                            isLight = isLight,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        CompactBackupPill(
+                                            label = "Alarms",
+                                            checked = backupAlarms,
+                                            onToggle = { backupAlarms = !backupAlarms },
+                                            accentColor = accentColor,
+                                            isLight = isLight,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        CompactBackupPill(
+                                            label = "World Clock",
+                                            checked = backupWorldClock,
+                                            onToggle = { backupWorldClock = !backupWorldClock },
+                                            accentColor = accentColor,
+                                            isLight = isLight,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        CompactBackupPill(
+                                            label = "Recycle Bin",
+                                            checked = backupRecycleBin,
+                                            onToggle = { backupRecycleBin = !backupRecycleBin },
+                                            accentColor = accentColor,
+                                            isLight = isLight,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1364,33 +1580,10 @@ fun SettingsScreen(
                 onClick = {
                     scope.launch {
                         if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) return@launch
-                        val curIndex = listState.firstVisibleItemIndex
-                        val curOffset = listState.firstVisibleItemScrollOffset
-                        var totalDistance = curOffset.toFloat()
-                        for (i in 0 until curIndex) {
-                            totalDistance += (itemHeights[i] ?: 600) + spacingPx
+                        if (listState.firstVisibleItemIndex > 6) {
+                            listState.scrollToItem(6)
                         }
-                        val targetDistance = totalDistance + 100f
-                        listState.scroll(MutatePriority.Default) {
-                            var prevValue = 0f
-                            val anim = AnimationState(initialValue = 0f)
-                            val duration = (totalDistance / 7f).toInt().coerceIn(320, 480)
-                            anim.animateTo(
-                                targetValue = targetDistance,
-                                animationSpec = tween(
-                                    durationMillis = duration,
-                                    easing = CubicBezierEasing(0.22f, 1.0f, 0.36f, 1.0f)
-                                )
-                            ) {
-                                val delta = value - prevValue
-                                prevValue = value
-                                scrollBy(-delta)
-                                if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) {
-                                    cancelAnimation()
-                                }
-                            }
-                        }
-                        listState.scrollToItem(0, 0)
+                        listState.animateScrollToItem(0, 0)
                     }
                 },
                 shape = CircleShape,
@@ -1411,177 +1604,6 @@ fun SettingsScreen(
         }
     }
 
-    // App Font Picker Dialog
-    if (showAppFontDialog) {
-        AlertDialog(
-            onDismissRequest = { showAppFontDialog = false },
-            title = { Text("Choose App Font") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AppFontStyle.entries.forEach { style ->
-                        val isSelected = appFontStyle == style
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    if (style == AppFontStyle.CUSTOM_FILE) {
-                                        showAppFontDialog = false
-                                        appFontFilePickerLauncher.launch(FontManager.FONT_MIME_TYPES)
-                                    } else {
-                                        scope.launch { settingsDataStore.setAppFontStyle(style) }
-                                        showAppFontDialog = false
-                                    }
-                                }
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = style.label,
-                                fontSize = 16.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
-                            )
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
-                                    tint = accentColor,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAppFontDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // Accent Color Picker Dialog (Presets + Custom Color Option)
-    if (showAccentDialog) {
-        AlertDialog(
-            onDismissRequest = { showAccentDialog = false },
-            title = { Text("Choose Accent Color") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    val presets = AccentColor.entries.filter { it != AccentColor.CUSTOM }
-                    presets.chunked(4).forEach { row ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            row.forEach { accent ->
-                                val selected = currentAccent == accent
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(accent.toColor())
-                                        .border(
-                                            width = if (selected) 3.dp else 1.dp,
-                                            color = if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                                            shape = CircleShape
-                                        )
-                                        .clickable {
-                                            scope.launch { settingsDataStore.setAccentColor(accent) }
-                                            showAccentDialog = false
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (selected) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Check,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Custom color entry with full spectrum gradient
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                showAccentDialog = false
-                                showCustomPicker = true
-                            }
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.sweepGradient(
-                                            listOf(
-                                                Color.Red, Color.Yellow, Color.Green,
-                                                Color.Cyan, Color.Blue, Color.Magenta, Color.Red
-                                            )
-                                        )
-                                    )
-                                    .border(
-                                        width = if (currentAccent == AccentColor.CUSTOM) 3.dp else 1.dp,
-                                        color = if (currentAccent == AccentColor.CUSTOM) MaterialTheme.colorScheme.primary else Color.White,
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (currentAccent == AccentColor.CUSTOM) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Check,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Custom Color",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Full HSV spectrum & Hex picker",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Icon(
-                            imageVector = Icons.Outlined.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAccentDialog = false }) {
-                    Text("Close")
-                }
-            }
-        )
-    }
-
-    // Custom Color Picker Dialog
     if (showCustomPicker) {
         CustomColorPickerDialog(
             initialColor = if (currentAccent == AccentColor.CUSTOM) accentCustomArgb else accentColor.toArgb().toLong(),
@@ -1595,109 +1617,109 @@ fun SettingsScreen(
             }
         )
     }
+}
 
-    // Backup & Restore Dialog
-    if (showBackupDialog) {
-        val exporting = backupMode == BackupManager.BackupMode.EXPORT
-        AlertDialog(
-            onDismissRequest = { showBackupDialog = false },
-            title = { Text(if (exporting) "Export backup" else "Import backup") },
-            text = {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(
-                            onClick = { backupMode = BackupManager.BackupMode.EXPORT },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(50)
-                        ) {
-                            Text("Export")
-                        }
-                        OutlinedButton(
-                            onClick = { backupMode = BackupManager.BackupMode.IMPORT },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(50)
-                        ) {
-                            Text("Import")
+@Composable
+private fun FrostedDropdownMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    offset: DpOffset = DpOffset(0.dp, 4.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    if (!expanded) return
+
+    val menuShape = RoundedCornerShape(20.dp)
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        offset = offset,
+        shape = menuShape,
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp,
+        shadowElevation = 8.dp,
+        border = null
+    ) {
+        val view = LocalView.current
+        SideEffect {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                var current: ViewParent? = view.parent
+                while (current != null) {
+                    if (current is View) {
+                        val lp = current.layoutParams
+                        if (lp is WindowManager.LayoutParams) {
+                            lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                            lp.blurBehindRadius = 60
+                            val wm = current.context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+                            wm?.updateViewLayout(current, lp)
+                            break
                         }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = if (exporting) {
-                            "Choose what to include in the backup file."
-                        } else {
-                            "Choose what to restore from the backup file. Selected categories replace their current data."
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    BackupOptionRow(
-                        label = "App settings & appearance",
-                        checked = backupSettings,
-                        onCheckedChange = { backupSettings = it }
-                    )
-                    BackupOptionRow(
-                        label = "Alarms",
-                        checked = backupAlarms,
-                        onCheckedChange = { backupAlarms = it }
-                    )
-                    BackupOptionRow(
-                        label = "World-clock cities",
-                        checked = backupWorldClock,
-                        onCheckedChange = { backupWorldClock = it }
-                    )
-                    BackupOptionRow(
-                        label = "Recycle bin",
-                        checked = backupRecycleBin,
-                        onCheckedChange = { backupRecycleBin = it }
-                    )
+                    current = current.parent
                 }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val selection = currentSelection()
-                        showBackupDialog = false
-                        if (exporting) {
-                            exportLauncher.launch("lucid-clock-backup.json")
-                        } else {
-                            importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
-                        }
-                    },
-                    enabled = backupSettings || backupAlarms || backupWorldClock || backupRecycleBin
-                ) {
-                    Text("Choose file…")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showBackupDialog = false }) { Text("Cancel") }
             }
-        )
+        }
+
+        FrostedBlurBox(
+            modifier = Modifier.fillMaxWidth(),
+            shape = menuShape
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp)
+            ) {
+                content()
+            }
+        }
     }
 }
 
 @Composable
-private fun BackupOptionRow(
+private fun CompactBackupPill(
     label: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onToggle: () -> Unit,
+    accentColor: Color,
+    isLight: Boolean,
+    modifier: Modifier = Modifier
 ) {
+    val pillBg = if (checked) {
+        accentColor.copy(alpha = 0.16f)
+    } else {
+        if (isLight) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.06f)
+    }
+    val contentColor = if (checked) {
+        accentColor
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(pillBg)
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
-        Spacer(modifier = Modifier.width(8.dp))
+        if (checked) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+        }
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            fontSize = 13.sp,
+            fontWeight = if (checked) FontWeight.SemiBold else FontWeight.Medium,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

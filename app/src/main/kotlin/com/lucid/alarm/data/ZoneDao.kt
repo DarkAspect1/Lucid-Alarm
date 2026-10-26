@@ -24,13 +24,9 @@ interface ZoneDao {
     @Query("DELETE FROM trashed_zones")
     fun emptyTrash()
 
-    // ---- Backup / restore ----
-
-    /** Every trashed zone for a full backup snapshot. */
     @Query("SELECT * FROM trashed_zones ORDER BY deletedAt DESC")
     fun getAllTrashedZonesForBackup(): List<TrashedZone>
 
-    /** Wipes every trashed zone so a backup restore can start from a clean slate. */
     @Query("DELETE FROM trashed_zones")
     fun deleteAllTrashedZones()
 }

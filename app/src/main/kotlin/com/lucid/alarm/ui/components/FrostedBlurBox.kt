@@ -31,15 +31,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
 
-/**
- * Shared frosted card surface with screen-aligned backdrop blur and zero borders:
- * Layer 1 (Screen-Aligned Blurred Wallpaper Slice): Draws the active screen background
- *   translated by (-cardOffset.x, -cardOffset.y) with 30.dp blur so it aligns 1:1 with wallpaper.
- * Layer 2 (Frosted Glass Luminance Overlay — NO BORDER):
- *   - Dark Mode: Color(0xFF22232E).copy(alpha = 0.64f) + subtle vertical sheen.
- *   - Light Mode: Color(0xFFFFFFFF).copy(alpha = 0.72f).
- * Layer 3 (Unblurred Foreground Content): Renders crisp text and icons.
- */
 @Composable
 fun FrostedCardSurface(
     modifier: Modifier = Modifier,
@@ -64,7 +55,7 @@ fun FrostedCardSurface(
             .onGloballyPositioned { cardOffset = it.positionInRoot() }
             .clip(shape)
     ) {
-        // Layer 1: Screen-Aligned Blurred Wallpaper Slice
+
         Canvas(
             modifier = Modifier
                 .matchParentSize()
@@ -131,7 +122,6 @@ fun FrostedCardSurface(
             }
         }
 
-        // Layer 2: Frosted Glass Luminance Overlay — NO BORDER
         if (tintColor != null) {
             Box(
                 modifier = Modifier
@@ -163,14 +153,10 @@ fun FrostedCardSurface(
             }
         }
 
-        // Layer 3: Unblurred Foreground Content
         content()
     }
 }
 
-/**
- * FrostedBlurBox delegates directly to [FrostedCardSurface] with zero border.
- */
 @Composable
 fun FrostedBlurBox(
     modifier: Modifier = Modifier,

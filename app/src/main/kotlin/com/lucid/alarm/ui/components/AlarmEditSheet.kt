@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -29,7 +30,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -55,21 +58,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.data.prefs.AlarmVibrationPreset
 import com.lucid.alarm.data.prefs.SettingsDataStore
+import com.lucid.alarm.ui.components.SelectionChipShape
 import com.lucid.alarm.ui.components.selectedChipColors
 import java.util.Calendar
 import kotlin.math.roundToInt
 
 private data class RepeatDay(val calendarConstant: Int, val letter: String)
 
-/** Repeat chips, Sunday-first, single letter (S M T W T F S). */
 private val REPEAT_DAYS = listOf(
     RepeatDay(Calendar.SUNDAY, "S"),
     RepeatDay(Calendar.MONDAY, "M"),
@@ -88,13 +96,6 @@ private val SNOOZE_LIMIT_OPTIONS = listOf(
     5 to "5 times"
 )
 
-/**
- * Alarm creation / edit sheet.
- *
- * The time picker is pinned (never scrolls); the option body scrolls beneath it. A nested-scroll
- * guard lets the body consume its own scroll before a downward drag reaches the sheet, so an
- * upward fling can never bounce the sheet.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AlarmEditSheet(
@@ -119,7 +120,7 @@ fun AlarmEditSheet(
     val displayedSoundTitle = when {
         soundUri.isNotBlank() -> soundTitle
         defaultSoundTitle == "System default" -> "Default Ringtone"
-        else -> "Default · $defaultSoundTitle"
+        else -> "Default \u00B7 $defaultSoundTitle"
     }
     var vibrationEnabled by remember { mutableStateOf(initialAlarm?.vibrationEnabled ?: true) }
     var vibrationPattern by remember { mutableStateOf(initialAlarm?.vibrationPattern ?: "HEARTBEAT") }
@@ -252,7 +253,10 @@ fun AlarmEditSheet(
     var showAppearanceEditor by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { true }
+    )
 
     val ringtoneLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -276,7 +280,13 @@ fun AlarmEditSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        sheetGesturesEnabled = false
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                width = 32.dp,
+                height = 4.dp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            )
+        }
     ) {
         Column(
             modifier = Modifier
@@ -284,7 +294,7 @@ fun AlarmEditSheet(
                 .fillMaxHeight(0.92f)
                 .imePadding()
         ) {
-            // ---- Pinned header + time picker (never scrolls) ----
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -309,11 +319,26 @@ fun AlarmEditSheet(
                 )
             }
 
-            // ---- Scrollable option body ----
+            val consumeVerticalFlingConnection = remember {
+                object : NestedScrollConnection {
+                    override fun onPostScroll(
+                        consumed: Offset,
+                        available: Offset,
+                        source: NestedScrollSource
+                    ): Offset = Offset(0f, available.y)
+
+                    override suspend fun onPostFling(
+                        consumed: Velocity,
+                        available: Velocity
+                    ): Velocity = Velocity(0f, available.y)
+                }
+            }
+
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .nestedScroll(consumeVerticalFlingConnection)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -327,8 +352,6 @@ fun AlarmEditSheet(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Repeat days: single letters, Sunday-first. A single equal-width row keeps all
-                // seven day chips identical and on one line (no wrapping, no oversized chip).
                 Column {
                     Text("Repeat", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
@@ -373,7 +396,6 @@ fun AlarmEditSheet(
                     }
                 }
 
-                // ---- Group chips + add ----
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -399,6 +421,7 @@ fun AlarmEditSheet(
                                  FilterChip(
                                      selected = groupName == group,
                                      onClick = { groupName = group },
+                                     shape = SelectionChipShape,
                                      colors = selectedChipColors(),
                                      label = { Text(group) }
                                  )
@@ -406,7 +429,6 @@ fun AlarmEditSheet(
                     }
                 }
 
-                // ---- Sound ----
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -435,7 +457,6 @@ fun AlarmEditSheet(
                     }
                 }
 
-                // ---- Vibration ----
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -453,6 +474,7 @@ fun AlarmEditSheet(
                              FilterChip(
                                  selected = vibrationPattern == preset.name,
                                  onClick = { vibrationPattern = preset.name },
+                                 shape = SelectionChipShape,
                                  colors = selectedChipColors(),
                                  label = { Text(preset.label) }
                              )
@@ -460,7 +482,6 @@ fun AlarmEditSheet(
                     }
                 }
 
-                // ---- Snooze ----
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -483,6 +504,7 @@ fun AlarmEditSheet(
                              FilterChip(
                                  selected = snoozeMinutes == minutes,
                                  onClick = { snoozeMinutes = minutes },
+                                 shape = SelectionChipShape,
                                  colors = selectedChipColors(),
                                  label = {
                                      Text(if (minutes == 0) "Default" else "${minutes}m")
@@ -503,6 +525,7 @@ fun AlarmEditSheet(
                              FilterChip(
                                  selected = snoozeLimit == limit,
                                  onClick = { snoozeLimit = limit },
+                                 shape = SelectionChipShape,
                                  colors = selectedChipColors(),
                                  label = { Text(text) }
                              )
@@ -510,7 +533,6 @@ fun AlarmEditSheet(
                     }
                 }
 
-                // ---- Advanced alert options (collapsed by default) ----
                 Column {
                     Row(
                         modifier = Modifier
@@ -586,7 +608,11 @@ fun AlarmEditSheet(
                             }
                             Slider(
                                 value = areYouAwakeMinutes.toFloat(),
-                                onValueChange = { areYouAwakeMinutes = it.roundToInt() },
+                                onValueChange = {
+                                    areYouAwakeMinutes = it.roundToInt()
+                                    hasCustomAreYouAwake = true
+                                    areYouAwakeEnabled = true
+                                },
                                 valueRange = 0f..15f,
                                 steps = 14,
                                 modifier = Modifier.fillMaxWidth()
@@ -643,7 +669,11 @@ fun AlarmEditSheet(
                             }
                             Slider(
                                 value = upcomingNotificationLeadMinutes.toFloat(),
-                                onValueChange = { upcomingNotificationLeadMinutes = it.roundToInt() },
+                                onValueChange = {
+                                    upcomingNotificationLeadMinutes = it.roundToInt()
+                                    hasCustomUpcoming = true
+                                    upcomingNotificationEnabled = true
+                                },
                                 valueRange = 0f..60f,
                                 steps = 59,
                                 modifier = Modifier.fillMaxWidth()
@@ -652,28 +682,89 @@ fun AlarmEditSheet(
                     }
                 }
 
-                // ---- Per-alarm appearance ----
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showAppearanceEditor = true },
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Alarm Appearance", style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            text = if (appearanceEnabled) {
-                                "Custom wallpaper & clock"
-                            } else {
-                                "Uses the global ringing look"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showAppearanceEditor = true },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Alarm Appearance", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = if (appearanceEnabled) {
+                                    "Custom wallpaper & clock"
+                                } else {
+                                    "Uses the global ringing look"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TextButton(onClick = { showAppearanceEditor = true }) {
+                            Text(if (appearanceEnabled) "Edit" else "Customize")
+                        }
                     }
-                    TextButton(onClick = { showAppearanceEditor = true }) {
-                        Text(if (appearanceEnabled) "Edit" else "Customize")
+                    if (appearanceEnabled) {
+                        TextButton(
+                            onClick = {
+                                appearanceEnabled = false
+                                appearanceUri = ""
+                                appearanceBackgroundStyle = ""
+                                appearanceVideoUri = ""
+                                appearanceSolidColor = 0L
+                                appearanceColor = 0L
+                                appearanceClockStyle = ""
+                                appearanceClockFont = ""
+                                appearanceClockFontPath = ""
+                                appearanceDateFont = ""
+                                appearanceDateFontPath = ""
+                                appearanceDateVisible = true
+                                appearanceDateOffsetX = 0f
+                                appearanceDateOffsetY = 0f
+                                appearanceDateScale = 1f
+                                appearanceRemoveLeadingZero = false
+                                appearanceBlur = -1f
+                                appearanceDim = -1f
+                                appearanceClockColorEnd = 0L
+                                appearanceClockGradient = false
+                                appearanceClockGradientDir = ""
+                                appearanceDateColor = 0L
+                                appearanceDateColorEnd = 0L
+                                appearanceDateGradient = false
+                                appearanceDateGradientDir = ""
+                                appearanceShowAmPm = null
+                                appearanceAmPmFont = ""
+                                appearanceAmPmFontPath = ""
+                                appearanceAmPmColor = 0L
+                                appearanceLabelVisible = null
+                                appearanceLabelFont = ""
+                                appearanceLabelFontPath = ""
+                                appearanceLabelColor = 0L
+                                appearanceSnoozeFont = ""
+                                appearanceSnoozeFontPath = ""
+                                appearanceSnoozeContainerColor = 0L
+                                appearanceSnoozeTextColor = 0L
+                                appearanceDismissFont = ""
+                                appearanceDismissFontPath = ""
+                                appearanceDismissContainerColor = 0L
+                                appearanceDismissTextColor = 0L
+                                appearanceOffsetX = 0f
+                                appearanceOffsetY = 0f
+                                appearanceBoxW = 0f
+                                appearanceBoxH = 0f
+                                appearanceClockBoxEnabled = false
+                                appearanceClockBoxColor = 0L
+                                appearanceClockBoxOpacity = 0.35f
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Reset to global appearance")
+                        }
                     }
                 }
 
@@ -734,13 +825,13 @@ fun AlarmEditSheet(
                             snoozeEnabled = snoozeEnabled,
                             snoozeMinutes = snoozeMinutes,
                             snoozeLimit = snoozeLimit,
-                            areYouAwakeEnabled = effectiveAreYouAwake,
+                            areYouAwakeEnabled = if (hasCustomAreYouAwake || areYouAwakeMinutes > 0) (if (hasCustomAreYouAwake) areYouAwakeEnabled else effectiveAreYouAwake) else effectiveAreYouAwake,
                             areYouAwakeMinutes = if (effectiveAreYouAwake) areYouAwakeMinutes else 0,
-                            upcomingNotificationEnabled = effectiveUpcoming,
+                            upcomingNotificationEnabled = if (hasCustomUpcoming || upcomingNotificationLeadMinutes > 0) (if (hasCustomUpcoming) upcomingNotificationEnabled else effectiveUpcoming) else effectiveUpcoming,
                             upcomingNotificationLeadMinutes =
                                 if (effectiveUpcoming) upcomingNotificationLeadMinutes else 0,
-                            hasCustomAreYouAwake = hasCustomAreYouAwake,
-                            hasCustomUpcomingNotification = hasCustomUpcoming,
+                            hasCustomAreYouAwake = hasCustomAreYouAwake || areYouAwakeMinutes > 0,
+                            hasCustomUpcomingNotification = hasCustomUpcoming || upcomingNotificationLeadMinutes > 0,
                             customAppearanceEnabled = resolvedAppearance,
                             customBackgroundUri = if (resolvedAppearance) appearanceUri else "",
                             customBackgroundStyle = if (resolvedAppearance) appearanceBackgroundStyle else "",

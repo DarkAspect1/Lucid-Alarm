@@ -12,10 +12,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Backs the world-clock recycle bin. Removing a city moves it here instead of deleting it
- * outright; entries older than [TrashedZone.RECYCLE_BIN_RETENTION_MILLIS] are purged on startup.
- */
 class WorldClockViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = (application as AlarmApplication).worldClockRepository
@@ -31,7 +27,6 @@ class WorldClockViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch { repository.purgeExpired() }
     }
 
-    /** Moves [zoneIds] to the world-clock recycle bin and removes them from the saved list. */
     fun trashZones(zoneIds: List<String>) {
         viewModelScope.launch {
             if (zoneIds.isEmpty()) return@launch
@@ -42,7 +37,6 @@ class WorldClockViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    /** Restores [zoneIds] to the saved list (appended, de-duplicated) and clears them from trash. */
     fun restoreZones(zoneIds: List<String>) {
         viewModelScope.launch {
             if (zoneIds.isEmpty()) return@launch

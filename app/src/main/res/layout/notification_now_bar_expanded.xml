@@ -1,16 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Custom "Now Bar" layout rendered by RemoteViews inside the ongoing Timer/Stopwatch notification.
-  Only RemoteViews-supported widgets are used (FrameLayout, LinearLayout, ImageView, TextView) and
-  every dynamic piece (background bitmap, accent squircle, icons, readouts, action labels and
-  action PendingIntents) is bound from Kotlin.
--->
+
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/now_bar_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
-    <!-- Full-bleed accent-tinted pill background, generated in Kotlin. -->
     <ImageView
         android:id="@+id/now_bar_bg_image"
         android:layout_width="match_parent"
@@ -29,7 +23,6 @@
         android:paddingTop="18dp"
         android:paddingBottom="14dp">
 
-        <!-- Upper row: squircle badge + live readout. Tapping it opens the app. -->
         <LinearLayout
             android:id="@+id/now_bar_header"
             android:layout_width="match_parent"
@@ -43,7 +36,6 @@
                 android:layout_width="54dp"
                 android:layout_height="54dp">
 
-                <!-- Accent-tinted 18dp squircle behind the icon. -->
                 <ImageView
                     android:id="@+id/now_bar_badge_bg"
                     android:layout_width="54dp"
@@ -52,7 +44,6 @@
                     android:importantForAccessibility="no"
                     android:contentDescription="@string/now_bar_badge_desc" />
 
-                <!-- White stopwatch / hourglass glyph. -->
                 <ImageView
                     android:id="@+id/now_bar_icon"
                     android:layout_width="28dp"
@@ -93,7 +84,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Lower row: split actions with a centered divider. -->
         <LinearLayout
             android:id="@+id/now_bar_actions"
             android:layout_width="match_parent"

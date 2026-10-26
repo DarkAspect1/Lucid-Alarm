@@ -23,18 +23,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.ui.amPmSuffix
 import com.lucid.alarm.ui.formatHourMinute
-import com.lucid.alarm.ui.theme.LocalBoxColors
 import com.lucid.alarm.ui.theme.onColorFor
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -53,31 +52,23 @@ fun AlarmRow(
     onLongClick: () -> Unit,
     showReenablePill: Boolean = false,
     onReenable: () -> Unit = {},
-    dayNightBackground: Boolean = false,
     showBottomDivider: Boolean = false,
+    showSwitch: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val formattedTime = formatHourMinute(alarm.hour, alarm.minute, is24Hour, removeLeadingZero)
     val repeatSummary = repeatSummary(alarm.daysOfWeek)
 
     val selectedNow = selectionMode && isSelected
-    val dynamicBackground = dayNightBackground && !selectedNow
-    val skySeed = alarm.id.hashCode()
-    val brightPhase = isDaytimeBrightPhase(alarm.hour)
-    val dynamicContentColor = if (brightPhase) Color(0xFF0B1220) else Color.White
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
     val contentColor = when {
         selectedNow -> MaterialTheme.colorScheme.onPrimary
-        dynamicBackground && alarm.isEnabled -> dynamicContentColor
-        dynamicBackground -> dynamicContentColor.copy(alpha = 0.40f)
         alarm.isEnabled -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.40f)
     }
     val secondaryColor = when {
         selectedNow -> MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
-        dynamicBackground && alarm.isEnabled -> dynamicContentColor.copy(alpha = 0.82f)
-        dynamicBackground -> dynamicContentColor.copy(alpha = 0.40f)
         alarm.isEnabled -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.40f)
     }
@@ -90,15 +81,6 @@ fun AlarmRow(
                 onLongClick = onLongClick
             )
     ) {
-        if (dynamicBackground) {
-            DayNightLandscapeBackground(
-                hour = alarm.hour,
-                minute = alarm.minute,
-                seed = skySeed,
-                brightText = !brightPhase,
-                modifier = Modifier.matchParentSize()
-            )
-        }
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
@@ -115,10 +97,12 @@ fun AlarmRow(
                                 fontWeight = FontWeight.SemiBold
                             ),
                             color = when {
-                                dynamicBackground || selectedNow -> contentColor
+                                selectedNow -> contentColor
                                 alarm.isEnabled -> MaterialTheme.colorScheme.primary
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.40f)
-                            }
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                     }
@@ -148,11 +132,13 @@ fun AlarmRow(
                     }
 
                     Spacer(modifier = Modifier.height(2.dp))
-                    val subtitleText = if (alarm.label.isNotBlank()) repeatSummary else "${alarm.groupName} · $repeatSummary"
+                    val subtitleText = if (alarm.label.isNotBlank()) repeatSummary else "${alarm.groupName} \u00B7 $repeatSummary"
                     Text(
                         text = subtitleText,
                         style = MaterialTheme.typography.bodySmall,
-                        color = secondaryColor
+                        color = secondaryColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -161,7 +147,7 @@ fun AlarmRow(
                         checked = isSelected,
                         onToggle = { onToggle(!isSelected) }
                     )
-                } else {
+                } else if (showSwitch) {
                     Switch(
                         checked = alarm.isEnabled,
                         onCheckedChange = onToggle
@@ -214,17 +200,18 @@ fun AlarmCard(
     onLongClick: () -> Unit,
     showReenablePill: Boolean = false,
     onReenable: () -> Unit = {},
-    dayNightBackground: Boolean = false,
     cardShape: Shape = RoundedCornerShape(28.dp),
     cardPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
     showBottomDivider: Boolean = false,
     connectedIndex: Int = 0,
     totalConnected: Int = 1,
+    showSwitch: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val selectedNow = selectionMode && isSelected
-    val effectiveShape = if (selectedNow) RoundedCornerShape(24.dp) else cardShape
-    val effectivePadding = if (selectedNow && totalConnected > 1) PaddingValues(horizontal = 16.dp, vertical = 3.dp) else cardPadding
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val effectiveShape = cardShape
+    val effectivePadding = cardPadding
 
     FrostedBlurBox(
         modifier = modifier
@@ -247,13 +234,12 @@ fun AlarmCard(
             onLongClick = onLongClick,
             showReenablePill = showReenablePill,
             onReenable = onReenable,
-            dayNightBackground = dayNightBackground,
-            showBottomDivider = if (selectedNow) false else showBottomDivider
+            showBottomDivider = if (selectedNow) false else showBottomDivider,
+            showSwitch = showSwitch
         )
     }
 }
 
-/** Describes the next occurrence of a repeating alarm for the restore pill. */
 private fun reenableLabel(days: Set<Int>, hour: Int, minute: Int): String {
     val now = Calendar.getInstance()
     val target = (now.clone() as Calendar).apply {
@@ -281,17 +267,20 @@ private fun reenableLabel(days: Set<Int>, hour: Int, minute: Int): String {
     return "Turn back on for $label"
 }
 
+private val WEEKDAYS = setOf(
+    Calendar.MONDAY,
+    Calendar.TUESDAY,
+    Calendar.WEDNESDAY,
+    Calendar.THURSDAY,
+    Calendar.FRIDAY
+)
+private val WEEKENDS = setOf(Calendar.SATURDAY, Calendar.SUNDAY)
+
 private fun repeatSummary(days: Set<Int>): String = when {
     days.isEmpty() -> "Once"
     days.size == 7 -> "Every day"
-    days == setOf(
-        Calendar.MONDAY,
-        Calendar.TUESDAY,
-        Calendar.WEDNESDAY,
-        Calendar.THURSDAY,
-        Calendar.FRIDAY
-    ) -> "Weekdays"
-    days == setOf(Calendar.SATURDAY, Calendar.SUNDAY) -> "Weekends"
+    days == WEEKDAYS -> "Weekdays"
+    days == WEEKENDS -> "Weekends"
     else -> days.sorted().joinToString(", ") { DAY_LABELS.getValue(it) }
 }
 

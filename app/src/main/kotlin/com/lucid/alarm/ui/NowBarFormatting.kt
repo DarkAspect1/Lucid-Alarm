@@ -3,16 +3,8 @@ package com.lucid.alarm.ui
 import java.util.Calendar
 import java.util.Locale
 
-/**
- * Formatting rules for the "Now Bar".
- *
- * The very same helpers render the in-app card and the system notification (which is built with
- * `RemoteViews` and therefore cannot use Compose formatting), so both surfaces always show the
- * exact same strings.
- */
 object NowBarFormatting {
 
-    /** Timer readout: `MM:SS`, or `HH:MM:SS` once the timer runs past an hour. */
     fun timerTime(secondsLeft: Int): String {
         val safe = secondsLeft.coerceAtLeast(0)
         val h = safe / 3600
@@ -25,12 +17,6 @@ object NowBarFormatting {
         }
     }
 
-    /**
-     * Stopwatch readout for the ongoing notification: `MM:SS`, or `H:MM:SS` past an hour.
-     *
-     * The services re-post the notification once per second, so the readout only needs whole
-     * seconds instead of centiseconds; the lap readout keeps centiseconds through [lapTime].
-     */
     fun stopwatchTime(millis: Long): String {
         val safe = millis.coerceAtLeast(0L)
         val h = safe / 3600000L
@@ -43,7 +29,6 @@ object NowBarFormatting {
         }
     }
 
-    /** Lap readout: `MM:SS.CC` (centiseconds). */
     fun lapTime(millis: Long): String {
         val safe = millis.coerceAtLeast(0L)
         val m = safe / 60000L
@@ -52,7 +37,6 @@ object NowBarFormatting {
         return String.format(Locale.getDefault(), "%02d:%02d.%02d", m, s, cs)
     }
 
-    /** Compact duration label, e.g. `45 s`, `10 m`, `1 h 5 m`. */
     fun durationShort(millis: Long): String {
         val totalSeconds = (millis / 1000L).toInt().coerceAtLeast(0)
         val h = totalSeconds / 3600
@@ -66,11 +50,6 @@ object NowBarFormatting {
         }
     }
 
-    /**
-     * Wall-clock time at which a timer with [remainingMillis] left will hit zero.
-     * 24-hour mode renders `23:59`, 12-hour mode renders `11:18 pm` (lower-case suffix, and the
-     * leading zero of the hour is dropped when [removeLeadingZero] is set).
-     */
     fun estimatedEndTime(
         remainingMillis: Long,
         is24Hour: Boolean,
@@ -97,7 +76,6 @@ object NowBarFormatting {
         return "$hourText:${String.format(Locale.getDefault(), "%02d", minute)} $suffix"
     }
 
-    /** Timer subtitle: `<total> / <end time>` while running, `<total> / Paused` while paused. */
     fun timerSubtitle(
         totalSeconds: Int,
         secondsLeft: Int,
@@ -113,7 +91,6 @@ object NowBarFormatting {
         }
     }
 
-    /** Stopwatch subtitle: `No laps completed` or `Lap 3 • 00:11.15`. */
     fun stopwatchSubtitle(lapCount: Int, latestLapSplit: Long): String = if (lapCount <= 0) {
         "No laps completed"
     } else {

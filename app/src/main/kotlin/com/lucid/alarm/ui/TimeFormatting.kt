@@ -2,10 +2,6 @@ package com.lucid.alarm.ui
 
 import java.util.Locale
 
-/**
- * Centralised 12h/24h time formatting so every card, list and lock-screen honours the
- * global [com.lucid.alarm.data.prefs.TimeFormat] setting.
- */
 fun formatHourMinute(
     hour: Int,
     minute: Int,
@@ -31,7 +27,6 @@ fun formatHourMinute(
     }
 }
 
-/** Format the current wall-clock time of [java.util.Calendar] (seconds not shown). */
 fun formatHourMinute(
     hour: Int,
     minute: Int,
@@ -40,7 +35,6 @@ fun formatHourMinute(
     removeLeadingZero: Boolean = false
 ): String = formatHourMinute(hour, minute, is24Hour, removeLeadingZero)
 
-/** Formats only the hour component (used by oversized clock styles). */
 fun formatHour(hour: Int, is24Hour: Boolean, removeLeadingZero: Boolean = false): String {
     val safeHour = hour.coerceIn(0, 23)
     return if (is24Hour) {
@@ -59,14 +53,9 @@ fun formatHour(hour: Int, is24Hour: Boolean, removeLeadingZero: Boolean = false)
     }
 }
 
-/** AM/PM suffix for the given hour (empty string in 24h mode). */
 fun amPmSuffix(hour: Int, is24Hour: Boolean): String =
     if (is24Hour) "" else if (hour.coerceIn(0, 23) < 12) "AM" else "PM"
 
-/**
- * Full time string for notifications: [formatHourMinute] plus the AM/PM suffix in 12h mode so a
- * notification can never show an ambiguous time when the app is set to 12-hour format.
- */
 fun formatNotificationTime(
     hour: Int,
     minute: Int,
@@ -77,12 +66,6 @@ fun formatNotificationTime(
     return if (is24Hour) time else "$time ${amPmSuffix(hour, is24Hour)}"
 }
 
-/**
- * Digits-only clock string for the ringing clock face: always zero-padded `HH:mm` in 24h mode and
- * `hh:mm` in 12h mode, with **no** AM/PM suffix (the suffix is rendered as a separate element so it
- * can never be duplicated inside the time text). When [removeLeadingZero] is set (12h only) the hour
- * is rendered without its leading zero (e.g. `8:38`).
- */
 fun formatClockDigits(
     hour: Int,
     minute: Int,

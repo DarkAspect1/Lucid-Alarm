@@ -14,12 +14,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 
-/**
- * Full-bleed looping video wallpaper backed by a Media3 [ExoPlayer].
- *
- * Always muted by default, repeats forever, and scales to fill (zoom) the host. The player is
- * created per [videoUri] and released when the composable leaves composition or the URI changes.
- */
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoBackgroundPlayer(

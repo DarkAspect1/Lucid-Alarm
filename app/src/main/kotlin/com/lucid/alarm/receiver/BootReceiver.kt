@@ -11,15 +11,15 @@ import kotlinx.coroutines.launch
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED || 
-            intent.action == Intent.ACTION_LOCKED_BOOT_COMPLETED || 
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
+            intent.action == Intent.ACTION_LOCKED_BOOT_COMPLETED ||
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
-            
+
             Log.d("BootReceiver", "Boot completed. Rescheduling alarms.")
-            
+
             val app = context.applicationContext as AlarmApplication
             val repository = app.repository
-            
+
             CoroutineScope(Dispatchers.IO).launch {
                 val activeAlarms = repository.getActiveAlarmsSync()
                 for (alarm in activeAlarms) {

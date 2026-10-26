@@ -1,15 +1,10 @@
 package com.lucid.alarm.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.AnimationState
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.MutatePriority
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -26,7 +21,6 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -49,15 +43,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.AlarmOff
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.AlarmOff
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.ui.graphics.Shape
 import com.lucid.alarm.ui.components.FrostedBlurBox
+import com.lucid.alarm.ui.components.GroupCapsulePill
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.CreateNewFolder
@@ -75,13 +70,9 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -106,17 +97,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -131,13 +119,11 @@ import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.data.prefs.VolumePolicy
 import com.lucid.alarm.ui.components.AlarmCard
-import com.lucid.alarm.ui.components.AlarmRow
 import com.lucid.alarm.ui.components.AlarmEditSheet
 import com.lucid.alarm.ui.components.AppDropdownMenu
 import com.lucid.alarm.ui.components.AppMenuItem
 import com.lucid.alarm.ui.components.edgeFadeMask
-import com.lucid.alarm.ui.components.DayNightLandscapeBackground
-import com.lucid.alarm.ui.components.isDaytimeBrightPhase
+import com.lucid.alarm.ui.components.SelectionChipShape
 import com.lucid.alarm.ui.components.selectedChipColors
 import com.lucid.alarm.ui.theme.onColorFor
 import com.lucid.alarm.ui.viewmodel.AlarmViewModel
@@ -179,6 +165,7 @@ fun MainAlarmsScreen(
     dismissTransientUi: Long? = null,
     onCanScrollChange: (Boolean) -> Unit = {},
     onScrollInProgressChange: (Boolean) -> Unit = {},
+    fabInteractive: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val alarms by viewModel.alarms.collectAsState()
@@ -191,7 +178,6 @@ fun MainAlarmsScreen(
     )
     val removeLeadingZero by settingsDataStore.removeLeadingZeroFlow.collectAsState(initial = true)
     val sortMode by settingsDataStore.alarmSortModeFlow.collectAsState(initial = AlarmSortMode.TIME)
-    val dayNightCards by settingsDataStore.dynamicDayNightAlarmsLandscapes.collectAsState(initial = true)
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
@@ -213,7 +199,6 @@ fun MainAlarmsScreen(
 
     val savedGroupOrder by settingsDataStore.alarmGroupOrderFlow.collectAsState(initial = emptyList())
 
-    // "General" is first unless reordered; custom groups follow according to saved order.
     val groups = remember(alarms, savedGroupOrder) {
         val allPresent = alarms.map { it.groupName }.filter { it.isNotBlank() }.distinct()
         val allGroups = (listOf(AlarmEntity.DEFAULT_GROUP) + allPresent).distinct()
@@ -234,6 +219,19 @@ fun MainAlarmsScreen(
         }
     }
     val hasCustomGroups = groups.size > 1
+
+    val groupCounts by remember(alarms) {
+        derivedStateOf {
+            val totalEnabled = alarms.count { it.isEnabled }
+            val map = HashMap<String?, Pair<Int, Int>>()
+            map[null] = totalEnabled to (alarms.size - totalEnabled)
+            alarms.groupBy { it.groupName }.forEach { (group, groupAlarms) ->
+                val enabled = groupAlarms.count { it.isEnabled }
+                map[group] = enabled to (groupAlarms.size - enabled)
+            }
+            map
+        }
+    }
 
     val filteredAlarms = remember(alarms, selectedGroup, filterStatus, selectedDay) {
         alarms.filter { alarm ->
@@ -272,8 +270,6 @@ fun MainAlarmsScreen(
 
     LaunchedEffect(selectionMode) { onSelectionModeChange(selectionMode) }
 
-    // A Now Bar tap while this tab is composed must not leave an alarm sheet/dialog floating over
-    // the Stopwatch/Timer tab, so every transient UI state is reset when a new request arrives.
     LaunchedEffect(dismissTransientUi) {
         if (dismissTransientUi == null) return@LaunchedEffect
         showEditSheet = false
@@ -292,21 +288,17 @@ fun MainAlarmsScreen(
     val listState = rememberLazyListState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    // Corner buttons ride with the nav bar: they fade/slide away as it hides on scroll.
     val cornerButtonsAlpha by animateFloatAsState(
         targetValue = if (barsVisible) 1f else 0f,
         label = "cornerButtonsAlpha"
     )
 
-    // Reorderable backing list. It drives the visible order in every sort mode; a drag anywhere
-    // switches the list to Custom order and persists the new positions.
     val displayAlarms = remember { mutableStateListOf<AlarmEntity>() }
     var draggingIndex by remember { mutableIntStateOf(-1) }
     var draggedDistance by remember { mutableFloatStateOf(0f) }
     var dragMoved by remember { mutableStateOf(false) }
     var dragSettleJob by remember { mutableStateOf<Job?>(null) }
-    // Order that was just dropped. While set, the resync below ignores inconsistent source lists
-    // so the async Custom-mode + persistence writes can never bounce the list back first.
+
     var pendingOrderIds by remember { mutableStateOf<List<Int>?>(null) }
 
     LaunchedEffect(pendingOrderIds) {
@@ -330,10 +322,6 @@ fun MainAlarmsScreen(
         }
     }
 
-    // Number of header rows above the alarms inside the LazyColumn (main header, floating next-alarm
-    // header, group filter). The group filter is omitted when there are no custom groups, and the
-    // day filter now lives in the overflow menu instead of the list. Headers stay visible in
-    // selection mode so entering selection never shifts the list.
     val headerCount = if (hasCustomGroups) 2 else 1
     val headerCountState = rememberUpdatedState(headerCount)
     val renderList = displayAlarms
@@ -434,14 +422,7 @@ fun MainAlarmsScreen(
                             selectedGroup = selectedGroup,
                             selectionMode = selectionMode,
                             selectedGroupNames = selectedGroupNames,
-                            counts = { group ->
-                                val scoped = if (group == null) {
-                                    alarms
-                                } else {
-                                    alarms.filter { it.groupName == group }
-                                }
-                                scoped.count { it.isEnabled } to scoped.count { !it.isEnabled }
-                            },
+                            counts = { group -> groupCounts[group] ?: (0 to 0) },
                             onGroupSelected = { selectedGroup = it },
                             onToggleSelection = { group ->
                                 selectedGroupNames = if (selectedGroupNames.contains(group)) {
@@ -474,8 +455,7 @@ fun MainAlarmsScreen(
                 } else {
                     itemsIndexed(renderList, key = { _, alarm -> alarm.id }) { index, alarm ->
                         val isDragging = draggingIndex == index
-                        // Reordering engages only inside selection mode: outside it a long
-                        // press enters selection (handled by the card's combinedClickable).
+
                         val dragModifier = if (selectionMode) {
                             Modifier
                                 .zIndex(if (isDragging) 5f else 0f)
@@ -509,7 +489,6 @@ fun MainAlarmsScreen(
                                             val draggedBottom = draggedTop + draggedInfo.size
                                             val draggedCenterY = (draggedTop + draggedBottom) / 2f
 
-                                            // Smooth auto-scroll near edges
                                             val scrollMargin = 100f
                                             val vpStart = listState.layoutInfo.viewportStartOffset.toFloat()
                                             val vpEnd = listState.layoutInfo.viewportEndOffset.toFloat()
@@ -519,7 +498,6 @@ fun MainAlarmsScreen(
                                                 scope.launch { listState.scrollBy(18f) }
                                             }
 
-                                            // Directional neighbor midpoint swap with zero boundary jitter
                                             if (dragAmount.y > 0f || draggedDistance > 0f) {
                                                 if (from + 1 < displayAlarms.size) {
                                                     val nextAlarm = displayAlarms[from + 1]
@@ -552,18 +530,14 @@ fun MainAlarmsScreen(
                                         },
                                         onDragEnd = {
                                             if (draggingIndex != -1 && dragMoved) {
-                                                // A manual reorder implies custom ordering. Publish the
-                                                // order we already show so both the async sort-mode write
-                                                // and the persisted reorder agree with the UI immediately.
+
                                                 pendingOrderIds = displayAlarms.map { it.id }
                                                 viewModel.setSortMode(AlarmSortMode.CUSTOM)
                                                 viewModel.reorderAlarms(displayAlarms.map { it.id })
                                             }
                                             dragMoved = false
                                             dragSettleJob?.cancel()
-                                            // Keep the card registered as dragging while it springs
-                                            // back into its slot, so the resync guard stays calm and
-                                            // no second placement animation fights the settle motion.
+
                                             dragSettleJob = scope.launch {
                                                 animate(
                                                     initialValue = draggedDistance,
@@ -593,14 +567,12 @@ fun MainAlarmsScreen(
                         val totalCount = renderList.size
                         val isSelected = selectedIds.contains(alarm.id)
                         val cardShape = when {
-                            isDragging -> RoundedCornerShape(28.dp)
                             totalCount == 1 -> RoundedCornerShape(28.dp)
                             index == 0 -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
                             index == totalCount - 1 -> RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
                             else -> RoundedCornerShape(0.dp)
                         }
                         val cardPadding = when {
-                            isDragging -> PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                             totalCount == 1 -> PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                             index == 0 -> PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 0.dp)
                             index == totalCount - 1 -> PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 6.dp)
@@ -630,8 +602,7 @@ fun MainAlarmsScreen(
                                 }
                             },
                             onLongClick = {
-                                // In selection mode a long press belongs to the reorder
-                                // gesture; outside it the press enters selection.
+
                                 if (!selectionMode) {
                                     selectionActive = true
                                     selectedGroupNames = emptySet()
@@ -643,7 +614,6 @@ fun MainAlarmsScreen(
                                 !alarm.isEnabled &&
                                 alarm.daysOfWeek.isNotEmpty(),
                             onReenable = { viewModel.toggleAlarm(alarm, true) },
-                            dayNightBackground = dayNightCards,
                             cardShape = cardShape,
                             cardPadding = cardPadding,
                             showBottomDivider = showBottomDivider,
@@ -723,7 +693,14 @@ fun MainAlarmsScreen(
                     selectedGroupNames = emptySet()
                 },
                 onDelete = {
-                    viewModel.moveSelectionToTrash(selectedGroupNames, selectedIds)
+                    val activeGroup = selectedGroup
+                    val autoTrashGroup = if (activeGroup != null && activeGroup != AlarmEntity.DEFAULT_GROUP && filteredAlarms.isNotEmpty() && selectedIds.containsAll(filteredAlarms.map { it.id })) {
+                        setOf(activeGroup)
+                    } else {
+                        emptySet()
+                    }
+                    val groupsToTrash = selectedGroupNames + autoTrashGroup
+                    viewModel.moveSelectionToTrash(groupsToTrash, selectedIds)
                     selectionActive = false
                     selectedIds = emptySet()
                     selectedGroupNames = emptySet()
@@ -744,11 +721,12 @@ fun MainAlarmsScreen(
             val accentColor = MaterialTheme.colorScheme.primary
             SmallFloatingActionButton(
                 onClick = {
+                    if (!fabInteractive) return@SmallFloatingActionButton
                     editingAlarm = null
                     showEditSheet = true
                 },
                 containerColor = accentColor,
-                contentColor = if (accentColor.luminance() > 0.55f) Color(0xFF111318) else Color.White,
+                contentColor = onColorFor(accentColor),
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp)
             ) {
@@ -774,32 +752,10 @@ fun MainAlarmsScreen(
                 onClick = {
                     scope.launch {
                         if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) return@launch
-                        val curIndex = listState.firstVisibleItemIndex
-                        val curOffset = listState.firstVisibleItemScrollOffset
-                        val avgHeight = if (listState.layoutInfo.visibleItemsInfo.isNotEmpty()) {
-                            listState.layoutInfo.visibleItemsInfo.map { it.size }.average().toFloat()
-                        } else 350f
-                        val totalDistance = curIndex * avgHeight + curOffset + 200f
-                        listState.scroll(MutatePriority.Default) {
-                            var prevValue = 0f
-                            val anim = AnimationState(initialValue = 0f)
-                            val duration = (totalDistance / 8f).toInt().coerceIn(300, 450)
-                            anim.animateTo(
-                                targetValue = totalDistance,
-                                animationSpec = tween(
-                                    durationMillis = duration,
-                                    easing = CubicBezierEasing(0.22f, 1.0f, 0.36f, 1.0f)
-                                )
-                            ) {
-                                val delta = value - prevValue
-                                prevValue = value
-                                scrollBy(-delta)
-                                if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) {
-                                    cancelAnimation()
-                                }
-                            }
+                        if (listState.firstVisibleItemIndex > 6) {
+                            listState.scrollToItem(6)
                         }
-                        listState.scrollToItem(0, 0)
+                        listState.animateScrollToItem(0, 0)
                     }
                 },
                 shape = CircleShape,
@@ -831,7 +787,10 @@ fun MainAlarmsScreen(
         ) {
             Box {
                 SmallFloatingActionButton(
-                    onClick = { showOverflowMenu = true },
+                    onClick = {
+                        if (!fabInteractive) return@SmallFloatingActionButton
+                        showOverflowMenu = true
+                    },
                     containerColor = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
                     contentColor = if (isLight) Color(0xFF1E1E1E) else Color.White,
                     shape = CircleShape,
@@ -848,7 +807,7 @@ fun MainAlarmsScreen(
                     onDismissRequest = { showOverflowMenu = false },
                     items = listOf(
                         AppMenuItem("Select", Icons.Outlined.Checklist) { selectionActive = true },
-                        AppMenuItem("Sort", Icons.Outlined.Sort) { showSortDialog = true },
+                        AppMenuItem("Sort", Icons.AutoMirrored.Outlined.Sort) { showSortDialog = true },
                         AppMenuItem("Filter", Icons.Outlined.Tune) { showFilterDialog = true },
                         AppMenuItem("Filter by Days", Icons.Outlined.DateRange) {
                             showDayFilterDialog = true
@@ -1034,13 +993,6 @@ private fun SortModeDialog(
     )
 }
 
-/**
- * Floating, card-less next-alarm header.
- *
- * Recomputes the closest enabled alarm and its countdown every 30 seconds and whenever [alarms]
- * changes (toggle / create / edit / delete), so the header always stays in sync. The countdown is
- * split over at most two centred lines and sits above a single-line date/time subtitle.
- */
 @Composable
 private fun NextAlarmHeader(
     alarms: List<AlarmEntity>,
@@ -1117,7 +1069,6 @@ private fun NextAlarmHeader(
     }
 }
 
-/** Next wall-clock trigger for [alarm], mirroring [com.lucid.alarm.receiver.AlarmScheduler]. */
 private fun nextTriggerMillis(alarm: AlarmEntity, now: Calendar): Long {
     val target = (now.clone() as Calendar).apply {
         set(Calendar.HOUR_OF_DAY, alarm.hour.coerceIn(0, 23))
@@ -1137,10 +1088,6 @@ private fun nextTriggerMillis(alarm: AlarmEntity, now: Calendar): Long {
     return target.timeInMillis
 }
 
-/**
- * Splits the next-alarm countdown over at most two centred lines, e.g.
- * `"Alarm in 2 days\n3 hours 15 minutes"`. Short countdowns stay on a single line.
- */
 private fun formatCountdownLines(diffMillis: Long): String {
     val human = TimeLeftFormatter.humanized(diffMillis)
     if (human == "less than a minute") return "Alarm in\nless than a minute"
@@ -1153,7 +1100,6 @@ private fun formatCountdownLines(diffMillis: Long): String {
     return "Alarm in ${tokens[0]} ${tokens[1]}\n" + tokens.drop(2).joinToString(" ")
 }
 
-/** Single-line subtitle: abbreviated weekday, day, month and the alarm's wall-clock time. */
 private fun nextAlarmSubtitle(
     alarm: AlarmEntity,
     triggerMillis: Long,
@@ -1305,117 +1251,6 @@ private fun GroupFilterRow(
                 }
                 if (rowChips.size == 1) {
                     Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun GroupCapsulePill(
-    label: String,
-    selected: Boolean,
-    counts: Pair<Int, Int>,
-    onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
-) {
-    val enabledCount = counts.first
-    val disabledCount = counts.second
-    val hasEnabled = enabledCount > 0
-    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
-    val titleColor = when {
-        selected -> MaterialTheme.colorScheme.onPrimary
-        isLight -> MaterialTheme.colorScheme.primary
-        else -> Color.White
-    }
-    val countColor = when {
-        selected -> MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    FrostedBlurBox(
-        modifier = modifier
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(28.dp),
-        tintColor = if (selected) MaterialTheme.colorScheme.primary else null,
-        borderColor = null
-    ) {
-        val circleBackground = when {
-            selected -> MaterialTheme.colorScheme.onPrimary
-            hasEnabled -> MaterialTheme.colorScheme.primary
-            else -> Color(0xFF484952)
-        }
-        val circleIconTint = when {
-            selected && hasEnabled -> MaterialTheme.colorScheme.primary
-            selected -> Color(0xFF484952)
-            else -> Color.White
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left Icon Button (38.dp circle)
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(circleBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (hasEnabled) Icons.Filled.Alarm else Icons.Filled.AlarmOff,
-                    contentDescription = null,
-                    tint = circleIconTint,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = titleColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                // Right Status Counts (Icons Instead of Text Labels)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.Alarm,
-                        contentDescription = "Active alarms",
-                        tint = countColor,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "$enabledCount",
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = countColor
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Outlined.AlarmOff,
-                        contentDescription = "Inactive alarms",
-                        tint = countColor.copy(alpha = 0.7f),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "$disabledCount",
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = countColor.copy(alpha = 0.7f)
-                    )
                 }
             }
         }
@@ -1652,7 +1487,7 @@ private fun SelectionActionBar(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val lightMode = MaterialTheme.colorScheme.background.luminance() > 0.5f
-        // Floating accent "Cancel" pill hovering just above the compact action bar.
+
         Surface(
             color = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -1680,7 +1515,7 @@ private fun SelectionActionBar(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        // Compact single-row action bar, matching the nav pill's surface and height.
+
         Surface(
             border = null,
             color = if (lightMode) {
@@ -1701,19 +1536,19 @@ private fun SelectionActionBar(
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 when {
-                    // Only groups selected: group-specific operations.
+
                     groupsOnly -> {
                         SelectionAction(Icons.Outlined.NotificationsOff, "Turn Off", onTurnOff)
                         SelectionAction(Icons.Outlined.FolderOff, "Ungroup", onUngroup)
                         SelectionAction(Icons.Outlined.DeleteOutline, "Delete", onDelete)
                     }
-                    // Groups + normal alarms: bulk enable / disable / trash.
+
                     mixedSelection -> {
                         SelectionAction(Icons.Outlined.NotificationsActive, "Turn On", onTurnOn)
                         SelectionAction(Icons.Outlined.NotificationsOff, "Turn Off", onTurnOff)
                         SelectionAction(Icons.Outlined.DeleteOutline, "Delete", onDelete)
                     }
-                    // Only normal alarms: the standard alarm actions.
+
                     else -> {
                         SelectionAction(
                             Icons.Outlined.SelectAll,
@@ -1798,6 +1633,7 @@ private fun GroupAssignmentDialog(
                                 newGroup = ""
                                 groupName = group
                             },
+                            shape = SelectionChipShape,
                             colors = selectedChipColors(),
                             label = { Text(group) }
                         )
@@ -1815,42 +1651,5 @@ private fun GroupAssignmentDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
-    )
-}
-
-@Composable
-fun AlarmItem(
-    alarm: AlarmEntity,
-    selectionMode: Boolean,
-    isSelected: Boolean,
-    is24Hour: Boolean,
-    removeLeadingZero: Boolean,
-    onToggle: (Boolean) -> Unit,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    showReenablePill: Boolean,
-    onReenable: () -> Unit,
-    dayNightBackground: Boolean = false,
-    cardShape: Shape = RoundedCornerShape(28.dp),
-    cardPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-    showBottomDivider: Boolean = false,
-    modifier: Modifier = Modifier
-) {
-    AlarmCard(
-        alarm = alarm,
-        selectionMode = selectionMode,
-        isSelected = isSelected,
-        is24Hour = is24Hour,
-        removeLeadingZero = removeLeadingZero,
-        onToggle = onToggle,
-        onClick = onClick,
-        onLongClick = onLongClick,
-        showReenablePill = showReenablePill,
-        onReenable = onReenable,
-        dayNightBackground = dayNightBackground,
-        cardShape = cardShape,
-        cardPadding = cardPadding,
-        showBottomDivider = showBottomDivider,
-        modifier = modifier
     )
 }

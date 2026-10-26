@@ -61,24 +61,17 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    
-    // Room
+
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
-    
-    // ViewModel Compose
+
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
-    
-    // Material Icons Extended for Alarm icons
+
     implementation("androidx.compose.material:material-icons-extended:1.6.8")
 
-    // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-// The Timer/Stopwatch ongoing "Now Bar" notification is a custom RemoteViews card (no MediaSession,
-// no MediaStyle) so One UI never treats a countdown as a music/video playback.
-// Media3 (ExoPlayer) is only used for video wallpapers.
 implementation("androidx.media3:media3-exoplayer:1.3.1")
 implementation("androidx.media3:media3-ui:1.3.1")
 

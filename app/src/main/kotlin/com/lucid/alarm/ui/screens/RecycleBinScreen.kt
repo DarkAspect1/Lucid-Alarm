@@ -1,18 +1,15 @@
 package com.lucid.alarm.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,25 +30,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.NotificationsActive
-import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import com.lucid.alarm.ui.components.SelectionCheckbox
-import com.lucid.alarm.ui.components.edgeFadeMask
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,7 +51,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -81,30 +68,38 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.lucid.alarm.data.AlarmEntity
-import com.lucid.alarm.ui.amPmSuffix
-import com.lucid.alarm.ui.formatHourMinute
+import com.lucid.alarm.ui.components.AlarmCard
+import com.lucid.alarm.ui.components.GroupCapsulePill
+import com.lucid.alarm.ui.components.edgeFadeMask
 import com.lucid.alarm.ui.viewmodel.AlarmViewModel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-private sealed interface TrashEntry {
+private sealed interface TrashedItem {
     val key: String
-    val ids: List<Int>
+    val deletedAt: Long
+    val alarmIds: List<Int>
 
-    data class Group(val name: String, val members: List<AlarmEntity>) : TrashEntry {
-        override val key: String = "group:$name"
-        override val ids: List<Int> = members.map { it.id }
+    data class Group(
+        val groupName: String,
+        val alarms: List<AlarmEntity>,
+        override val deletedAt: Long
+    ) : TrashedItem {
+        override val key: String get() = "group_$groupName"
+        override val alarmIds: List<Int> get() = alarms.map { it.id }
+        val enabledCount: Int get() = alarms.count { it.isEnabled }
+        val disabledCount: Int get() = alarms.size - enabledCount
     }
 
-    data class Single(val alarm: AlarmEntity) : TrashEntry {
-        override val key: String = "single:${alarm.id}"
-        override val ids: List<Int> = listOf(alarm.id)
+    data class StandaloneAlarm(
+        val alarm: AlarmEntity
+    ) : TrashedItem {
+        override val key: String get() = "alarm_${alarm.id}"
+        override val deletedAt: Long get() = alarm.deletedAt
+        override val alarmIds: List<Int> get() = listOf(alarm.id)
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RecycleBinScreen(
     viewModel: AlarmViewModel,
@@ -116,29 +111,42 @@ fun RecycleBinScreen(
     val trashed by viewModel.trashedAlarms.collectAsState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    val groups = remember(trashed) {
-        trashed.filter { it.trashedGroup.isNotBlank() }
+    val trashedItems = remember(trashed) {
+        val groups = trashed.filter { it.trashedGroup.isNotBlank() }
             .groupBy { it.trashedGroup }
-            .map { (name, members) -> TrashEntry.Group(name, members) }
+            .map { (groupName, groupAlarms) ->
+                TrashedItem.Group(
+                    groupName = groupName,
+                    alarms = groupAlarms,
+                    deletedAt = groupAlarms.maxOfOrNull { it.deletedAt } ?: 0L
+                )
+            }
+        val standalone = trashed.filter { it.trashedGroup.isBlank() }
+            .map { TrashedItem.StandaloneAlarm(it) }
+
+        (groups + standalone).sortedByDescending { it.deletedAt }
     }
-    val singles = remember(trashed) {
-        trashed.filter { it.trashedGroup.isBlank() }.map { TrashEntry.Single(it) }
-    }
-    val entries: List<TrashEntry> = groups + singles
 
     var selectionMode by remember { mutableStateOf(false) }
-    val selected = remember { mutableStateListOf<String>() }
+    var selectedIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+
+    val selectedItemsCount = trashedItems.count { item ->
+        when (item) {
+            is TrashedItem.Group -> item.alarms.isNotEmpty() && item.alarms.all { selectedIds.contains(it.id) }
+            is TrashedItem.StandaloneAlarm -> selectedIds.contains(item.alarm.id)
+        }
+    }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
 
     var isScrollingUp by remember { mutableStateOf(false) }
-    var prevIndex by remember { mutableIntStateOf(gridState.firstVisibleItemIndex) }
-    var prevOffset by remember { mutableIntStateOf(gridState.firstVisibleItemScrollOffset) }
+    var prevIndex by remember { mutableIntStateOf(listState.firstVisibleItemIndex) }
+    var prevOffset by remember { mutableIntStateOf(listState.firstVisibleItemScrollOffset) }
 
-    LaunchedEffect(gridState.firstVisibleItemIndex, gridState.firstVisibleItemScrollOffset) {
-        val curIndex = gridState.firstVisibleItemIndex
-        val curOffset = gridState.firstVisibleItemScrollOffset
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        val curIndex = listState.firstVisibleItemIndex
+        val curOffset = listState.firstVisibleItemScrollOffset
         if (curIndex < prevIndex || (curIndex == prevIndex && curOffset < prevOffset)) {
             isScrollingUp = true
         } else if (curIndex > prevIndex || (curIndex == prevIndex && curOffset > prevOffset)) {
@@ -150,91 +158,66 @@ fun RecycleBinScreen(
 
     val showScrollToTop by remember {
         derivedStateOf {
-            val pastThreshold = gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 220
-            pastThreshold && (!gridState.isScrollInProgress || isScrollingUp)
+            val pastThreshold = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 220
+            pastThreshold && (!listState.isScrollInProgress || isScrollingUp)
         }
-    }
-
-    fun toggle(key: String) {
-        if (selected.contains(key)) selected.remove(key) else selected.add(key)
     }
 
     fun exitSelection() {
         selectionMode = false
-        selected.clear()
-    }
-
-    fun restoreEntries(keys: List<String>) {
-        keys.forEach { key ->
-            when (val entry = entries.firstOrNull { it.key == key }) {
-                is TrashEntry.Group -> viewModel.restoreGroupFromTrash(entry.name)
-                is TrashEntry.Single -> viewModel.restoreFromTrash(listOf(entry.alarm.id))
-                null -> Unit
-            }
-        }
-    }
-
-    fun deleteEntries(keys: List<String>) {
-        keys.forEach { key ->
-            when (val entry = entries.firstOrNull { it.key == key }) {
-                is TrashEntry.Group -> viewModel.deleteGroupPermanently(entry.name)
-                is TrashEntry.Single -> viewModel.deletePermanently(listOf(entry.alarm.id))
-                null -> Unit
-            }
-        }
+        selectedIds = emptySet()
     }
 
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
     val showFloatingBack by remember {
         derivedStateOf {
-            gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 48
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 140
         }
     }
+    val floatingBackAlpha by animateFloatAsState(
+        targetValue = if (showFloatingBack) 1f else 0f,
+        animationSpec = tween(180),
+        label = "floatingBackAlpha"
+    )
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Floating Back Button: Appears only when scrolled and header disappears
-        AnimatedVisibility(
-            visible = showFloatingBack,
-            enter = fadeIn(animationSpec = tween(150)),
-            exit = fadeOut(animationSpec = tween(150)),
+
+        Box(
             modifier = Modifier
                 .padding(top = statusBarTop + 4.dp, start = 12.dp)
                 .zIndex(10f)
+                .graphicsLayer {
+                    alpha = floatingBackAlpha
+                }
         ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = if (isLight) Color(0xCCFFFFFF) else Color(0xCC282932),
-                        shape = CircleShape
+            if (floatingBackAlpha > 0.01f) {
+                IconButton(
+                    onClick = onBack,
+                    enabled = showFloatingBack,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            color = if (isLight) Color(0xCCFFFFFF) else Color(0xCC282932),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(22.dp)
                     )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(22.dp)
-                )
+                }
             }
         }
 
-        // Strict two-group grid: group cards always flow exactly two per row; single alarms
-        // follow below spanning the full width so the time stays readable.
-        LazyVerticalGrid(
-            state = gridState,
-            columns = GridCells.Fixed(2),
+        LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize().edgeFadeMask(),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                bottom = 112.dp
-            ),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            contentPadding = PaddingValues(bottom = 112.dp)
         ) {
-            item(key = "recycle_bin_header", span = { GridItemSpan(maxLineSpan) }) {
+            item(key = "recycle_bin_header") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -243,14 +226,14 @@ fun RecycleBinScreen(
                 ) {
                     RecycleBinHeader(
                         onBack = onBack,
-                        itemCount = trashed.size,
-                        selectionCount = if (selectionMode) selected.size else null
+                        itemCount = trashedItems.size,
+                        selectionCount = if (selectionMode) selectedItemsCount else null
                     )
                 }
             }
 
-            if (entries.isEmpty()) {
-                item(key = "recycleBinEmpty", span = { GridItemSpan(maxLineSpan) }) {
+            if (trashedItems.isEmpty()) {
+                item(key = "recycleBinEmpty") {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -264,79 +247,133 @@ fun RecycleBinScreen(
                         )
                     }
                 }
-            }
+            } else {
+                val totalCount = trashedItems.size
+                itemsIndexed(trashedItems, key = { _, item -> item.key }) { index, item ->
+                    val isSelected = when (item) {
+                        is TrashedItem.Group -> item.alarms.isNotEmpty() && item.alarms.all { selectedIds.contains(it.id) }
+                        is TrashedItem.StandaloneAlarm -> selectedIds.contains(item.alarm.id)
+                    }
+                    val cardShape = when {
+                        totalCount == 1 -> RoundedCornerShape(28.dp)
+                        index == 0 -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+                        index == totalCount - 1 -> RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
+                        else -> RoundedCornerShape(0.dp)
+                    }
+                    val cardPadding = when {
+                        totalCount == 1 -> PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                        index == 0 -> PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 0.dp)
+                        index == totalCount - 1 -> PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 6.dp)
+                        else -> PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                    }
+                    val showBottomDivider = index < totalCount - 1
 
-            gridItems(groups, key = { it.key }) { entry ->
-                TrashGroupCard(
-                    name = entry.name,
-                    members = entry.members,
-                    is24Hour = is24Hour,
-                    removeLeadingZero = removeLeadingZero,
-                    selectionMode = selectionMode,
-                    selected = selected.contains(entry.key),
-                    onToggleSelect = { toggle(entry.key) },
-                    onLongClick = {
-                        if (!selectionMode) {
-                            selectionMode = true
-                            selected.add(entry.key)
+                    when (item) {
+                        is TrashedItem.Group -> {
+                            GroupCapsulePill(
+                                label = item.groupName,
+                                selected = isSelected,
+                                counts = item.enabledCount to item.disabledCount,
+                                onClick = {
+                                    val groupIds = item.alarms.map { it.id }.toSet()
+                                    if (selectionMode) {
+                                        selectedIds = if (isSelected) {
+                                            selectedIds - groupIds
+                                        } else {
+                                            selectedIds + groupIds
+                                        }
+                                    } else {
+                                        selectionMode = true
+                                        selectedIds = groupIds
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!selectionMode) {
+                                        selectionMode = true
+                                        selectedIds = item.alarms.map { it.id }.toSet()
+                                    }
+                                },
+                                cardShape = cardShape,
+                                selectionMode = selectionMode,
+                                showBottomDivider = showBottomDivider,
+                                connectedIndex = index,
+                                totalConnected = totalCount,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(cardPadding)
+                            )
                         }
-                    },
-                    onRestore = { viewModel.restoreGroupFromTrash(entry.name) },
-                    onDelete = { viewModel.deleteGroupPermanently(entry.name) }
-                )
-            }
-
-            gridItems(
-                singles,
-                key = { it.key },
-                span = { GridItemSpan(maxLineSpan) }
-            ) { entry ->
-                TrashedAlarmCard(
-                    alarm = entry.alarm,
-                    is24Hour = is24Hour,
-                    removeLeadingZero = removeLeadingZero,
-                    selectionMode = selectionMode,
-                    selected = selected.contains(entry.key),
-                    onToggleSelect = { toggle(entry.key) },
-                    onLongClick = {
-                        if (!selectionMode) {
-                            selectionMode = true
-                            selected.add(entry.key)
+                        is TrashedItem.StandaloneAlarm -> {
+                            AlarmCard(
+                                alarm = item.alarm,
+                                selectionMode = selectionMode,
+                                isSelected = isSelected,
+                                is24Hour = is24Hour,
+                                removeLeadingZero = removeLeadingZero,
+                                onToggle = {
+                                    selectedIds = if (selectedIds.contains(item.alarm.id)) {
+                                        selectedIds - item.alarm.id
+                                    } else {
+                                        selectedIds + item.alarm.id
+                                    }
+                                },
+                                onClick = {
+                                    if (selectionMode) {
+                                        selectedIds = if (selectedIds.contains(item.alarm.id)) {
+                                            selectedIds - item.alarm.id
+                                        } else {
+                                            selectedIds + item.alarm.id
+                                        }
+                                    } else {
+                                        selectionMode = true
+                                        selectedIds = setOf(item.alarm.id)
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!selectionMode) {
+                                        selectionMode = true
+                                        selectedIds = setOf(item.alarm.id)
+                                    }
+                                },
+                                cardShape = cardShape,
+                                cardPadding = cardPadding,
+                                showBottomDivider = showBottomDivider,
+                                connectedIndex = index,
+                                totalConnected = totalCount,
+                                showSwitch = false
+                            )
                         }
-                    },
-                    onRestore = { viewModel.restoreFromTrash(listOf(entry.alarm.id)) },
-                    onDelete = { viewModel.deletePermanently(listOf(entry.alarm.id)) }
-                )
+                    }
+                }
             }
         }
 
         RecycleBinBottomBar(
             selectionMode = selectionMode,
-            selectedCount = selected.size,
-            allSelected = entries.isNotEmpty() && selected.containsAll(entries.map { it.key }),
-            hasEntries = entries.isNotEmpty(),
+            selectedCount = selectedItemsCount,
+            allSelected = trashedItems.isNotEmpty() && selectedItemsCount == trashedItems.size,
+            hasEntries = trashedItems.isNotEmpty(),
             onSelect = { selectionMode = true },
             onCancel = { exitSelection() },
             onSelectAllToggle = {
-                val allKeys = entries.map { it.key }
-                if (selected.containsAll(allKeys)) {
-                    selected.clear()
+                val allIds = trashed.map { it.id }.toSet()
+                if (selectedIds.containsAll(allIds)) {
+                    selectedIds = emptySet()
                 } else {
-                    selected.clear()
-                    selected.addAll(allKeys)
+                    selectedIds = allIds
                 }
             },
             onRestore = {
                 if (selectionMode) {
-                    restoreEntries(selected.toList())
+                    viewModel.restoreFromTrash(selectedIds.toList())
                     exitSelection()
                 } else {
-                    restoreEntries(entries.map { it.key })
+                    viewModel.restoreFromTrash(trashed.map { it.id })
                 }
             },
             onDelete = {
                 if (selectionMode) {
-                    deleteEntries(selected.toList())
+                    viewModel.deletePermanently(selectedIds.toList())
                     exitSelection()
                 } else {
                     showDeleteAllDialog = true
@@ -357,9 +394,8 @@ fun RecycleBinScreen(
                 .padding(bottom = 96.dp)
                 .zIndex(5f)
         ) {
-            val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
             Surface(
-                onClick = { scope.launch { gridState.animateScrollToItem(0) } },
+                onClick = { scope.launch { listState.animateScrollToItem(0) } },
                 shape = CircleShape,
                 color = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
                 contentColor = if (isLight) Color(0xFF1E1E1E) else Color.White,
@@ -381,7 +417,7 @@ fun RecycleBinScreen(
             AlertDialog(
                 onDismissRequest = { showDeleteAllDialog = false },
                 title = { Text("Empty recycle bin?") },
-                text = { Text("Permanently delete all ${trashed.size} trashed alarms? This cannot be undone.") },
+                text = { Text("Permanently delete all ${trashedItems.size} trashed item${if (trashedItems.size == 1) "" else "s"}? This cannot be undone.") },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.emptyRecycleBin()
@@ -445,242 +481,6 @@ private fun RecycleBinHeader(
     }
 }
 
-@Composable
-private fun TrashCountChip(
-    icon: ImageVector,
-    count: Int,
-    tint: Color
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(3.dp))
-        Text(text = count.toString(), style = MaterialTheme.typography.labelMedium, color = tint, maxLines = 1)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
-@Composable
-private fun TrashGroupCard(
-    name: String,
-    members: List<AlarmEntity>,
-    is24Hour: Boolean,
-    removeLeadingZero: Boolean,
-    selectionMode: Boolean,
-    selected: Boolean,
-    onToggleSelect: () -> Unit,
-    onLongClick: () -> Unit,
-    onRestore: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val active = members.count { it.isEnabled }
-    val inactive = members.size - active
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = { if (selectionMode) onToggleSelect() },
-                onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(20.dp),
-        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-    ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        TrashCountChip(
-                            icon = Icons.Outlined.NotificationsActive,
-                            count = active,
-                            tint = if (selected) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.primary
-                        )
-                        TrashCountChip(
-                            icon = Icons.Outlined.NotificationsOff,
-                            count = inactive,
-                            tint = if (selected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f)
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                if (!selectionMode) {
-                    IconButton(onClick = onRestore, modifier = Modifier.size(40.dp)) {
-                        Icon(
-                            Icons.Filled.RestoreFromTrash,
-                            contentDescription = "Restore group",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    SelectionCheckbox(checked = selected, onToggle = onToggleSelect)
-                }
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            members.take(2).forEach { member ->
-                Text(
-                    text = if (member.label.isNotBlank()) member.label else "Alarm",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (selected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            if (members.size > 2) {
-                Text(
-                    text = "+${members.size - 2} more",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (selected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (!selectionMode) {
-                Spacer(modifier = Modifier.height(2.dp))
-                TextButton(onClick = onDelete, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
-@Composable
-private fun TrashedAlarmCard(
-    alarm: AlarmEntity,
-    is24Hour: Boolean,
-    removeLeadingZero: Boolean,
-    selectionMode: Boolean,
-    selected: Boolean,
-    onToggleSelect: () -> Unit,
-    onLongClick: () -> Unit,
-    onRestore: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val time = formatHourMinute(alarm.hour, alarm.minute, is24Hour, removeLeadingZero)
-    val trashedDate = rememberTrashedDate(alarm.deletedAt)
-    val selectedNow = selectionMode && selected
-    val container = if (selectedNow) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-    val contentColor = if (selectedNow) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-    val secondaryColor = if (selectedNow) {
-        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = { if (selectionMode) onToggleSelect() },
-                onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = container,
-            contentColor = contentColor
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (alarm.label.isNotBlank()) alarm.label else "Alarm",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = if (selectedNow) {
-                            contentColor
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row {
-                        Text(
-                            text = time,
-                            style = MaterialTheme.typography.displayMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 38.sp
-                            ),
-                            color = contentColor,
-                            modifier = Modifier.alignByBaseline()
-                        )
-                        if (!is24Hour) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = amPmSuffix(alarm.hour, is24Hour),
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                                color = contentColor.copy(alpha = 0.85f),
-                                modifier = Modifier.alignByBaseline()
-                            )
-                        }
-                    }
-                    if (trashedDate.isNotBlank()) {
-                        Text(
-                            text = "Trashed: $trashedDate",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = secondaryColor
-                        )
-                    }
-                }
-                if (!selectionMode) {
-                    IconButton(onClick = onRestore, modifier = Modifier.size(40.dp)) {
-                        Icon(
-                            Icons.Filled.RestoreFromTrash,
-                            contentDescription = "Restore",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    SelectionCheckbox(checked = selected, onToggle = onToggleSelect)
-                }
-            }
-            if (!selectionMode) {
-                Spacer(modifier = Modifier.height(2.dp))
-                TextButton(onClick = onDelete, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun rememberTrashedDate(deletedAt: Long): String {
-    if (deletedAt <= 0) return ""
-    val sdf = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-    return sdf.format(Date(deletedAt))
-}
-
-/**
- * Persistent action bar shared by the idle and selection states. Keeping one bar mounted means the
- * restore/delete affordances never jump or leave the bottom edge unoccupied, even when the bin is
- * empty (the actions simply dim instead of disappearing).
- */
 @Composable
 private fun RecycleBinBottomBar(
     selectionMode: Boolean,
@@ -797,4 +597,3 @@ private fun RecycleBinBarAction(
         )
     }
 }
-

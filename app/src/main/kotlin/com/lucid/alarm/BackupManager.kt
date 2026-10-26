@@ -14,19 +14,10 @@ import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-/**
- * Granular backup / restore using Android's Storage Access Framework.
- *
- * A backup is a single JSON document. Each [BackupCategory] maps to one top-level key so the user
- * can choose exactly which slices to write on export and which to apply on import. Settings are
- * stored as typed `[name, typeTag, value]` triples (see [SettingsDataStore.dumpPreferences]) so the
- * preferences round-trip without this class needing to know every key.
- */
 object BackupManager {
 
     private const val FORMAT_VERSION = 1
 
-    /** Which direction the backup dialog is operating in. */
     enum class BackupMode { EXPORT, IMPORT }
 
     enum class BackupCategory(val key: String, val label: String) {
@@ -36,7 +27,6 @@ object BackupManager {
         RECYCLE_BIN("recycleBin", "Recycle bin")
     }
 
-    /** What the UI asked for: which categories to read/write. */
     data class Selection(
         val settings: Boolean = true,
         val alarms: Boolean = true,
@@ -50,8 +40,6 @@ object BackupManager {
     ) {
         val success: Boolean get() = error == null
     }
-
-    // ---- Export -------------------------------------------------------------------------------
 
     suspend fun export(
         context: Context,
@@ -104,8 +92,6 @@ object BackupManager {
         }
     }
 
-    // ---- Import -------------------------------------------------------------------------------
-
     suspend fun import(
         context: Context,
         uri: Uri,
@@ -123,7 +109,7 @@ object BackupManager {
 
             if (selection.settings && root.has(BackupCategory.SETTINGS.key)) {
                 val entries = parseSettings(root.getJSONArray(BackupCategory.SETTINGS.key))
-                store.restorePreferences(entries, replaceAll = true)
+                store.restorePreferences(entries, replaceAll = false)
                 applied += BackupCategory.SETTINGS.label
             }
 
@@ -136,8 +122,7 @@ object BackupManager {
                 } else if (selection.recycleBin && !selection.alarms) {
                     alarms = alarms.filter { it.isTrashed }
                 }
-                // Replace the whole table so ids stay stable and the recycle bin is consistent.
-                db.alarmDao().deleteAllAlarms()
+
                 alarms.forEach { db.alarmDao().insert(it.copy(id = 0)) }
                 rescheduleAlarms(context, db.alarmDao().getAllAlarmsForBackup())
                 applied += BackupCategory.ALARMS.label
@@ -145,14 +130,17 @@ object BackupManager {
 
             if (selection.worldClock && root.has(BackupCategory.WORLD_CLOCK.key)) {
                 val zoneIds = parseWorldClock(root.getJSONArray(BackupCategory.WORLD_CLOCK.key))
-                store.restoreWorldClockZones(zoneIds)
+                val currentZones = store.dumpWorldClockZones()
+                val merged = (currentZones + zoneIds).distinct()
+                store.restoreWorldClockZones(merged)
                 applied += BackupCategory.WORLD_CLOCK.label
             }
 
             if (selection.recycleBin && root.has(BackupCategory.RECYCLE_BIN.key)) {
                 val zones = parseZones(root.getJSONArray(BackupCategory.RECYCLE_BIN.key))
-                db.zoneDao().deleteAllTrashedZones()
-                if (zones.isNotEmpty()) db.zoneDao().insertAll(zones)
+                val existingZoneIds = db.zoneDao().getAllTrashedZonesForBackup().map { it.zoneId }.toSet()
+                val newZones = zones.filter { it.zoneId !in existingZoneIds }
+                if (newZones.isNotEmpty()) db.zoneDao().insertAll(newZones)
                 applied += BackupCategory.RECYCLE_BIN.label
             }
 
@@ -182,8 +170,6 @@ object BackupManager {
             }
         }
     }
-
-    // ---- Settings (de)serialisation -----------------------------------------------------------
 
     private fun dumpSettings(store: SettingsDataStore): JSONArray = runCatching {
         kotlinx.coroutines.runBlocking { store.dumpPreferences() }
@@ -235,8 +221,6 @@ object BackupManager {
         return out
     }
 
-    // ---- Alarm (de)serialisation --------------------------------------------------------------
-
     private fun encodeAlarm(a: AlarmEntity): JSONObject = JSONObject().apply {
         put("id", a.id)
         put("hour", a.hour)
@@ -262,6 +246,7 @@ object BackupManager {
         put("customBackgroundUri", a.customBackgroundUri)
         put("customBackgroundStyle", a.customBackgroundStyle)
         put("customBackgroundSolidColor", a.customBackgroundSolidColor)
+        put("customBackgroundInteractiveColors", a.customBackgroundInteractiveColors)
         put("customVideoUri", a.customVideoUri)
         put("customClockColor", a.customClockColor)
         put("customClockOffsetX", a.customClockOffsetX.toDouble())
@@ -345,6 +330,7 @@ object BackupManager {
                 customBackgroundUri = o.optString("customBackgroundUri", ""),
                 customBackgroundStyle = o.optString("customBackgroundStyle", ""),
                 customBackgroundSolidColor = o.optLong("customBackgroundSolidColor", 0L),
+                customBackgroundInteractiveColors = o.optString("customBackgroundInteractiveColors", ""),
                 customVideoUri = o.optString("customVideoUri", ""),
                 customClockColor = o.optLong("customClockColor", 0L),
                 customClockOffsetX = o.optDouble("customClockOffsetX", 0.0).toFloat(),
@@ -402,8 +388,6 @@ object BackupManager {
         }
         return out
     }
-
-    // ---- Zone (de)serialisation ---------------------------------------------------------------
 
     private fun encodeZone(z: TrashedZone): JSONObject = JSONObject().apply {
         put("zoneId", z.zoneId)

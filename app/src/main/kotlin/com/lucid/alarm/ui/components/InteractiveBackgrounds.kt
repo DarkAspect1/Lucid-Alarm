@@ -15,7 +15,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -44,15 +43,6 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
 
-/**
- * Shared, reusable interactive background system used by BOTH the alarm customization / ringing
- * screens and the global app background (see [com.lucid.alarm.ui.ClockAppScaffold]).
- *
- * Every renderer accepts an optional list of user-selected colours (2..4) so the mesh gradient can
- * paint the exact colours the user picked, and reacts to touch (tap / drag) with attraction /
- * ripple physics. The renderers are intentionally cheap: a single [Canvas] each, a few dozen
- * particles, no allocation per frame beyond the tiny lists parsed from the colour arguments.
- */
 enum class InteractiveBackgroundKind {
     MESH_GRADIENT,
     STARFIELD,
@@ -60,7 +50,6 @@ enum class InteractiveBackgroundKind {
     FIREFLIES
 }
 
-/** Parses packed-ARGB longs into Compose [Color]s, coercing to at least two usable colours. */
 @JvmName("interactiveColorsOfArgb")
 fun interactiveColorsOf(argb: List<Long>, fallback: List<Color>): List<Color> {
     val parsed = argb.mapNotNull { runCatching { Color(it) }.getOrNull() }
@@ -70,16 +59,9 @@ fun interactiveColorsOf(argb: List<Long>, fallback: List<Color>): List<Color> {
     }
 }
 
-/** Variant for callers that already hold Compose [Color]s (e.g. the alarm background renderer). */
 fun interactiveColorsOf(colors: List<Color>, fallback: List<Color>): List<Color> =
     if (colors.size >= 2) colors.take(4) else fallback
 
-/**
- * Renders the requested [kind] as a full-size interactive background.
- *
- * @param colors the 2..4 user-selected colours (mesh gradient) / tint base (aurora, fireflies).
- * @param dark whether the host theme is dark, used to pick sensible fallbacks & contrast.
- */
 @Composable
 fun InteractiveBackground(
     kind: InteractiveBackgroundKind,
@@ -96,7 +78,7 @@ fun InteractiveBackground(
         ),
         label = "phase"
     )
-    // A slower secondary clock so blobs/stars never move in lockstep.
+
     val slowPhase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
@@ -120,7 +102,6 @@ fun InteractiveBackground(
     }
 }
 
-/** Smoothly drifting, touch-reactive multi-colour metaball / mesh gradient. */
 @Composable
 fun InteractiveMeshGradient(
     colors: List<Color>,
@@ -130,7 +111,7 @@ fun InteractiveMeshGradient(
     modifier: Modifier = Modifier
 ) {
     val palette = if (colors.size >= 2) colors else defaultMeshColors(dark)
-    // Touch target in normalised coordinates (-1..1). Persists between gestures and eases home.
+
     var touch by mutableStateOfTouch()
 
     Canvas(
@@ -170,11 +151,11 @@ fun InteractiveMeshGradient(
     ) {
         val w = size.width
         val h = size.height
-        // Base fill: a dim wash of the palette's first colour so gaps never show through black.
+
         drawRect(color = lerp(palette[0], if (dark) Color.Black else Color.White, 0.55f))
 
         val count = palette.size
-        // Home positions spread around the canvas; blobs orbit them and are pulled toward the touch.
+
         for (i in 0 until count) {
             val seedAngle = (i.toFloat() / count) * 6.2831855f
             val orbitR = 0.28f * minOf(w, h)
@@ -183,7 +164,6 @@ fun InteractiveMeshGradient(
             val wobbleX = sin(phase * 6.28f + i) * 0.12f * w
             val wobbleY = cos(phase * 6.28f + i * 1.7f) * 0.12f * h
 
-            // Touch attraction eases the blob toward the finger (stronger while pressed).
             val tx = if (touch.active) (touch.x * 0.5f + 0.5f) * w else w / 2f
             val ty = if (touch.active) (touch.y * 0.5f + 0.5f) * h else h / 2f
             val pull = if (touch.active) 0.35f else 0.06f
@@ -214,11 +194,6 @@ data class Star(
     val tint: Color = Color.White
 )
 
-/**
- * Exact Starfield Particle Drift background renderer.
- * Classic cosmic look: crisp white and pale-blue twinkling particles drifting on an obsidian
- * background with smooth parallax layers, ignoring custom color overrides to preserve its native aesthetic.
- */
 @Composable
 fun StarfieldBackground(
     modifier: Modifier = Modifier,
@@ -281,7 +256,6 @@ fun StarfieldBackground(
     }
 }
 
-/** Flowing neon curtains that bend and ripple with touch velocity. */
 @Composable
 fun InteractiveAurora(
     colors: List<Color>,
@@ -327,7 +301,7 @@ fun InteractiveAurora(
                 listOf(Color(0xFF03040A), lerp(Color.Black, base.first(), 0.12f))
             )
         )
-        // Each selected colour becomes one flowing curtain band.
+
         base.forEachIndexed { band, c ->
             val bandTop = 0.12f + band * 0.16f
             val path = Path()
@@ -362,7 +336,6 @@ fun InteractiveAurora(
     }
 }
 
-/** Soft glowing orbs drifting upward that swirl around touch points. */
 @Composable
 fun InteractiveFireflies(
     colors: List<Color>,
@@ -416,12 +389,12 @@ fun InteractiveFireflies(
         for (i in seeds.indices) {
             val s = seeds[i]
             val speed = 0.4f + s * 0.8f
-            // Upward drift, wrapping.
+
             val y = h - (((slowPhase * speed + s) % 1f) * h)
             val swayX = sin((y / h) * 6.28f * 2f + phase * 6.28f + i) * 0.05f * w
             var x = (s * 5.13f % 1f) * w + swayX
             var yy = y
-            // Swirl around the touch point when pressed.
+
             if (tx != null && ty != null) {
                 val dx = x - tx
                 val dy = yy - ty
@@ -451,7 +424,6 @@ fun InteractiveFireflies(
     }
 }
 
-/** Default mesh colours when the user hasn't picked any. */
 fun defaultMeshColors(dark: Boolean): List<Color> =
     if (dark) {
         listOf(Color(0xFF3B82F6), Color(0xFF8B5CF6), Color(0xFF14B8A6))
@@ -459,7 +431,6 @@ fun defaultMeshColors(dark: Boolean): List<Color> =
         listOf(Color(0xFF93C5FD), Color(0xFFC4B5FD), Color(0xFF99F6E4))
     }
 
-// A tiny immutable holder for the touch state, avoiding a data-class allocation per gesture step.
 private data class TouchState(
     val x: Float = 0f,
     val y: Float = 0f,
@@ -469,28 +440,19 @@ private data class TouchState(
 @Composable
 private fun mutableStateOfTouch() = remember { mutableStateOf(TouchState()) }
 
-/** A small curated palette offered by the multi-colour interactive picker. */
 val INTERACTIVE_PRESET_COLORS: List<Color> = listOf(
-    Color(0xFF3B82F6), // blue
-    Color(0xFF8B5CF6), // violet
-    Color(0xFF14B8A6), // teal
-    Color(0xFF22C55E), // green
-    Color(0xFFEAB308), // amber
-    Color(0xFFD9B478), // gold/ochre
-    Color(0xFFEF4444), // red
-    Color(0xFFEC4899), // pink
-    Color(0xFF06B6D4), // cyan
-    Color(0xFF64748B)  // slate
+    Color(0xFF3B82F6),
+    Color(0xFF8B5CF6),
+    Color(0xFF14B8A6),
+    Color(0xFF22C55E),
+    Color(0xFFEAB308),
+    Color(0xFFD9B478),
+    Color(0xFFEF4444),
+    Color(0xFFEC4899),
+    Color(0xFF06B6D4),
+    Color(0xFF64748B)
 )
 
-/**
- * A self-contained multi-colour selector for the interactive backgrounds.
- *
- * Each circle is a tappable swatch that opens the full HSV [CustomColorPickerDialog] for that
- * stop; long-pressing a swatch (while more than two remain) removes it. The trailing "+" opens the
- * same picker to append a brand-new colour. Selectable count is bounded to 2..[maxColors] so the
- * renderers always have enough stops.
- */
 @Composable
 fun InteractiveColorPickerRow(
     colors: List<Color>,

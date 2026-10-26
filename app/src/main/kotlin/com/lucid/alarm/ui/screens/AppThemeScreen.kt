@@ -1,6 +1,7 @@
 package com.lucid.alarm.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -65,6 +66,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +81,7 @@ import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.data.prefs.ThemeMode
 import com.lucid.alarm.ui.FontManager
 import com.lucid.alarm.ui.components.CustomColorPickerDialog
+import com.lucid.alarm.ui.components.SelectionChipShape
 import com.lucid.alarm.ui.components.selectedChipColors
 import com.lucid.alarm.ui.components.edgeFadeMask
 import com.lucid.alarm.ui.rememberFontPicker
@@ -121,12 +124,6 @@ fun AppThemeScreen(
     val backgroundInteractiveColors by settingsDataStore.backgroundInteractiveColorsFlow.collectAsState(
         initial = emptyList()
     )
-    val dynamicDayNightAlarms by settingsDataStore.dynamicDayNightAlarmsLandscapes.collectAsState(
-        initial = true
-    )
-    val dynamicDayNightWorldClock by settingsDataStore.dynamicDayNightWorldClockLandscapes.collectAsState(
-        initial = false
-    )
     val appFontStyle by settingsDataStore.appFontStyleFlow.collectAsState(initial = AppFontStyle.SYSTEM_DEFAULT)
     val appCustomFontPath by settingsDataStore.appCustomFontPathFlow.collectAsState(initial = "")
     val uiScale by settingsDataStore.uiScaleFlow.collectAsState(initial = SettingsDataStore.DEFAULT_UI_SCALE)
@@ -157,35 +154,43 @@ fun AppThemeScreen(
 
     val showFloatingBack by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 48
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 140
         }
     }
+    val floatingBackAlpha by animateFloatAsState(
+        targetValue = if (showFloatingBack) 1f else 0f,
+        animationSpec = tween(180),
+        label = "floatingBackAlpha"
+    )
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Floating Back Button: Appears only when scrolled and header disappears
-        AnimatedVisibility(
-            visible = showFloatingBack,
-            enter = fadeIn(animationSpec = tween(150)),
-            exit = fadeOut(animationSpec = tween(150)),
+
+        Box(
             modifier = Modifier
                 .padding(top = statusBarTop + 4.dp, start = 12.dp)
                 .zIndex(10f)
+                .graphicsLayer {
+                    alpha = floatingBackAlpha
+                }
         ) {
-            IconButton(
-                onClick = onNavigateBack,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = if (isLight) Color(0xCCFFFFFF) else Color(0xCC282932),
-                        shape = CircleShape
+            if (floatingBackAlpha > 0.01f) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    enabled = showFloatingBack,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            color = if (isLight) Color(0xCCFFFFFF) else Color(0xCC282932),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(22.dp)
                     )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(22.dp)
-                )
+                }
             }
         }
 
@@ -383,6 +388,8 @@ fun AppThemeScreen(
                     AppBackgroundStyle.entries.forEach { style ->
                         FilterChip(
                             selected = appBackgroundStyle == style,
+                            shape = SelectionChipShape,
+                            colors = selectedChipColors(),
                             onClick = {
                                 scope.launch { settingsDataStore.setAppBackgroundStyle(style) }
                             },
@@ -594,82 +601,6 @@ fun AppThemeScreen(
 
         item {
             SettingsSectionCard(
-                title = "Dynamic Day-Night Landscapes",
-                icon = Icons.Outlined.DarkMode
-            ) {
-                Text(
-                    text = "Give alarm and world-clock cards a live sky with a unique procedural " +
-                        "landscape. Turn each list on or off independently; custom card Colors " +
-                        "return whenever a list is off.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 12.dp)
-                    ) {
-                        Text(
-                            text = "Dynamic Day-Night Alarm Landscapes",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Shows a time-based sky & procedural landscape according to " +
-                                "each alarm's set time.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = dynamicDayNightAlarms,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                settingsDataStore.setDynamicDayNightAlarmsLandscapes(enabled)
-                            }
-                        }
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 12.dp)
-                    ) {
-                        Text(
-                            text = "Dynamic Day-Night World Clock Landscapes",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Shows a live local sky & procedural landscape for each city.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = dynamicDayNightWorldClock,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                settingsDataStore.setDynamicDayNightWorldClockLandscapes(enabled)
-                            }
-                        }
-                    )
-                }
-            }
-        }
-
-        item {
-            SettingsSectionCard(
                 title = "App Font",
                 icon = Icons.Outlined.TextFields
             ) {
@@ -690,9 +621,10 @@ fun AppThemeScreen(
                             onClick = {
                                 scope.launch { settingsDataStore.setAppFontStyle(style) }
                             },
-                    label = { Text(style.label) },
-                    colors = selectedChipColors()
-                )
+                            shape = SelectionChipShape,
+                            label = { Text(style.label) },
+                            colors = selectedChipColors()
+                        )
                     }
                 }
                 if (appFontStyle == AppFontStyle.CUSTOM_FILE) {
@@ -727,8 +659,7 @@ fun AppThemeScreen(
             onConfirm = { argb ->
                 showAccentPicker = false
                 scope.launch {
-                    // Store the Color first, then select CUSTOM, so the theme never lands on
-                    // AccentColor.CUSTOM while the stored value is still the fallback.
+
                     settingsDataStore.setAccentCustomColor(argb)
                     settingsDataStore.setAccentColor(AccentColor.CUSTOM)
                 }
@@ -747,7 +678,7 @@ fun AppThemeScreen(
             onDismiss = { showBackgroundPicker = false },
             onConfirm = { argb ->
                 showBackgroundPicker = false
-                // Atomic: stores the Color and selects BackgroundPalette.CUSTOM together.
+
                 scope.launch { settingsDataStore.setBackgroundCustomColor(argb) }
             }
         )
@@ -949,4 +880,3 @@ internal fun SettingsSectionCard(
         }
     }
 }
-

@@ -12,13 +12,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -38,7 +34,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Public
@@ -50,13 +45,10 @@ import androidx.compose.material.icons.outlined.Timer
 import com.lucid.alarm.ui.theme.OneUiAppBackground
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -84,7 +76,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -93,10 +84,6 @@ import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.service.NowBarNotification
 import com.lucid.alarm.service.TimerStopwatchManager
-import com.lucid.alarm.ui.components.FrostedCardSurface
-import com.lucid.alarm.ui.components.StarfieldBackground
-import com.lucid.alarm.ui.components.defaultMeshColors
-import com.lucid.alarm.ui.components.interactiveColorsOf
 import com.lucid.alarm.ui.screens.AlarmCustomizationScreen
 import com.lucid.alarm.ui.screens.AppThemeScreen
 import com.lucid.alarm.ui.screens.RecycleBinScreen
@@ -107,7 +94,6 @@ import com.lucid.alarm.ui.screens.WorldClockRecycleBinScreen
 import com.lucid.alarm.ui.screens.WorldClockScreen
 import com.lucid.alarm.ui.theme.BoxColors
 import com.lucid.alarm.ui.theme.LocalBoxColors
-import com.lucid.alarm.ui.theme.onColorFor
 import com.lucid.alarm.ui.viewmodel.AlarmViewModel
 import com.lucid.alarm.ui.viewmodel.WorldClockViewModel
 import kotlin.math.abs
@@ -141,9 +127,9 @@ fun ClockAppScaffold(
     var showRecycleBin by rememberSaveable { mutableStateOf(false) }
     var showWorldClockRecycleBin by rememberSaveable { mutableStateOf(false) }
     var settingsSubScreen by rememberSaveable { mutableStateOf<SettingsSubScreen>(SettingsSubScreen.MAIN) }
-    // Lifted so the floating nav pill can step aside while the alarms list is multi-selecting.
+
     var alarmsSelectionActive by remember { mutableStateOf(false) }
-    // Same, for the world-clock tab's multi-select / reorder mode.
+
     var worldClockSelectionActive by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -165,14 +151,9 @@ fun ClockAppScaffold(
     val backgroundInteractiveColors by
         settingsDataStore.backgroundInteractiveColorsFlow.collectAsState(initial = emptyList())
 
-
-    // HorizontalPager drives both the tab content and the sliding bottom-bar indicator.
     val pagerState = rememberPagerState(pageCount = { ClockTab.entries.size })
     val currentTab = ClockTab.entries[pagerState.currentPage]
 
-    // A Now Bar body tap always wins over whatever overlay is open: it closes Settings, the recycle
-    // bins and the customization sub-screen, then lands on the tab the notification belongs to.
-    // The timestamp in [navRequest] guarantees the effect re-runs even when the tab is unchanged.
     LaunchedEffect(navRequest) {
         val request = navRequest ?: return@LaunchedEffect
         val target = when (request.first) {
@@ -189,9 +170,6 @@ fun ClockAppScaffold(
         onNavRequestHandled()
     }
 
-
-    // Live state of the Timer and the Stopwatch. The foreground services own it; the screens only
-    // mirror it. The persistent Now Bar itself lives exclusively in the system notification.
     val timerState by TimerStopwatchManager.timer.collectAsState()
     val stopwatchState by TimerStopwatchManager.stopwatch.collectAsState()
 
@@ -213,7 +191,6 @@ fun ClockAppScaffold(
         ClockTab.STOPWATCH -> false
     }
 
-    // Bottom-bar visibility driven by scroll direction through a nested-scroll connection.
     val barsVisibleState = remember { mutableStateOf(true) }
     val scrollAccumulator = remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -227,7 +204,7 @@ fun ClockAppScaffold(
                     barsVisibleState.value = true
                     return Offset.Zero
                 }
-                if (source == NestedScrollSource.Drag) {
+                if (source == NestedScrollSource.UserInput) {
                     val delta = available.y
                     val next = (scrollAccumulator.floatValue + delta)
                         .coerceIn(-hideThreshold, hideThreshold)
@@ -238,7 +215,7 @@ fun ClockAppScaffold(
                         barsVisibleState.value = true
                     }
                 }
-                // Once scrolling pauses or stops (no new scroll delta within 400ms), re-show the bar
+
                 reShowJob?.cancel()
                 reShowJob = scope.launch {
                     delay(400L)
@@ -259,7 +236,6 @@ fun ClockAppScaffold(
 
     val resolvedBarsVisible = if (currentTabCanScroll) barsVisibleState.value else true
 
-    // Whenever scrolling stops or if the tab can no longer scroll, bring the bar back immediately
     LaunchedEffect(isCurrentTabScrolling, currentTabCanScroll) {
         if (!isCurrentTabScrolling || !currentTabCanScroll) {
             reShowJob?.cancel()
@@ -268,8 +244,6 @@ fun ClockAppScaffold(
         }
     }
 
-    // Whenever the active tab changes (tap, swipe or Now Bar navigation) bring the bar back into
-    // view and clear any accumulated hide gesture so the pill never stays stuck off-screen.
     LaunchedEffect(currentTab) {
         reShowJob?.cancel()
         barsVisibleState.value = true
@@ -303,11 +277,7 @@ fun ClockAppScaffold(
         }
     }
 
-    // The four tabs draw their own scrollable headers beneath the transparent status bar. Settings,
-    // Appearance, Alarm Customization and both recycle bins do the same, so the scaffold never
-    // pins a static top bar over them.
     val showingTabs = !showSettings && !showRecycleBin && !showWorldClockRecycleBin
-
 
     val boxColors = remember(settingsCardColor, alarmCardColor, worldClockCardColor) {
         BoxColors(
@@ -332,6 +302,7 @@ fun ClockAppScaffold(
         ) {
             val isDark = MaterialTheme.colorScheme.background.luminance() <= 0.5f
             val accent = MaterialTheme.colorScheme.primary
+            val isSwitchingTabs = pagerState.isScrollInProgress || abs(pagerState.currentPageOffsetFraction) > 0.01f
             OneUiAppBackground(dark = isDark, accentColor = accent, modifier = Modifier.fillMaxSize())
             when {
                 showWorldClockRecycleBin -> WorldClockRecycleBinScreen(
@@ -380,9 +351,7 @@ fun ClockAppScaffold(
                 }
                 else -> HorizontalPager(
                     state = pagerState,
-                    // Keep the neighbouring page composed so a tab switch can never render a
-                    // frame where the incoming tab's content is not yet composed (which lets the
-                    // bare background flash through mid-switch).
+
                     beyondViewportPageCount = 1,
                     modifier = Modifier
                         .fillMaxSize()
@@ -398,7 +367,8 @@ fun ClockAppScaffold(
                             onOpenRecycleBin = { showRecycleBin = true },
                             onCanScrollChange = { alarmsCanScroll = it },
                             onScrollInProgressChange = { alarmsScrolling = it },
-                            dismissTransientUi = navRequest?.second
+                            dismissTransientUi = navRequest?.second,
+                            fabInteractive = !isSwitchingTabs
                         )
                         ClockTab.TIMER -> TimerScreen(
                             settingsDataStore = settingsDataStore,
@@ -419,15 +389,15 @@ fun ClockAppScaffold(
                             onOpenSettings = { showSettings = true },
                             onOpenRecycleBin = { showWorldClockRecycleBin = true },
                             onCanScrollChange = { worldClockCanScroll = it },
-                            onScrollInProgressChange = { worldClockScrolling = it }
+                            onScrollInProgressChange = { worldClockScrolling = it },
+                            fabInteractive = !isSwitchingTabs
                         )
                     }
                 }
             }
 
             if (showingTabs) {
-                // Only the current tab's selection state may hide the pill: a flag left over from
-                // a tab the user has swiped away from must not keep the bar hidden elsewhere.
+
                 val selectionHidesBar =
                     (currentTab == ClockTab.ALARMS && alarmsSelectionActive) ||
                         (currentTab == ClockTab.WORLD_CLOCK && worldClockSelectionActive)
@@ -452,22 +422,25 @@ fun ClockAppScaffold(
 
             val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             val statusBarBgColor = MaterialTheme.colorScheme.background
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(statusBarTop + 32.dp)
-                    .align(Alignment.TopCenter)
-                    .zIndex(4f)
-                    .pointerInput(Unit) {}
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                statusBarBgColor.copy(alpha = 0.88f),
-                                Color.Transparent
+            val isCustomizingAlarm = showSettings && settingsSubScreen == SettingsSubScreen.CUSTOMIZATION
+            if (!isCustomizingAlarm) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(statusBarTop + 32.dp)
+                        .align(Alignment.TopCenter)
+                        .zIndex(4f)
+                        .pointerInput(Unit) {}
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    statusBarBgColor.copy(alpha = 0.88f),
+                                    Color.Transparent
+                                )
                             )
                         )
-                    )
-            )
+                )
+            }
         }
     }
     }
@@ -482,12 +455,8 @@ enum class SettingsSubScreen {
 
 private val TabBarHeight = 56.dp
 
-/** Width of the floating nav pill (restored to 248.dp). */
 private val NavBarPillWidth = 248.dp
 
-/**
- * Floating bottom navigation bar matching One UI reference screenshots (Pictures 1, 2, & 4).
- */
 @Composable
 fun FloatingPillBottomBar(
     pagerState: PagerState,
@@ -500,7 +469,6 @@ fun FloatingPillBottomBar(
     val scope = rememberCoroutineScope()
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
-    // Colors matching One UI reference pictures
     val resolvedContainer = containerColor ?: if (isLight) {
         Color(0xFFF0F2F6).copy(alpha = 0.88f)
     } else {
@@ -529,7 +497,7 @@ fun FloatingPillBottomBar(
             .padding(horizontal = 24.dp, vertical = 16.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Long-press label tooltip (fades in/out above the bar).
+
         AnimatedVisibility(
             visible = tooltipIndex != null,
             enter = fadeIn(animationSpec = tween(120)),
