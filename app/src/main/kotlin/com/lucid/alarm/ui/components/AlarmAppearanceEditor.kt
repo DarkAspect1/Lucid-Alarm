@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
@@ -45,6 +46,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -103,6 +105,7 @@ import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.ui.FontManager
 import com.lucid.alarm.ui.rememberFontPicker
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import kotlin.math.abs
@@ -164,6 +167,7 @@ fun AlarmAppearanceEditor(
     initial: AlarmAppearance,
     settingsDataStore: SettingsDataStore,
     fontBaseSuffix: String,
+    usesGlobalLook: Boolean = false,
     onDismiss: () -> Unit,
     onSave: (AlarmAppearance) -> Unit
 ) {
@@ -343,6 +347,77 @@ fun AlarmAppearanceEditor(
         }
     }
 
+    LaunchedEffect(Unit) {
+        if (usesGlobalLook) {
+            offsetX = settingsDataStore.freeDragOffsetXFlow.first()
+            offsetY = settingsDataStore.freeDragOffsetYFlow.first()
+            clockScale = settingsDataStore.clockContainerScaleFlow.first()
+            clockStyle = settingsDataStore.ringingClockStyleFlow.first()
+            val gClockFont = settingsDataStore.alarmClockFontStyleFlow.first()
+            clockFont = gClockFont.name
+            clockFontPath = settingsDataStore.alarmClockCustomFontPathFlow.first()
+            val gDateFont = settingsDataStore.clockDateFontFlow.first()
+            dateFont = gDateFont.name
+            dateFontPath = settingsDataStore.clockDateCustomFontPathFlow.first()
+            dateVisible = settingsDataStore.clockDateVisibleFlow.first()
+            dateOffsetX = settingsDataStore.clockDateOffsetXFlow.first()
+            dateOffsetY = settingsDataStore.clockDateOffsetYFlow.first()
+            dateScale = settingsDataStore.clockDateScaleFlow.first()
+            boxWidth = settingsDataStore.clockBoxWidthFlow.first()
+            boxHeight = settingsDataStore.clockBoxHeightFlow.first()
+            clockBoxEnabled = settingsDataStore.clockBoxEnabledFlow.first()
+            clockBoxColor = settingsDataStore.clockBoxColorFlow.first()
+            clockBoxOpacity = settingsDataStore.clockBoxOpacityFlow.first()
+            val gBg = settingsDataStore.ringingBackgroundFlow.first()
+            backgroundStyle = gBg.name
+            backgroundUri = settingsDataStore.ringingBackgroundImageUriFlow.first()
+            videoUri = settingsDataStore.ringingVideoUriFlow.first()
+            backgroundSolidColor = settingsDataStore.ringingSolidColorFlow.first()
+            blur = settingsDataStore.ringingBlurFlow.first()
+            dim = settingsDataStore.ringingDimFlow.first()
+            clockColor = settingsDataStore.clockColorFlow.first()
+            clockGradient = settingsDataStore.clockGradientFlow.first()
+            clockColorEnd = settingsDataStore.clockColorEndFlow.first()
+            clockGradientDir = settingsDataStore.clockGradientDirFlow.first().name
+            dateColor = settingsDataStore.dateColorFlow.first()
+            dateGradient = settingsDataStore.dateGradientFlow.first()
+            dateColorEnd = settingsDataStore.dateColorEndFlow.first()
+            dateGradientDir = settingsDataStore.dateGradientDirFlow.first().name
+            ovShowAmPm = settingsDataStore.showAmPmFlow.first()
+            ovLabelVisible = settingsDataStore.alarmLabelVisibleFlow.first()
+            ovAmPmFont = settingsDataStore.amPmFontStyleFlow.first().name
+            ovAmPmFontPath = settingsDataStore.amPmCustomFontPathFlow.first()
+            ovAmPmColor = settingsDataStore.amPmColorFlow.first()
+            ovLabelFont = settingsDataStore.alarmLabelFontStyleFlow.first().name
+            ovLabelFontPath = settingsDataStore.alarmLabelCustomFontPathFlow.first()
+            ovLabelColor = settingsDataStore.alarmLabelColorFlow.first()
+            ovSnoozeFont = settingsDataStore.snoozeFontStyleFlow.first().name
+            ovSnoozeFontPath = settingsDataStore.snoozeCustomFontPathFlow.first()
+            ovSnoozeContainerColor = settingsDataStore.snoozeContainerColorFlow.first()
+            ovSnoozeTextColor = settingsDataStore.snoozeTextColorFlow.first()
+            ovDismissFont = settingsDataStore.dismissFontStyleFlow.first().name
+            ovDismissFontPath = settingsDataStore.dismissCustomFontPathFlow.first()
+            ovDismissContainerColor = settingsDataStore.dismissContainerColorFlow.first()
+            ovDismissTextColor = settingsDataStore.dismissTextColorFlow.first()
+        } else {
+            if (initial.offsetX == 0f && initial.offsetY == 0f) {
+                offsetX = settingsDataStore.freeDragOffsetXFlow.first()
+                offsetY = settingsDataStore.freeDragOffsetYFlow.first()
+            }
+            if (initial.dateOffsetX == 0f && initial.dateOffsetY == 0f) {
+                dateOffsetX = settingsDataStore.clockDateOffsetXFlow.first()
+                dateOffsetY = settingsDataStore.clockDateOffsetYFlow.first()
+            }
+            if (initial.dateScale <= 0f || initial.dateScale == 1f) {
+                dateScale = settingsDataStore.clockDateScaleFlow.first()
+            }
+            if (initial.clockStyle.isBlank()) {
+                clockStyle = settingsDataStore.ringingClockStyleFlow.first()
+            }
+            clockScale = settingsDataStore.clockContainerScaleFlow.first()
+        }
+    }
+
     val effectiveBackgroundStyle = backgroundStyle
         .takeIf { it.isNotBlank() }
         ?.let { raw -> runCatching { RingingBackgroundStyle.valueOf(raw) }.getOrNull() }
@@ -485,6 +560,10 @@ fun AlarmAppearanceEditor(
         ovDismissFontPath = path
         ovDismissFont = RingingClockFont.CUSTOM_FILE.name
     }
+
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val sheetBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val sheetContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -807,7 +886,6 @@ fun AlarmAppearanceEditor(
                             .height(statusBarTop + 32.dp)
                             .align(Alignment.TopCenter)
                             .zIndex(4f)
-                            .pointerInput(Unit) {}
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
@@ -827,6 +905,19 @@ fun AlarmAppearanceEditor(
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                         OutlinedButton(
                             onClick = { showBackgroundSheet = true },
                             shape = RoundedCornerShape(999.dp)
@@ -959,7 +1050,9 @@ fun AlarmAppearanceEditor(
     if (showBackgroundSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBackgroundSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = sheetBg,
+            contentColor = sheetContentColor
         ) {
             Column(
                 modifier = Modifier
@@ -990,48 +1083,23 @@ fun AlarmAppearanceEditor(
                                 backgroundStyle = option.name
                                 if (option != RingingBackgroundStyle.CUSTOM_IMAGE) backgroundUri = ""
                                 if (option != RingingBackgroundStyle.VIDEO) videoUri = ""
-                                if (option != RingingBackgroundStyle.CUSTOM_IMAGE &&
-                                    option != RingingBackgroundStyle.VIDEO
-                                ) {
-                                    showBackgroundSheet = false
+                                when (option) {
+                                    RingingBackgroundStyle.CUSTOM_IMAGE -> imagePicker.launch(arrayOf("image/*"))
+                                    RingingBackgroundStyle.VIDEO -> videoPicker.launch(arrayOf("video/*"))
+                                    RingingBackgroundStyle.SOLID_COLOR -> {}
+                                    else -> showBackgroundSheet = false
                                 }
                             },
                             label = { Text(option.label) }
                         )
                     }
                 }
-                if (backgroundStyle == RingingBackgroundStyle.CUSTOM_IMAGE.name ||
-                    (backgroundStyle.isBlank() &&
-                        globalBackground == RingingBackgroundStyle.CUSTOM_IMAGE)
-                ) {
-                    Button(
-                        onClick = { imagePicker.launch(arrayOf("image/*")) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Choose image\u2026")
-                    }
-                }
-                if (backgroundStyle == RingingBackgroundStyle.VIDEO.name ||
-                    (backgroundStyle.isBlank() && globalBackground == RingingBackgroundStyle.VIDEO)
-                ) {
+                if (effectiveBackgroundStyle == RingingBackgroundStyle.VIDEO && effectiveVideoUri.isNotBlank()) {
                     Text(
-                        text = "Looping, muted video wallpaper (MP4/MKV).",
+                        text = "Video selected",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    Button(
-                        onClick = { videoPicker.launch(arrayOf("video/*")) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Choose video\u2026")
-                    }
-                    if (effectiveVideoUri.isNotBlank()) {
-                        Text(
-                            text = "Video selected",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
                 }
                 if (effectiveBackgroundStyle == RingingBackgroundStyle.SOLID_COLOR) {
                     Text(
@@ -1085,7 +1153,9 @@ fun AlarmAppearanceEditor(
     if (showClockSheet) {
         ModalBottomSheet(
             onDismissRequest = { showClockSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = sheetBg,
+            contentColor = sheetContentColor
         ) {
             Column(
                 modifier = Modifier
@@ -1304,7 +1374,9 @@ fun AlarmAppearanceEditor(
     if (showSnoozeSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSnoozeSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = sheetBg,
+            contentColor = sheetContentColor
         ) {
             Column(
                 modifier = Modifier
@@ -1386,7 +1458,9 @@ fun AlarmAppearanceEditor(
     if (showDismissSheet) {
         ModalBottomSheet(
             onDismissRequest = { showDismissSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = sheetBg,
+            contentColor = sheetContentColor
         ) {
             Column(
                 modifier = Modifier

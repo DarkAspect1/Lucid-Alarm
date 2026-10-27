@@ -97,6 +97,7 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
     fun updateAlarm(alarm: AlarmEntity) {
         forgetReenable(listOf(alarm.id))
         viewModelScope.launch {
+            scheduler.cancelAllAuxiliaryTimers(alarm.id)
             repository.update(alarm)
             if (alarm.isEnabled) {
                 scheduler.scheduleAlarm(alarm, effectiveLeadMinutes(alarm, upcomingConfig()))

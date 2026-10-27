@@ -31,7 +31,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.receiver.AlarmReceiver
 import com.lucid.alarm.receiver.AlarmScheduler
-import com.lucid.alarm.receiver.AwakeCheckReceiver
 import com.lucid.alarm.ui.theme.toColor
 import com.lucid.alarm.service.AlarmAudioService
 import com.lucid.alarm.service.NowBarNotification
@@ -204,53 +203,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun registerNotificationChannels() {
-        val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        runCatching {
-            notificationManager.deleteNotificationChannel("lucid_high_priority_alarm_channel")
-        }
-
-        val audioAttributes = android.media.AudioAttributes.Builder()
-            .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
-        val alarmSound = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
-            ?: android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
-
-        val firingAlarmChannel = NotificationChannel(
-            AlarmAudioService.ALARM_CHANNEL_ID,
-            "Firing Alarms",
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "High priority alarm notifications and lock screen wakeups"
-            enableVibration(true)
-            vibrationPattern = longArrayOf(0, 500, 250, 500)
-            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            setBypassDnd(true)
-            setSound(alarmSound, audioAttributes)
-        }
-
-        val upcomingAlarmChannel = NotificationChannel(
-            AlarmReceiver.UPCOMING_CHANNEL_ID,
-            "Upcoming Alarms",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "Heads-up notification before scheduled alarms fire"
-            setShowBadge(false)
-        }
-
-        val awakeCheckChannel = NotificationChannel(
-            AwakeCheckReceiver.CHANNEL_ID,
-            "Awake Check",
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "Post-dismiss check confirming you are awake"
-            setBypassDnd(true)
-        }
-
-        notificationManager.createNotificationChannels(
-            listOf(firingAlarmChannel, upcomingAlarmChannel, awakeCheckChannel)
-        )
+        AlarmAudioService.initSilentAlarmChannels(this)
     }
 }

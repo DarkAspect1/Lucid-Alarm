@@ -1,8 +1,5 @@
 <resources>
     <string name="app_name">Lucid</string>
-    <string name="now_bar_background_desc">Now Bar background</string>
-    <string name="now_bar_badge_desc">Now Bar icon badge</string>
-    <string name="now_bar_divider_desc">Now Bar action separator</string>
     <string name="now_bar_timer_icon_desc">Timer</string>
     <string name="now_bar_stopwatch_icon_desc">Stopwatch</string>
     <string name="now_bar_channel_timer">Timer</string>

@@ -13,7 +13,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -124,6 +127,7 @@ fun SettingsScreen(
 
     val screenBg = if (isLight) Color(0xFFF2F2F7) else Color(0xFF000000)
     val cardBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val cardContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
     val cardBorder = if (isLight) Color(0xFFE5E7EB) else Color.Transparent
     val accentColor = MaterialTheme.colorScheme.primary
 
@@ -404,6 +408,7 @@ fun SettingsScreen(
                 Surface(
                     shape = cardShape,
                     color = cardBg,
+                    contentColor = cardContentColor,
                     border = null,
                     shadowElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
@@ -820,6 +825,7 @@ fun SettingsScreen(
                 Surface(
                     shape = cardShape,
                     color = cardBg,
+                    contentColor = cardContentColor,
                     border = null,
                     shadowElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
@@ -1005,6 +1011,7 @@ fun SettingsScreen(
                 Surface(
                     shape = cardShape,
                     color = cardBg,
+                    contentColor = cardContentColor,
                     border = null,
                     shadowElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
@@ -1213,6 +1220,7 @@ fun SettingsScreen(
                 Surface(
                     shape = cardShape,
                     color = cardBg,
+                    contentColor = cardContentColor,
                     border = null,
                     shadowElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
@@ -1372,6 +1380,7 @@ fun SettingsScreen(
                 Surface(
                     shape = cardShape,
                     color = cardBg,
+                    contentColor = cardContentColor,
                     border = null,
                     shadowElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
@@ -1580,10 +1589,33 @@ fun SettingsScreen(
                 onClick = {
                     scope.launch {
                         if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) return@launch
-                        if (listState.firstVisibleItemIndex > 6) {
-                            listState.scrollToItem(6)
+                        val totalDistance = run {
+                            var dist = listState.firstVisibleItemScrollOffset.toFloat()
+                            val visible = listState.layoutInfo.visibleItemsInfo
+                            val avgHeight = if (visible.isNotEmpty()) visible.map { it.size }.average().toFloat() else 800f
+                            dist + listState.firstVisibleItemIndex * avgHeight + 1000f
                         }
-                        listState.animateScrollToItem(0, 0)
+                        var prev = 0f
+                        listState.scroll {
+                            AnimationState(0f).animateTo(
+                                targetValue = totalDistance,
+                                sequentialAnimation = false,
+                                animationSpec = tween(
+                                    durationMillis = 350,
+                                    easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
+                                )
+                            ) {
+                                val delta = value - prev
+                                prev = value
+                                scrollBy(-delta)
+                                if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) {
+                                    cancelAnimation()
+                                }
+                            }
+                        }
+                        if (listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0) {
+                            listState.scrollToItem(0, 0)
+                        }
                     }
                 },
                 shape = CircleShape,

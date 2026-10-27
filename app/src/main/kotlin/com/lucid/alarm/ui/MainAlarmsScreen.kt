@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
@@ -50,7 +51,9 @@ import androidx.compose.material.icons.filled.AlarmOff
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.AlarmOff
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.window.Dialog
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.components.GroupCapsulePill
 import androidx.compose.material.icons.outlined.DateRange
@@ -75,6 +78,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
@@ -191,6 +195,8 @@ fun MainAlarmsScreen(
     var editingAlarm by remember { mutableStateOf<AlarmEntity?>(null) }
     var showGroupDialog by remember { mutableStateOf(false) }
     var groupEditTarget by remember { mutableStateOf<String?>(null) }
+    var groupRenameTarget by remember { mutableStateOf<String?>(null) }
+    var alarmRenameTarget by remember { mutableStateOf<AlarmEntity?>(null) }
     var showSortDialog by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     var showFilterDialog by remember { mutableStateOf(false) }
@@ -431,7 +437,11 @@ fun MainAlarmsScreen(
                                     selectedGroupNames + group
                                 }
                             },
-                            onEditGroup = { groupEditTarget = it },
+                            onEnterSelection = { group ->
+                                selectionActive = true
+                                selectedGroupNames = setOf(group)
+                                selectedIds = emptySet()
+                            },
                             onReorderGroups = { newOrder ->
                                 scope.launch { settingsDataStore.setAlarmGroupOrder(newOrder) }
                             }
@@ -633,7 +643,7 @@ fun MainAlarmsScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(2f)
-                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .padding(horizontal = 6.dp, vertical = 20.dp)
         ) {
             val groupAlarmIds = alarms
                 .filter { it.groupName in selectedGroupNames }
@@ -641,12 +651,21 @@ fun MainAlarmsScreen(
             val groupsOnly = selectedGroupNames.isNotEmpty() && selectedIds.isEmpty()
             val mixedSelection = selectedGroupNames.isNotEmpty() && selectedIds.isNotEmpty()
             val allSelectedIds = (selectedIds + groupAlarmIds).toList()
+            val singleGroup = if (selectedGroupNames.size == 1 && selectedIds.isEmpty()) selectedGroupNames.first() else null
+            val singleAlarm = if (selectedIds.size == 1 && selectedGroupNames.isEmpty()) alarms.firstOrNull { it.id == selectedIds.first() } else null
             SelectionActionBar(
                 selectedCount = selectedIds.size + selectedGroupNames.size,
                 allSelected = filteredAlarms.isNotEmpty() &&
                     selectedIds.containsAll(filteredAlarms.map { it.id }),
                 groupsOnly = groupsOnly,
                 mixedSelection = mixedSelection,
+                onRename = if (singleGroup != null) {
+                    if (singleGroup != AlarmEntity.DEFAULT_GROUP) {
+                        { groupRenameTarget = singleGroup }
+                    } else null
+                } else if (singleAlarm != null) {
+                    { alarmRenameTarget = singleAlarm }
+                } else null,
                 onClose = {
                     selectionActive = false
                     selectedIds = emptySet()
@@ -721,7 +740,6 @@ fun MainAlarmsScreen(
             val accentColor = MaterialTheme.colorScheme.primary
             SmallFloatingActionButton(
                 onClick = {
-                    if (!fabInteractive) return@SmallFloatingActionButton
                     editingAlarm = null
                     showEditSheet = true
                 },
@@ -752,10 +770,7 @@ fun MainAlarmsScreen(
                 onClick = {
                     scope.launch {
                         if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) return@launch
-                        if (listState.firstVisibleItemIndex > 6) {
-                            listState.scrollToItem(6)
-                        }
-                        listState.animateScrollToItem(0, 0)
+                        listState.animateScrollToItem(0)
                     }
                 },
                 shape = CircleShape,
@@ -788,7 +803,6 @@ fun MainAlarmsScreen(
             Box {
                 SmallFloatingActionButton(
                     onClick = {
-                        if (!fabInteractive) return@SmallFloatingActionButton
                         showOverflowMenu = true
                     },
                     containerColor = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
@@ -861,11 +875,49 @@ fun MainAlarmsScreen(
                 viewModel.renameGroup(target, newName)
                 selectedGroup = newName.trim().ifBlank { target }
                 groupEditTarget = null
+                selectionActive = false
+                selectedIds = emptySet()
+                selectedGroupNames = emptySet()
             },
             onDelete = {
                 viewModel.deleteGroup(target)
                 if (selectedGroup == target) selectedGroup = null
                 groupEditTarget = null
+                selectionActive = false
+                selectedIds = emptySet()
+                selectedGroupNames = emptySet()
+            }
+        )
+    }
+
+    groupRenameTarget?.let { group ->
+        CompactRenameDialog(
+            title = "Rename group",
+            initialValue = group,
+            label = "Group name",
+            onDismiss = { groupRenameTarget = null },
+            onConfirm = { newName ->
+                viewModel.renameGroup(group, newName)
+                groupRenameTarget = null
+                selectionActive = false
+                selectedIds = emptySet()
+                selectedGroupNames = emptySet()
+            }
+        )
+    }
+
+    alarmRenameTarget?.let { target ->
+        CompactRenameDialog(
+            title = "Rename alarm",
+            initialValue = target.label,
+            label = "Alarm label",
+            onDismiss = { alarmRenameTarget = null },
+            onConfirm = { newLabel ->
+                viewModel.updateAlarm(target.copy(label = newLabel))
+                alarmRenameTarget = null
+                selectionActive = false
+                selectedIds = emptySet()
+                selectedGroupNames = emptySet()
             }
         )
     }
@@ -883,8 +935,13 @@ fun MainAlarmsScreen(
 
     if (showFilterDialog) {
         var draftStatus by remember { mutableStateOf(filterStatus) }
+        val dialogBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+        val dialogContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
         AlertDialog(
             onDismissRequest = { showFilterDialog = false },
+            containerColor = dialogBg,
+            titleContentColor = dialogContentColor,
+            textContentColor = dialogContentColor,
             title = { Text("Filter alarms") },
             text = {
                 Column {
@@ -961,8 +1018,14 @@ private fun SortModeDialog(
     onDismiss: () -> Unit,
     onSelect: (AlarmSortMode) -> Unit
 ) {
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val dialogBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val dialogContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = dialogBg,
+        titleContentColor = dialogContentColor,
+        textContentColor = dialogContentColor,
         title = { Text("Sort alarms by") },
         text = {
             Column {
@@ -1130,7 +1193,7 @@ private fun GroupFilterRow(
     counts: (String?) -> Pair<Int, Int>,
     onGroupSelected: (String?) -> Unit,
     onToggleSelection: (String) -> Unit,
-    onEditGroup: (String) -> Unit,
+    onEnterSelection: (String) -> Unit,
     onReorderGroups: (List<String>) -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
@@ -1240,7 +1303,7 @@ private fun GroupFilterRow(
                                 if (selectionMode) {
                                     onToggleSelection(group)
                                 } else {
-                                    onEditGroup(group)
+                                    onEnterSelection(group)
                                 }
                             }
                         } else null,
@@ -1263,8 +1326,14 @@ private fun DayFilterDialog(
     onSelect: (Int?) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val dialogBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val dialogContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = dialogBg,
+        titleContentColor = dialogContentColor,
+        textContentColor = dialogContentColor,
         title = { Text("Filter by days") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1412,10 +1481,16 @@ private fun GroupEditDialog(
 ) {
     var name by remember(group) { mutableStateOf(group) }
     val isDefault = group == AlarmEntity.DEFAULT_GROUP
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val dialogBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val dialogContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
 
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(24.dp),
+        containerColor = dialogBg,
+        titleContentColor = dialogContentColor,
+        textContentColor = dialogContentColor,
         title = { Text(if (isDefault) "General alarms" else "Edit group") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1426,6 +1501,12 @@ private fun GroupEditDialog(
                         label = { Text("Group name") },
                         singleLine = true,
                         shape = RoundedCornerShape(24.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = dialogContentColor,
+                            unfocusedTextColor = dialogContentColor,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = if (isLight) Color(0xFF757575) else Color(0xFFAAAAAA)
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else {
@@ -1467,6 +1548,69 @@ private fun GroupEditDialog(
 }
 
 @Composable
+private fun CompactRenameDialog(
+    title: String,
+    initialValue: String,
+    label: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val contentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
+    var textValue by remember(initialValue) { mutableStateOf(initialValue) }
+    Dialog(onDismissRequest = onDismiss) {
+        FrostedBlurBox(
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = textValue,
+                    onValueChange = { textValue = it },
+                    label = { Text(label) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = contentColor,
+                        unfocusedTextColor = contentColor,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = if (isLight) Color(0xFF757575) else Color(0xFFAAAAAA)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = { onConfirm(textValue.trim()) },
+                        enabled = textValue.isNotBlank()
+                    ) {
+                        Text("Save")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun SelectionActionBar(
     selectedCount: Int,
     allSelected: Boolean,
@@ -1480,7 +1624,8 @@ private fun SelectionActionBar(
     onTurnOn: () -> Unit,
     onTurnOff: () -> Unit,
     onUngroup: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onRename: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -1531,14 +1676,18 @@ private fun SelectionActionBar(
             Row(
                 modifier = Modifier
                     .height(52.dp)
-                    .padding(horizontal = 8.dp),
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 when {
-
                     groupsOnly -> {
+                        SelectionAction(Icons.Outlined.NotificationsActive, "Turn On", onTurnOn)
                         SelectionAction(Icons.Outlined.NotificationsOff, "Turn Off", onTurnOff)
+                        if (selectedCount == 1 && onRename != null) {
+                            SelectionAction(Icons.Outlined.Edit, "Rename", onRename)
+                        }
                         SelectionAction(Icons.Outlined.FolderOff, "Ungroup", onUngroup)
                         SelectionAction(Icons.Outlined.DeleteOutline, "Delete", onDelete)
                     }
@@ -1555,6 +1704,9 @@ private fun SelectionActionBar(
                             if (allSelected) "Deselect" else "Select",
                             onSelectAllToggle
                         )
+                        if (selectedCount == 1 && onRename != null) {
+                            SelectionAction(Icons.Outlined.Edit, "Rename", onRename)
+                        }
                         SelectionAction(Icons.Outlined.CreateNewFolder, "Group", onMoveToGroup)
                         SelectionAction(Icons.Outlined.ContentCopy, "Copy", onCopy)
                         SelectionAction(Icons.Outlined.PowerSettingsNew, "Toggle", onToggle)
@@ -1576,7 +1728,7 @@ private fun SelectionAction(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 5.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
@@ -1604,9 +1756,15 @@ private fun GroupAssignmentDialog(
 ) {
     var groupName by remember { mutableStateOf(groups.firstOrNull() ?: AlarmEntity.DEFAULT_GROUP) }
     var newGroup by remember { mutableStateOf("") }
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val dialogBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val dialogContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = dialogBg,
+        titleContentColor = dialogContentColor,
+        textContentColor = dialogContentColor,
         title = { Text("Move / Add to group") },
         text = {
             Column {
@@ -1616,6 +1774,12 @@ private fun GroupAssignmentDialog(
                     label = { Text("New group name") },
                     singleLine = true,
                     shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = dialogContentColor,
+                        unfocusedTextColor = dialogContentColor,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = if (isLight) Color(0xFF757575) else Color(0xFFAAAAAA)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.width(8.dp))

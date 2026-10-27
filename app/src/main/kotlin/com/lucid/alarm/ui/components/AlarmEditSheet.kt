@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -40,8 +41,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,6 +69,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -277,16 +282,27 @@ fun AlarmEditSheet(
         }
     }
 
+    val sheetScrollGuard = remember {
+        object : NestedScrollConnection {
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                return if (available.y < 0f) Offset(0f, available.y) else Offset.Zero
+            }
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                return if (available.y < 0f) Velocity(0f, available.y) else Velocity.Zero
+            }
+        }
+    }
+
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val sheetBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val sheetContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = {
-            BottomSheetDefaults.DragHandle(
-                width = 32.dp,
-                height = 4.dp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-            )
-        }
+        sheetGesturesEnabled = false,
+        containerColor = sheetBg,
+        contentColor = sheetContentColor
     ) {
         Column(
             modifier = Modifier
@@ -319,26 +335,11 @@ fun AlarmEditSheet(
                 )
             }
 
-            val consumeVerticalFlingConnection = remember {
-                object : NestedScrollConnection {
-                    override fun onPostScroll(
-                        consumed: Offset,
-                        available: Offset,
-                        source: NestedScrollSource
-                    ): Offset = Offset(0f, available.y)
-
-                    override suspend fun onPostFling(
-                        consumed: Velocity,
-                        available: Velocity
-                    ): Velocity = Velocity(0f, available.y)
-                }
-            }
-
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .nestedScroll(consumeVerticalFlingConnection)
+                    .nestedScroll(sheetScrollGuard)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -349,6 +350,12 @@ fun AlarmEditSheet(
                     label = { Text("Label") },
                     singleLine = true,
                     shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = sheetContentColor,
+                        unfocusedTextColor = sheetContentColor,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = if (isLight) Color(0xFF757575) else Color(0xFFAAAAAA)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -791,110 +798,137 @@ fun AlarmEditSheet(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            val focusManager = LocalFocusManager.current
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = {
-                        val repeatDays = selectedDays.sorted().joinToString(",")
-                        val resolvedGroup = groupName.ifBlank { AlarmEntity.DEFAULT_GROUP }
-                        val resolvedAppearance =
-                            appearanceEnabled || appearanceUri.isNotBlank() ||
-                                appearanceColor != 0L || appearanceShowAmPm != null ||
-                                appearanceClockBoxEnabled ||
-                                appearanceAmPmColor != 0L || appearanceLabelVisible != null ||
-                                appearanceLabelColor != 0L || appearanceSnoozeContainerColor != 0L ||
-                                appearanceSnoozeTextColor != 0L ||
-                                appearanceDismissContainerColor != 0L ||
-                                appearanceDismissTextColor != 0L
-                        val base = initialAlarm
-                        val newAlarm = AlarmEntity(
-                            id = base?.id ?: 0,
-                            hour = hour,
-                            minute = minute,
-                            label = label,
-                            isEnabled = true,
-                            repeatDays = repeatDays,
-                            groupName = resolvedGroup,
-                            soundUri = soundUri,
-                            soundTitle = soundTitle,
-                            vibrationPattern = vibrationPattern,
-                            vibrationEnabled = vibrationEnabled,
-                            snoozeEnabled = snoozeEnabled,
-                            snoozeMinutes = snoozeMinutes,
-                            snoozeLimit = snoozeLimit,
-                            areYouAwakeEnabled = if (hasCustomAreYouAwake || areYouAwakeMinutes > 0) (if (hasCustomAreYouAwake) areYouAwakeEnabled else effectiveAreYouAwake) else effectiveAreYouAwake,
-                            areYouAwakeMinutes = if (effectiveAreYouAwake) areYouAwakeMinutes else 0,
-                            upcomingNotificationEnabled = if (hasCustomUpcoming || upcomingNotificationLeadMinutes > 0) (if (hasCustomUpcoming) upcomingNotificationEnabled else effectiveUpcoming) else effectiveUpcoming,
-                            upcomingNotificationLeadMinutes =
-                                if (effectiveUpcoming) upcomingNotificationLeadMinutes else 0,
-                            hasCustomAreYouAwake = hasCustomAreYouAwake || areYouAwakeMinutes > 0,
-                            hasCustomUpcomingNotification = hasCustomUpcoming || upcomingNotificationLeadMinutes > 0,
-                            customAppearanceEnabled = resolvedAppearance,
-                            customBackgroundUri = if (resolvedAppearance) appearanceUri else "",
-                            customBackgroundStyle = if (resolvedAppearance) appearanceBackgroundStyle else "",
-                            customVideoUri = if (resolvedAppearance) appearanceVideoUri else "",
-                            customBackgroundSolidColor = if (resolvedAppearance) appearanceSolidColor else 0L,
-                            customClockColor = if (resolvedAppearance) appearanceColor else 0L,
-                            customClockOffsetX = if (resolvedAppearance) appearanceOffsetX else 0f,
-                            customClockOffsetY = if (resolvedAppearance) appearanceOffsetY else 0f,
-                            customBoxWidth = if (resolvedAppearance) appearanceBoxW else 0f,
-                            customBoxHeight = if (resolvedAppearance) appearanceBoxH else 0f,
-                            customClockBoxEnabled =
-                                if (resolvedAppearance) appearanceClockBoxEnabled else false,
-                            customClockBoxColor =
-                                if (resolvedAppearance) appearanceClockBoxColor else 0L,
-                            customClockBoxOpacity =
-                                if (resolvedAppearance) appearanceClockBoxOpacity else 0.35f,
-                            customClockStyle = if (resolvedAppearance) appearanceClockStyle else "",
-                            customClockFont = if (resolvedAppearance) appearanceClockFont else "",
-                            customClockFontPath = if (resolvedAppearance) appearanceClockFontPath else "",
-                            customDateFont = if (resolvedAppearance) appearanceDateFont else "",
-                            customDateFontPath = if (resolvedAppearance) appearanceDateFontPath else "",
-                            customDateVisible = appearanceDateVisible,
-                            customDateOffsetX = if (resolvedAppearance) appearanceDateOffsetX else 0f,
-                            customDateOffsetY = if (resolvedAppearance) appearanceDateOffsetY else 0f,
-                            customDateScale = if (resolvedAppearance) appearanceDateScale else 1f,
-                            customRemoveLeadingZero = appearanceRemoveLeadingZero,
-                            customBlur = if (resolvedAppearance) appearanceBlur else -1f,
-                            customDim = if (resolvedAppearance) appearanceDim else -1f,
-                            customClockColorEnd = if (resolvedAppearance) appearanceClockColorEnd else 0L,
-                            customClockGradient = if (resolvedAppearance) appearanceClockGradient else false,
-                            customClockGradientDir = if (resolvedAppearance) appearanceClockGradientDir else "",
-                            customDateColor = if (resolvedAppearance) appearanceDateColor else 0L,
-                            customDateColorEnd = if (resolvedAppearance) appearanceDateColorEnd else 0L,
-                            customDateGradient = if (resolvedAppearance) appearanceDateGradient else false,
-                            customDateGradientDir = if (resolvedAppearance) appearanceDateGradientDir else "",
-                            customShowAmPm = if (resolvedAppearance) appearanceShowAmPm else null,
-                            customAmPmFont = if (resolvedAppearance) appearanceAmPmFont else "",
-                            customAmPmFontPath = if (resolvedAppearance) appearanceAmPmFontPath else "",
-                            customAmPmColor = if (resolvedAppearance) appearanceAmPmColor else 0L,
-                            customAlarmLabelVisible = if (resolvedAppearance) appearanceLabelVisible else null,
-                            customAlarmLabelFont = if (resolvedAppearance) appearanceLabelFont else "",
-                            customAlarmLabelFontPath = if (resolvedAppearance) appearanceLabelFontPath else "",
-                            customAlarmLabelColor = if (resolvedAppearance) appearanceLabelColor else 0L,
-                            customSnoozeFont = if (resolvedAppearance) appearanceSnoozeFont else "",
-                            customSnoozeFontPath = if (resolvedAppearance) appearanceSnoozeFontPath else "",
-                            customSnoozeContainerColor = if (resolvedAppearance) appearanceSnoozeContainerColor else 0L,
-                            customSnoozeTextColor = if (resolvedAppearance) appearanceSnoozeTextColor else 0L,
-                            customDismissFont = if (resolvedAppearance) appearanceDismissFont else "",
-                            customDismissFontPath = if (resolvedAppearance) appearanceDismissFontPath else "",
-                            customDismissContainerColor = if (resolvedAppearance) appearanceDismissContainerColor else 0L,
-                            customDismissTextColor = if (resolvedAppearance) appearanceDismissTextColor else 0L,
-                            createdAt = base?.createdAt ?: System.currentTimeMillis(),
-                            volumeLevel = volumeLevel,
-                            sortOrder = base?.sortOrder ?: 0,
-                            deletedAt = base?.deletedAt ?: 0L
-                        )
-                        onSave(newAlarm)
-                    }) {
+                    OutlinedButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            onDismiss()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            focusManager.clearFocus()
+                            val repeatDays = selectedDays.sorted().joinToString(",")
+                            val resolvedGroup = groupName.ifBlank { AlarmEntity.DEFAULT_GROUP }
+                            val resolvedAppearance =
+                                appearanceEnabled || appearanceUri.isNotBlank() ||
+                                    appearanceColor != 0L || appearanceShowAmPm != null ||
+                                    appearanceClockBoxEnabled ||
+                                    appearanceAmPmColor != 0L || appearanceLabelVisible != null ||
+                                    appearanceLabelColor != 0L || appearanceSnoozeContainerColor != 0L ||
+                                    appearanceSnoozeTextColor != 0L ||
+                                    appearanceDismissContainerColor != 0L ||
+                                    appearanceDismissTextColor != 0L
+                            val base = initialAlarm
+                            val newAlarm = AlarmEntity(
+                                id = base?.id ?: 0,
+                                hour = hour,
+                                minute = minute,
+                                label = label,
+                                isEnabled = true,
+                                repeatDays = repeatDays,
+                                groupName = resolvedGroup,
+                                soundUri = soundUri,
+                                soundTitle = soundTitle,
+                                vibrationPattern = vibrationPattern,
+                                vibrationEnabled = vibrationEnabled,
+                                snoozeEnabled = snoozeEnabled,
+                                snoozeMinutes = snoozeMinutes,
+                                snoozeLimit = snoozeLimit,
+                                areYouAwakeEnabled = if (hasCustomAreYouAwake || areYouAwakeMinutes > 0) (if (hasCustomAreYouAwake) areYouAwakeEnabled else effectiveAreYouAwake) else effectiveAreYouAwake,
+                                areYouAwakeMinutes = if (effectiveAreYouAwake) areYouAwakeMinutes else 0,
+                                upcomingNotificationEnabled = if (hasCustomUpcoming || upcomingNotificationLeadMinutes > 0) (if (hasCustomUpcoming) upcomingNotificationEnabled else effectiveUpcoming) else effectiveUpcoming,
+                                upcomingNotificationLeadMinutes =
+                                    if (effectiveUpcoming) upcomingNotificationLeadMinutes else 0,
+                                hasCustomAreYouAwake = hasCustomAreYouAwake || areYouAwakeMinutes > 0,
+                                hasCustomUpcomingNotification = hasCustomUpcoming || upcomingNotificationLeadMinutes > 0,
+                                customAppearanceEnabled = resolvedAppearance,
+                                customBackgroundUri = if (resolvedAppearance) appearanceUri else "",
+                                customBackgroundStyle = if (resolvedAppearance) appearanceBackgroundStyle else "",
+                                customVideoUri = if (resolvedAppearance) appearanceVideoUri else "",
+                                customBackgroundSolidColor = if (resolvedAppearance) appearanceSolidColor else 0L,
+                                customClockColor = if (resolvedAppearance) appearanceColor else 0L,
+                                customClockOffsetX = if (resolvedAppearance) appearanceOffsetX else 0f,
+                                customClockOffsetY = if (resolvedAppearance) appearanceOffsetY else 0f,
+                                customBoxWidth = if (resolvedAppearance) appearanceBoxW else 0f,
+                                customBoxHeight = if (resolvedAppearance) appearanceBoxH else 0f,
+                                customClockBoxEnabled =
+                                    if (resolvedAppearance) appearanceClockBoxEnabled else false,
+                                customClockBoxColor =
+                                    if (resolvedAppearance) appearanceClockBoxColor else 0L,
+                                customClockBoxOpacity =
+                                    if (resolvedAppearance) appearanceClockBoxOpacity else 0.35f,
+                                customClockStyle = if (resolvedAppearance) appearanceClockStyle else "",
+                                customClockFont = if (resolvedAppearance) appearanceClockFont else "",
+                                customClockFontPath = if (resolvedAppearance) appearanceClockFontPath else "",
+                                customDateFont = if (resolvedAppearance) appearanceDateFont else "",
+                                customDateFontPath = if (resolvedAppearance) appearanceDateFontPath else "",
+                                customDateVisible = appearanceDateVisible,
+                                customDateOffsetX = if (resolvedAppearance) appearanceDateOffsetX else 0f,
+                                customDateOffsetY = if (resolvedAppearance) appearanceDateOffsetY else 0f,
+                                customDateScale = if (resolvedAppearance) appearanceDateScale else 1f,
+                                customRemoveLeadingZero = appearanceRemoveLeadingZero,
+                                customBlur = if (resolvedAppearance) appearanceBlur else -1f,
+                                customDim = if (resolvedAppearance) appearanceDim else -1f,
+                                customClockColorEnd = if (resolvedAppearance) appearanceClockColorEnd else 0L,
+                                customClockGradient = if (resolvedAppearance) appearanceClockGradient else false,
+                                customClockGradientDir = if (resolvedAppearance) appearanceClockGradientDir else "",
+                                customDateColor = if (resolvedAppearance) appearanceDateColor else 0L,
+                                customDateColorEnd = if (resolvedAppearance) appearanceDateColorEnd else 0L,
+                                customDateGradient = if (resolvedAppearance) appearanceDateGradient else false,
+                                customDateGradientDir = if (resolvedAppearance) appearanceDateGradientDir else "",
+                                customShowAmPm = if (resolvedAppearance) appearanceShowAmPm else null,
+                                customAmPmFont = if (resolvedAppearance) appearanceAmPmFont else "",
+                                customAmPmFontPath = if (resolvedAppearance) appearanceAmPmFontPath else "",
+                                customAmPmColor = if (resolvedAppearance) appearanceAmPmColor else 0L,
+                                customAlarmLabelVisible = if (resolvedAppearance) appearanceLabelVisible else null,
+                                customAlarmLabelFont = if (resolvedAppearance) appearanceLabelFont else "",
+                                customAlarmLabelFontPath = if (resolvedAppearance) appearanceLabelFontPath else "",
+                                customAlarmLabelColor = if (resolvedAppearance) appearanceLabelColor else 0L,
+                                customSnoozeFont = if (resolvedAppearance) appearanceSnoozeFont else "",
+                                customSnoozeFontPath = if (resolvedAppearance) appearanceSnoozeFontPath else "",
+                                customSnoozeContainerColor = if (resolvedAppearance) appearanceSnoozeContainerColor else 0L,
+                                customSnoozeTextColor = if (resolvedAppearance) appearanceSnoozeTextColor else 0L,
+                                customDismissFont = if (resolvedAppearance) appearanceDismissFont else "",
+                                customDismissFontPath = if (resolvedAppearance) appearanceDismissFontPath else "",
+                                customDismissContainerColor = if (resolvedAppearance) appearanceDismissContainerColor else 0L,
+                                customDismissTextColor = if (resolvedAppearance) appearanceDismissTextColor else 0L,
+                                createdAt = base?.createdAt ?: System.currentTimeMillis(),
+                                volumeLevel = volumeLevel,
+                                sortOrder = base?.sortOrder ?: 0,
+                                deletedAt = base?.deletedAt ?: 0L
+                            )
+                            onSave(newAlarm)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
                         Text("Save")
                     }
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -902,6 +936,9 @@ fun AlarmEditSheet(
     if (showNewGroupDialog) {
         AlertDialog(
             onDismissRequest = { showNewGroupDialog = false },
+            containerColor = sheetBg,
+            titleContentColor = sheetContentColor,
+            textContentColor = sheetContentColor,
             title = { Text("New group") },
             text = {
                 OutlinedTextField(
@@ -910,6 +947,12 @@ fun AlarmEditSheet(
                     label = { Text("Group name") },
                     singleLine = true,
                     shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = sheetContentColor,
+                        unfocusedTextColor = sheetContentColor,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = if (isLight) Color(0xFF757575) else Color(0xFFAAAAAA)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -984,6 +1027,7 @@ fun AlarmEditSheet(
             ),
             settingsDataStore = settingsDataStore,
             fontBaseSuffix = (initialAlarm?.id ?: 0).toString(),
+            usesGlobalLook = !appearanceEnabled,
             onDismiss = { showAppearanceEditor = false },
             onSave = { result ->
                 appearanceUri = result.backgroundUri

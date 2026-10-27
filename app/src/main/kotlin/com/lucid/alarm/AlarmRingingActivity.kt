@@ -128,6 +128,18 @@ class AlarmRingingActivity : ComponentActivity() {
         val settingsDataStore = SettingsDataStore(applicationContext)
 
         setContent {
+            LaunchedEffect(Unit) {
+                AlarmAudioService.ringingState.collect { state ->
+                    if (state != null) {
+                        alarmId = state.alarmId
+                        alarmLabel = state.label
+                        snoozeCount = state.snoozeCount
+                        snoozeLimit = state.snoozeLimit
+                        isAwakeCheckActive = state.isAwakeCheckActive
+                    }
+                }
+            }
+
             val appFontStyle by settingsDataStore.appFontStyleFlow.collectAsState(
                 initial = AppFontStyle.SYSTEM_DEFAULT
             )
@@ -431,8 +443,8 @@ fun AlarmRingingScreen(
     val clockGradientDir = appearance?.customClockGradientDir?.takeIf { it.isNotBlank() }
         ?.let { raw -> runCatching { GradientDirection.valueOf(raw) }.getOrNull() }
         ?: globalClockGradientDir
-    val effectiveOffsetX = if (appearance != null) appearance.customClockOffsetX else savedOffsetX
-    val effectiveOffsetY = if (appearance != null) appearance.customClockOffsetY else savedOffsetY
+    val effectiveOffsetX = if (appearance != null && (appearance.customClockOffsetX != 0f || appearance.customClockOffsetY != 0f)) appearance.customClockOffsetX else savedOffsetX
+    val effectiveOffsetY = if (appearance != null && (appearance.customClockOffsetX != 0f || appearance.customClockOffsetY != 0f)) appearance.customClockOffsetY else savedOffsetY
     val effectiveBoxWidth = appearance?.customBoxWidth?.takeIf { it > 0f } ?: boxWidth
     val effectiveBoxHeight = appearance?.customBoxHeight?.takeIf { it > 0f } ?: boxHeight
     val effectiveClockStyle = appearance?.customClockStyle
@@ -452,9 +464,9 @@ fun AlarmRingingScreen(
     val effectiveDateFontPath = appearance?.customDateFontPath?.takeIf { it.isNotBlank() }
         ?: dateCustomFontPath
     val effectiveDateVisible = if (appearance != null) appearance.customDateVisible else dateVisible
-    val effectiveDateOffsetX = if (appearance != null) appearance.customDateOffsetX else dateOffsetX
-    val effectiveDateOffsetY = if (appearance != null) appearance.customDateOffsetY else dateOffsetY
-    val effectiveDateScale = if (appearance != null) appearance.customDateScale else dateScale
+    val effectiveDateOffsetX = if (appearance != null && (appearance.customDateOffsetX != 0f || appearance.customDateOffsetY != 0f)) appearance.customDateOffsetX else dateOffsetX
+    val effectiveDateOffsetY = if (appearance != null && (appearance.customDateOffsetX != 0f || appearance.customDateOffsetY != 0f)) appearance.customDateOffsetY else dateOffsetY
+    val effectiveDateScale = appearance?.customDateScale?.takeIf { it > 0f && it != 1f } ?: dateScale
     val effectiveRemoveLeadingZero = removeLeadingZero
     val effectiveBlur = appearance?.customBlur?.takeIf { it >= 0f } ?: ringingBlur
     val effectiveDim = appearance?.customDim?.takeIf { it >= 0f } ?: ringingDim

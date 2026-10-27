@@ -414,8 +414,14 @@ fun RecycleBinScreen(
         }
 
         if (showDeleteAllDialog) {
+            val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+            val dialogBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+            val dialogContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
             AlertDialog(
                 onDismissRequest = { showDeleteAllDialog = false },
+                containerColor = dialogBg,
+                titleContentColor = dialogContentColor,
+                textContentColor = dialogContentColor,
                 title = { Text("Empty recycle bin?") },
                 text = { Text("Permanently delete all ${trashedItems.size} trashed item${if (trashedItems.size == 1) "" else "s"}? This cannot be undone.") },
                 confirmButton = {

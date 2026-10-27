@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
@@ -44,6 +45,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -445,6 +447,9 @@ fun AlarmCustomizationScreen(
     val snoozeTypeface = resolveRingingFontFamily(snoozeFont, snoozeCustomFontPath)
     val dismissTypeface = resolveRingingFontFamily(dismissFont, dismissCustomFontPath)
     val solidColor = if (solidColorRaw != 0L) Color(solidColorRaw) else Color(0xFF101014)
+    val isLightMode = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val sheetBg = if (isLightMode) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val sheetContentColor = if (isLightMode) Color(0xFF111318) else Color(0xFFFFFFFF)
     val dateTopMarginPx = with(density) { 64.dp.toPx() }
 
     val isDarkBackground = when (background) {
@@ -719,7 +724,6 @@ fun AlarmCustomizationScreen(
                     .height(statusBarTop + 32.dp)
                     .align(Alignment.TopCenter)
                     .zIndex(4f)
-                    .pointerInput(Unit) {}
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -739,6 +743,19 @@ fun AlarmCustomizationScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(
+                    onClick = onDone,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 OutlinedButton(
                     onClick = { showBackgroundSheet = true },
                     shape = RoundedCornerShape(999.dp)
@@ -879,7 +896,9 @@ fun AlarmCustomizationScreen(
     if (showBackgroundSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBackgroundSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = sheetBg,
+            contentColor = sheetContentColor
         ) {
 
             val consumeVerticalFlingConnection = remember {
@@ -913,11 +932,11 @@ fun AlarmCustomizationScreen(
                                 shape = SelectionChipShape,
                                 onClick = {
                                     background = style
-                                    if (style != RingingBackgroundStyle.CUSTOM_IMAGE &&
-                                        style != RingingBackgroundStyle.VIDEO &&
-                                        style != RingingBackgroundStyle.SOLID_COLOR
-                                    ) {
-                                        showBackgroundSheet = false
+                                    when (style) {
+                                        RingingBackgroundStyle.CUSTOM_IMAGE -> imagePicker.launch(arrayOf("image/*"))
+                                        RingingBackgroundStyle.VIDEO -> videoPicker.launch(arrayOf("video/*"))
+                                        RingingBackgroundStyle.SOLID_COLOR -> {}
+                                        else -> showBackgroundSheet = false
                                     }
                                 },
                                 label = { Text(style.label) }
@@ -970,33 +989,12 @@ fun AlarmCustomizationScreen(
                         onValueChange = { ringingDim = it },
                         valueRange = 0f..1f
                     )
-                    if (background == RingingBackgroundStyle.CUSTOM_IMAGE) {
-                        Button(
-                            onClick = { imagePicker.launch(arrayOf("image/*")) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Choose image\u2026")
-                        }
-                    }
-                    if (background == RingingBackgroundStyle.VIDEO) {
+                    if (background == RingingBackgroundStyle.VIDEO && backgroundVideoUri.isNotBlank()) {
                         Text(
-                            text = "Looping, muted video wallpaper (MP4/MKV).",
+                            text = "Video selected",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Button(
-                            onClick = { videoPicker.launch(arrayOf("video/*")) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Choose video\u2026")
-                        }
-                        if (backgroundVideoUri.isNotBlank()) {
-                            Text(
-                                text = "Video selected",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -1006,7 +1004,9 @@ fun AlarmCustomizationScreen(
     if (showClockSheet) {
         ModalBottomSheet(
             onDismissRequest = { showClockSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = sheetBg,
+            contentColor = sheetContentColor
         ) {
             Column(
                 modifier = Modifier
@@ -1233,7 +1233,9 @@ fun AlarmCustomizationScreen(
     if (showDismissSheet) {
         ModalBottomSheet(
             onDismissRequest = { showDismissSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = sheetBg,
+            contentColor = sheetContentColor
         ) {
             Column(
                 modifier = Modifier
@@ -1293,7 +1295,9 @@ fun AlarmCustomizationScreen(
     if (showSnoozeSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSnoozeSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = sheetBg,
+            contentColor = sheetContentColor
         ) {
             Column(
                 modifier = Modifier

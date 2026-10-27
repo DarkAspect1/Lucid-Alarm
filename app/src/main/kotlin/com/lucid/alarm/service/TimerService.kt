@@ -1,5 +1,6 @@
 package com.lucid.alarm.service
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -18,6 +19,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
@@ -57,6 +59,7 @@ class TimerService : Service() {
     private var mediaPlayer: MediaPlayer? = null
     private var ringtone: Ringtone? = null
     private val vibrator: Vibrator? by lazy { resolveVibrator() }
+    private var wakeLock: PowerManager.WakeLock? = null
 
     @Volatile
     private var preferences = SettingsDataStore.NowBarPreferences(
@@ -87,6 +90,11 @@ class TimerService : Service() {
             return START_NOT_STICKY
         }
 
+        if (action == ACTION_TIMER_EXPIRED) {
+            scope.launch { enterRinging() }
+            return START_STICKY
+        }
+
         ensureForeground()
 
         when (action) {
@@ -112,6 +120,7 @@ class TimerService : Service() {
             ACTION_ADD_ONE_MINUTE -> extendExpiredTimer(60)
 
             ACTION_CANCEL -> {
+                cancelTimerAlarm()
                 stopRingAudio()
                 TimerStopwatchManager.setTimer(
                     running = false,
@@ -145,7 +154,13 @@ class TimerService : Service() {
 
     override fun onDestroy() {
         tickerJob?.cancel()
+        cancelTimerAlarm()
         stopRingAudio()
+        try {
+            if (wakeLock?.isHeld == true) wakeLock?.release()
+        } catch (_: Exception) {
+        }
+        wakeLock = null
         scope.cancel()
         super.onDestroy()
     }
@@ -153,17 +168,20 @@ class TimerService : Service() {
     private fun startTimer(seconds: Int) {
         val safe = seconds.coerceAtLeast(0)
         if (safe <= 0) return
+        val end = SystemClock.elapsedRealtime() + safe * 1000L
         TimerStopwatchManager.setTimer(
             running = true,
             totalSeconds = safe,
             secondsLeft = safe,
-            endRealtime = SystemClock.elapsedRealtime() + safe * 1000L
+            endRealtime = end
         )
+        scheduleTimerAlarm(end)
 
         promoteToForeground(buildNotification(preferences))
     }
 
     private fun pauseTimer() {
+        cancelTimerAlarm()
         val state = TimerStopwatchManager.timer.value
         if (!state.hasSession) return
         val remaining = if (state.running) {
@@ -182,12 +200,14 @@ class TimerService : Service() {
     private fun resumeTimer() {
         val state = TimerStopwatchManager.timer.value
         if (state.secondsLeft <= 0) return
+        val end = SystemClock.elapsedRealtime() + state.secondsLeft * 1000L
         TimerStopwatchManager.setTimer(
             running = true,
             totalSeconds = state.totalSeconds,
             secondsLeft = state.secondsLeft,
-            endRealtime = SystemClock.elapsedRealtime() + state.secondsLeft * 1000L
+            endRealtime = end
         )
+        scheduleTimerAlarm(end)
     }
 
     private fun adjustTimer(deltaSeconds: Int) {
@@ -203,20 +223,27 @@ class TimerService : Service() {
                 secondsLeft = armed,
                 endRealtime = 0L
             )
+            cancelTimerAlarm()
             return
         }
         val newLeft = (state.secondsLeft + deltaSeconds).coerceAtLeast(0)
         val newTotal = (state.totalSeconds + deltaSeconds).coerceAtLeast(0)
+        val end = if (state.running) {
+            SystemClock.elapsedRealtime() + newLeft * 1000L
+        } else {
+            0L
+        }
         TimerStopwatchManager.setTimer(
             running = state.running,
             totalSeconds = newTotal,
             secondsLeft = newLeft,
-            endRealtime = if (state.running) {
-                SystemClock.elapsedRealtime() + newLeft * 1000L
-            } else {
-                0L
-            }
+            endRealtime = end
         )
+        if (state.running) {
+            scheduleTimerAlarm(end)
+        } else {
+            cancelTimerAlarm()
+        }
     }
 
     private fun extendExpiredTimer(deltaSeconds: Int) {
@@ -225,12 +252,14 @@ class TimerService : Service() {
         val added = deltaSeconds.coerceAtLeast(1)
         val newLeft = if (state.ringing) added else (state.secondsLeft + added).coerceAtLeast(1)
         val newTotal = maxOf(state.totalSeconds, newLeft)
+        val end = SystemClock.elapsedRealtime() + newLeft * 1000L
         TimerStopwatchManager.setTimer(
             running = true,
             totalSeconds = newTotal,
             secondsLeft = newLeft,
-            endRealtime = SystemClock.elapsedRealtime() + newLeft * 1000L
+            endRealtime = end
         )
+        scheduleTimerAlarm(end)
 
         promoteToForeground(buildNotification(preferences))
         startTicker()
@@ -281,6 +310,19 @@ class TimerService : Service() {
     }
 
     private suspend fun enterRinging() {
+        cancelTimerAlarm()
+        val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+        if (wakeLock == null) {
+            wakeLock = powerManager?.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "Lucid:TimerServiceRingingWakeLock"
+            )?.apply {
+                setReferenceCounted(false)
+                acquire(10 * 60_000L)
+            }
+        } else if (wakeLock?.isHeld != true) {
+            wakeLock?.acquire(10 * 60_000L)
+        }
         TimerStopwatchManager.markTimerRinging()
         preferences = settings.currentNowBarPreferences()
         startRingAudio()
@@ -347,6 +389,7 @@ class TimerService : Service() {
     }
 
     private fun dismissRinging() {
+        cancelTimerAlarm()
         stopRingAudio()
         TimerStopwatchManager.setTimer(
             running = false,
@@ -462,6 +505,10 @@ class TimerService : Service() {
             vibrator?.cancel()
         } catch (_: Exception) {
         }
+        try {
+            if (wakeLock?.isHeld == true) wakeLock?.release()
+        } catch (_: Exception) {
+        }
     }
 
     private fun resolveVibrator(): Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -483,7 +530,7 @@ class TimerService : Service() {
                 description = getString(R.string.timer_ringing_channel_description)
                 setShowBadge(true)
                 enableVibration(true)
-
+                setBypassDnd(true)
                 setSound(null, null)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
@@ -516,6 +563,7 @@ class TimerService : Service() {
     private fun shutdown() {
         tickerJob?.cancel()
         tickerJob = null
+        cancelTimerAlarm()
         stopRingAudio()
         stopForeground(STOP_FOREGROUND_REMOVE)
         isForeground = false
@@ -618,6 +666,49 @@ class TimerService : Service() {
         putInt("android.ongoingActivityNoti.actionPrimarySet", 0)
     }
 
+    private fun scheduleTimerAlarm(endRealtime: Long) {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, TimerService::class.java).apply {
+            action = ACTION_TIMER_EXPIRED
+        }
+        val pendingIntent = PendingIntent.getService(
+            this,
+            TIMER_ALARM_REQUEST,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        try {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                endRealtime,
+                pendingIntent
+            )
+        } catch (_: SecurityException) {
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                endRealtime,
+                pendingIntent
+            )
+        }
+    }
+
+    private fun cancelTimerAlarm() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, TimerService::class.java).apply {
+            action = ACTION_TIMER_EXPIRED
+        }
+        val pendingIntent = PendingIntent.getService(
+            this,
+            TIMER_ALARM_REQUEST,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        if (pendingIntent != null) {
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+        }
+    }
+
     companion object {
         private const val TAG = "TimerService"
 
@@ -632,6 +723,7 @@ class TimerService : Service() {
         const val ACTION_CANCEL = "com.lucid.alarm.timer.CANCEL"
         const val ACTION_DISMISS_TIMER = "com.lucid.alarm.timer.DISMISS"
         const val ACTION_ADD_ONE_MINUTE = "com.lucid.alarm.timer.ADD_ONE_MINUTE"
+        const val ACTION_TIMER_EXPIRED = "com.lucid.alarm.timer.EXPIRED"
 
         const val EXTRA_SECONDS = "extra_seconds"
         const val EXTRA_DELTA_SECONDS = "extra_delta_seconds"
@@ -641,6 +733,7 @@ class TimerService : Service() {
         private const val RING_DISMISS_REQUEST = 9201
         private const val RING_ADD_REQUEST = 9202
         private const val RING_DELETE_REQUEST = 9203
+        private const val TIMER_ALARM_REQUEST = 9204
 
         fun start(context: Context, seconds: Int) {
             val intent = Intent(context, TimerService::class.java).apply {

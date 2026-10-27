@@ -543,7 +543,6 @@ fun WorldClockScreen(
             val accentColor = MaterialTheme.colorScheme.primary
             SmallFloatingActionButton(
                 onClick = {
-                    if (!fabInteractive) return@SmallFloatingActionButton
                     showAddDialog = true
                 },
                 containerColor = accentColor,
@@ -574,10 +573,7 @@ fun WorldClockScreen(
                 onClick = {
                     scope.launch {
                         if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) return@launch
-                        if (listState.firstVisibleItemIndex > 6) {
-                            listState.scrollToItem(6)
-                        }
-                        listState.animateScrollToItem(0, 0)
+                        listState.animateScrollToItem(0)
                     }
                 },
                 shape = CircleShape,
@@ -611,7 +607,6 @@ fun WorldClockScreen(
             Box {
                 SmallFloatingActionButton(
                     onClick = {
-                        if (!fabInteractive) return@SmallFloatingActionButton
                         showOverflowMenu = true
                     },
                     containerColor = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
@@ -677,8 +672,14 @@ private fun WorldClockSortDialog(
     onDismiss: () -> Unit,
     onSelect: (WorldClockSortMode) -> Unit
 ) {
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val dialogBg = if (isLight) Color(0xFFFFFFFF) else Color(0xFF17171C)
+    val dialogContentColor = if (isLight) Color(0xFF111318) else Color(0xFFFFFFFF)
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = dialogBg,
+        titleContentColor = dialogContentColor,
+        textContentColor = dialogContentColor,
         title = { Text("Sort cities by") },
         text = {
             Column {

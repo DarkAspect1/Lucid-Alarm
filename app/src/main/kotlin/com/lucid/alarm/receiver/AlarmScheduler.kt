@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.util.Log
 import com.lucid.alarm.MainActivity
 import com.lucid.alarm.data.AlarmEntity
+import com.lucid.alarm.service.AlarmAudioService
 import java.util.Calendar
 
 class AlarmScheduler(private val context: Context) {
@@ -48,7 +49,7 @@ class AlarmScheduler(private val context: Context) {
             Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
         } else {
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = android.net.Uri.fromParts("package", context.packageName, null)
+                data = Uri.fromParts("package", context.packageName, null)
             }
         }
     }
@@ -71,9 +72,8 @@ class AlarmScheduler(private val context: Context) {
         }
 
         if (daysOfWeek.isNotEmpty()) {
-
             var guard = 0
-            while (guard < 8 && !daysOfWeek.contains(target.get(Calendar.DAY_OF_WEEK))) {
+            while (guard < 8 && (!daysOfWeek.contains(target.get(Calendar.DAY_OF_WEEK)) || !target.after(now))) {
                 target.add(Calendar.DAY_OF_YEAR, 1)
                 guard++
             }
@@ -96,9 +96,10 @@ class AlarmScheduler(private val context: Context) {
             )
 
             setAlarmClockExact(
-                RETURN_CODE_FIRE_BASE + alarm.id,
-                buildFirePendingIntent(alarm),
-                triggerAtMillis
+                requestCode = alarm.id * 10 + OFFSET_RING,
+                showRequestCode = alarm.id * 10 + OFFSET_RING_SHOW,
+                pendingIntent = buildRingPendingIntent(alarm),
+                triggerAtMillis = triggerAtMillis
             )
 
             if (upcomingLeadMinutes > 0) {
@@ -111,85 +112,6 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
-    private fun scheduleUpcoming(
-        alarm: AlarmEntity,
-        triggerAtMillis: Long,
-        leadMinutes: Int
-    ) {
-        val upcomingAt = triggerAtMillis - leadMinutes * 60_000L
-        if (upcomingAt <= System.currentTimeMillis()) {
-
-            cancelUpcoming(alarm.id)
-            return
-        }
-        setExact(
-            RETURN_CODE_UPCOMING_BASE + alarm.id,
-            buildUpcomingPendingIntent(alarm),
-            upcomingAt
-        )
-    }
-
-    private fun setExact(requestCode: Int, pendingIntent: PendingIntent, triggerAtMillis: Long) {
-        try {
-            if (canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            } else {
-
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            }
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Unable to schedule exact alarm, falling back to inexact.", e)
-            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-        }
-    }
-
-    private fun setAlarmClockExact(
-        requestCode: Int,
-        pendingIntent: PendingIntent,
-        triggerAtMillis: Long
-    ) {
-        if (!canScheduleExactAlarms()) {
-            setExact(requestCode, pendingIntent, triggerAtMillis)
-            return
-        }
-        try {
-            val showIntent = PendingIntent.getActivity(
-                context,
-                RETURN_CODE_SHOW_BASE,
-                Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            alarmManager.setAlarmClock(
-                AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent),
-                pendingIntent
-            )
-        } catch (e: SecurityException) {
-            Log.e(TAG, "setAlarmClock rejected, falling back to exact set.", e)
-            setExact(requestCode, pendingIntent, triggerAtMillis)
-        }
-    }
-
-    fun cancelAlarm(alarm: AlarmEntity) = cancelAlarm(alarm.id)
-
-    fun cancelAlarm(alarmId: Int) {
-        alarmManager.cancel(buildFirePendingIntentForCancel(alarmId))
-        cancelUpcoming(alarmId)
-    }
-
-    private fun cancelUpcoming(alarmId: Int) {
-        alarmManager.cancel(buildUpcomingPendingIntentForCancel(alarmId))
-    }
-
     fun scheduleSnooze(
         alarmId: Int,
         label: String,
@@ -198,7 +120,7 @@ class AlarmScheduler(private val context: Context) {
         volumeLevel: Float,
         ringtoneUri: String?,
         vibrate: Boolean,
-        snoozeMinutes: Int = SNOOZE_MINUTES,
+        snoozeMinutes: Int = DEFAULT_SNOOZE_MINUTES,
         vibrationPreset: String = "",
         snoozeCount: Int = 1,
         snoozeLimit: Int = -1
@@ -219,21 +141,177 @@ class AlarmScheduler(private val context: Context) {
         )
 
         setAlarmClockExact(
-            SNOOZE_REQUEST_BASE + alarmId,
-            buildFirePendingIntent(
-                alarm,
-                requestCode = SNOOZE_REQUEST_BASE + alarmId,
-                snoozeCount = snoozeCount
-            ),
-            triggerAtMillis
+            requestCode = alarmId * 10 + OFFSET_SNOOZE,
+            showRequestCode = alarmId * 10 + OFFSET_SNOOZE_SHOW,
+            pendingIntent = buildSnoozePendingIntent(alarm, snoozeCount),
+            triggerAtMillis = triggerAtMillis
         )
     }
 
-    private fun buildFirePendingIntent(
+    fun scheduleAwakeCheckStage1(alarmId: Int, triggerAtMillis: Long) {
+        scheduleAwakeCheckTimeout(alarmId, triggerAtMillis)
+    }
+
+    fun scheduleAwakeCheckTimeout(alarmId: Int, triggerAtMillis: Long) {
+        val pendingIntent = buildAwakeTimeoutPendingIntent(alarmId)
+        setExact(alarmId * 10 + OFFSET_AWAKE_TIMEOUT, pendingIntent, triggerAtMillis)
+    }
+
+    private fun scheduleUpcoming(
         alarm: AlarmEntity,
-        requestCode: Int = RETURN_CODE_FIRE_BASE + alarm.id,
-        snoozeCount: Int = 0
-    ): PendingIntent {
+        triggerAtMillis: Long,
+        leadMinutes: Int
+    ) {
+        val upcomingAt = triggerAtMillis - leadMinutes * 60_000L
+        if (upcomingAt <= System.currentTimeMillis()) {
+            cancelUpcoming(alarm.id)
+            return
+        }
+        val pendingIntent = buildUpcomingPendingIntent(alarm)
+        setExact(alarm.id * 10 + OFFSET_UPCOMING, pendingIntent, upcomingAt)
+    }
+
+    private fun setExact(requestCode: Int, pendingIntent: PendingIntent, triggerAtMillis: Long) {
+        try {
+            if (canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Unable to schedule exact alarm, falling back to inexact.", e)
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        }
+    }
+
+    private fun setAlarmClockExact(
+        requestCode: Int,
+        showRequestCode: Int,
+        pendingIntent: PendingIntent,
+        triggerAtMillis: Long
+    ) {
+        if (!canScheduleExactAlarms()) {
+            setExact(requestCode, pendingIntent, triggerAtMillis)
+            return
+        }
+        try {
+            val showIntent = PendingIntent.getActivity(
+                context,
+                showRequestCode,
+                Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.setAlarmClock(
+                AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent),
+                pendingIntent
+            )
+        } catch (e: SecurityException) {
+            Log.e(TAG, "setAlarmClock rejected, falling back to exact set.", e)
+            setExact(requestCode, pendingIntent, triggerAtMillis)
+        }
+    }
+
+    fun cancelAlarm(alarm: AlarmEntity) = cancelAlarm(alarm.id)
+
+    fun cancelAlarm(alarmId: Int) {
+        cancelPendingIntent(alarmId * 10 + OFFSET_RING, AlarmReceiver.ACTION_FIRE_ALARM)
+        cancelPendingIntent(alarmId * 10 + OFFSET_RING_SHOW)
+        cancelUpcoming(alarmId)
+        cancelAllAuxiliaryTimers(alarmId)
+    }
+
+    fun cancelAllAuxiliaryTimers(alarmId: Int) {
+        cancelPendingIntent(snoozeRequestCode(alarmId), AlarmReceiver.ACTION_FIRE_ALARM)
+        cancelPendingIntent(alarmId * 10 + OFFSET_SNOOZE_SHOW)
+        cancelPendingIntent(awakeDelayRequestCode(alarmId), AlarmReceiver.ACTION_AWAKE_STAGE1)
+        cancelPendingIntent(awakeTimeoutRequestCode(alarmId), AlarmReceiver.ACTION_AWAKE_TIMEOUT)
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(AlarmAudioService.awakeCheckNotificationId(alarmId))
+        notificationManager.cancel(AlarmAudioService.FOREGROUND_NOTIFICATION_ID)
+
+        AlarmAudioService.cancelAuxiliary(context, alarmId)
+    }
+
+    fun cancelSnooze(alarmId: Int) {
+        cancelPendingIntent(alarmId * 10 + OFFSET_SNOOZE, AlarmReceiver.ACTION_FIRE_ALARM)
+        cancelPendingIntent(alarmId * 10 + OFFSET_SNOOZE_SHOW)
+    }
+
+    fun cancelUpcoming(alarmId: Int) {
+        cancelPendingIntent(alarmId * 10 + OFFSET_UPCOMING, AlarmReceiver.ACTION_UPCOMING_ALARM)
+    }
+
+    fun cancelAwakeCheck(alarmId: Int) {
+        cancelPendingIntent(alarmId * 10 + OFFSET_AWAKE_DELAY, AlarmReceiver.ACTION_AWAKE_STAGE1)
+        cancelPendingIntent(alarmId * 10 + OFFSET_AWAKE_TIMEOUT, AlarmReceiver.ACTION_AWAKE_TIMEOUT)
+    }
+
+    fun cancelAwakeTimeout(alarmId: Int) {
+        cancelPendingIntent(alarmId * 10 + OFFSET_AWAKE_TIMEOUT, AlarmReceiver.ACTION_AWAKE_TIMEOUT)
+    }
+
+    private fun cancelPendingIntent(requestCode: Int, action: String? = null) {
+        val intent = if (action != null) {
+            Intent(context, AlarmReceiver::class.java).apply { this.action = action }
+        } else {
+            Intent(context, MainActivity::class.java)
+        }
+        val pi = if (action != null) {
+            PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getActivity(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+        if (pi != null) {
+            alarmManager.cancel(pi)
+            pi.cancel()
+        }
+    }
+
+    private fun buildRingPendingIntent(alarm: AlarmEntity): PendingIntent {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_FIRE_ALARM
+            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarm.id)
+            putExtra(AlarmReceiver.EXTRA_ALARM_LABEL, alarm.label)
+            putExtra(AlarmReceiver.EXTRA_ALARM_HOUR, alarm.hour)
+            putExtra(AlarmReceiver.EXTRA_ALARM_MINUTE, alarm.minute)
+            putExtra(AlarmReceiver.EXTRA_ALARM_VOLUME, alarm.volumeLevel)
+            putExtra(AlarmReceiver.EXTRA_RINGTONE_URI, alarm.soundUri)
+            putExtra(AlarmReceiver.EXTRA_VIBRATE, alarm.vibrationEnabled)
+            putExtra(AlarmReceiver.EXTRA_VIBE_PRESET, alarm.vibrationPattern)
+            putExtra(AlarmReceiver.EXTRA_SNOOZE_COUNT, 0)
+            putExtra(AlarmReceiver.EXTRA_SNOOZE_LIMIT, alarm.snoozeLimit)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            alarm.id * 10 + OFFSET_RING,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun buildSnoozePendingIntent(alarm: AlarmEntity, snoozeCount: Int): PendingIntent {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_FIRE_ALARM
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarm.id)
@@ -249,24 +327,7 @@ class AlarmScheduler(private val context: Context) {
         }
         return PendingIntent.getBroadcast(
             context,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-    }
-
-    private fun buildFirePendingIntentForCancel(alarmId: Int): PendingIntent {
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_FIRE_ALARM
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            RETURN_CODE_FIRE_BASE + alarmId,
-            intent,
-            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-        ) ?: PendingIntent.getBroadcast(
-            context,
-            RETURN_CODE_FIRE_BASE + alarmId,
+            alarm.id * 10 + OFFSET_SNOOZE,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -282,24 +343,34 @@ class AlarmScheduler(private val context: Context) {
         }
         return PendingIntent.getBroadcast(
             context,
-            RETURN_CODE_UPCOMING_BASE + alarm.id,
+            alarm.id * 10 + OFFSET_UPCOMING,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
 
-    private fun buildUpcomingPendingIntentForCancel(alarmId: Int): PendingIntent {
+    private fun buildAwakeStage1PendingIntent(alarmId: Int): PendingIntent {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_UPCOMING_ALARM
+            action = AlarmReceiver.ACTION_AWAKE_STAGE1
+            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
         }
         return PendingIntent.getBroadcast(
             context,
-            RETURN_CODE_UPCOMING_BASE + alarmId,
+            alarmId * 10 + OFFSET_AWAKE_DELAY,
             intent,
-            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-        ) ?: PendingIntent.getBroadcast(
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun buildAwakeTimeoutPendingIntent(alarmId: Int): PendingIntent {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_AWAKE_TIMEOUT
+            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE, true)
+        }
+        return PendingIntent.getBroadcast(
             context,
-            RETURN_CODE_UPCOMING_BASE + alarmId,
+            alarmId * 10 + OFFSET_AWAKE_TIMEOUT,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -308,13 +379,21 @@ class AlarmScheduler(private val context: Context) {
     companion object {
         private const val TAG = "AlarmScheduler"
 
-        const val SNOOZE_MINUTES = 9
+        const val DEFAULT_SNOOZE_MINUTES = 5
 
-        private const val RETURN_CODE_FIRE_BASE = 0
-        private const val RETURN_CODE_UPCOMING_BASE = 100_000
+        const val OFFSET_RING = 1
+        const val OFFSET_SNOOZE = 2
+        const val OFFSET_UPCOMING = 3
+        const val OFFSET_AWAKE_DELAY = 4
+        const val OFFSET_AWAKE_TIMEOUT = 5
+        const val OFFSET_RING_SHOW = 6
+        const val OFFSET_SNOOZE_SHOW = 7
 
-        const val SNOOZE_REQUEST_BASE = 200_000
-        private const val RETURN_CODE_SHOW_BASE = 300_000
+        fun ringRequestCode(alarmId: Int): Int = alarmId * 10 + OFFSET_RING
+        fun snoozeRequestCode(alarmId: Int): Int = alarmId * 10 + OFFSET_SNOOZE
+        fun upcomingRequestCode(alarmId: Int): Int = alarmId * 10 + OFFSET_UPCOMING
+        fun awakeDelayRequestCode(alarmId: Int): Int = alarmId * 10 + OFFSET_AWAKE_DELAY
+        fun awakeTimeoutRequestCode(alarmId: Int): Int = alarmId * 10 + OFFSET_AWAKE_TIMEOUT
 
         @JvmStatic
         fun scheduleAlarm(context: Context, alarm: AlarmEntity, upcomingLeadMinutes: Int = 0) {

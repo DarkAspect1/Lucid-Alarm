@@ -368,7 +368,7 @@ fun ClockAppScaffold(
                             onCanScrollChange = { alarmsCanScroll = it },
                             onScrollInProgressChange = { alarmsScrolling = it },
                             dismissTransientUi = navRequest?.second,
-                            fabInteractive = !isSwitchingTabs
+                            fabInteractive = true
                         )
                         ClockTab.TIMER -> TimerScreen(
                             settingsDataStore = settingsDataStore,
@@ -390,7 +390,7 @@ fun ClockAppScaffold(
                             onOpenRecycleBin = { showWorldClockRecycleBin = true },
                             onCanScrollChange = { worldClockCanScroll = it },
                             onScrollInProgressChange = { worldClockScrolling = it },
-                            fabInteractive = !isSwitchingTabs
+                            fabInteractive = true
                         )
                     }
                 }
@@ -411,7 +411,7 @@ fun ClockAppScaffold(
                 ) {
                     FloatingPillBottomBar(
                         pagerState = pagerState,
-                        interactive = !pagerState.isScrollInProgress,
+                        interactive = true,
                         onTabSelected = { tab ->
                             scope.launch { pagerState.animateScrollToPage(tab.ordinal) }
                         },
@@ -422,15 +422,13 @@ fun ClockAppScaffold(
 
             val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             val statusBarBgColor = MaterialTheme.colorScheme.background
-            val isCustomizingAlarm = showSettings && settingsSubScreen == SettingsSubScreen.CUSTOMIZATION
-            if (!isCustomizingAlarm) {
+            if (showingTabs) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(statusBarTop + 32.dp)
                         .align(Alignment.TopCenter)
                         .zIndex(4f)
-                        .pointerInput(Unit) {}
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
@@ -554,8 +552,7 @@ fun FloatingPillBottomBar(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(innerCellPx, interactive) {
-                            if (!interactive) return@pointerInput
+                        .pointerInput(innerCellPx) {
                             detectHorizontalDragGestures { change, _ ->
                                 val page = (change.position.x / innerCellPx)
                                     .roundToInt()
@@ -577,8 +574,7 @@ fun FloatingPillBottomBar(
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(50))
-                                .pointerInput(tab, interactive) {
-                                    if (!interactive) return@pointerInput
+                                .pointerInput(tab) {
                                     detectTapGestures(
                                         onTap = { onTabSelected(tab) },
                                         onLongPress = {
