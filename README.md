@@ -93,7 +93,6 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
   * Bold Vertical
   * Compact Analog
   * Numbered Analog
-* **Aspect-locked resize handle:** A corner handle on the preview canvas scales the clock digits freely while preserving proportions.
 
 ### Interactive Background Engine
 
