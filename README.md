@@ -26,46 +26,6 @@
     <a href="LICENSE"><img src="https://img.shields.io/github/license/DarkAspect1/Lucid-Alarm?style=flat-square" alt="License" /></a>
   </p>
 
-## Screenshots
-
-<p align="center">
-  <img src="assets/screenshots/1.jpg" width="15%" alt="Alarms" />
-  <img src="assets/screenshots/25.jpg" width="15%" alt="World clock" />
-  <img src="assets/screenshots/3.jpg" width="15%" alt="Stopwatch" />
-  <img src="assets/screenshots/4.jpg" width="15%" alt="Stopwatch laps" />
-  <img src="assets/screenshots/5.jpg" width="15%" alt="Timer" />
-  <img src="assets/screenshots/6.jpg" width="15%" alt="Timer running" />
-</p>
-
-<p align="center">
-  <img src="assets/screenshots/7.jpg" width="15%" alt="Alarms, light theme" />
-  <img src="assets/screenshots/8.jpg" width="15%" alt="World clock, light theme" />
-  <img src="assets/screenshots/9.jpg" width="15%" alt="Stopwatch, light theme" />
-  <img src="assets/screenshots/10.jpg" width="15%" alt="Timer, light theme" />
-  <img src="assets/screenshots/27.jpg" width="15%" alt="Recycle bin" />
-  <img src="assets/screenshots/23.jpg" width="15%" alt="Recycle bin selection" />
-</p>
-
-<p align="center">
-  <img src="assets/screenshots/21.jpg" width="30%" alt="Pink accent" />
-  <img src="assets/screenshots/20.jpg" width="30%" alt="Teal accent" />
-  <img src="assets/screenshots/19.jpg" width="30%" alt="Gold accent" />
-</p>
-
-<p align="center">
-  <img src="assets/screenshots/24.jpg" width="30%" alt="Clock settings" />
-  <img src="assets/screenshots/26.jpg" width="30%" alt="New alarm" />
-  <img src="assets/screenshots/16.jpg" width="30%" alt="Alarm appearance options" />
-</p>
-
-<p align="center">
-  <img src="assets/screenshots/11.jpg" width="19%" alt="Ringing screen, vertical layout" />
-  <img src="assets/screenshots/12.jpg" width="19%" alt="Ringing screen, horizontal layout" />
-  <img src="assets/screenshots/13.jpg" width="19%" alt="Dismiss button styling" />
-  <img src="assets/screenshots/14.jpg" width="19%" alt="Snooze button styling" />
-  <img src="assets/screenshots/15.jpg" width="19%" alt="Background style" />
-</p>
-
   <p align="center">
     <b>
       <a href="#features">Features</a> &nbsp;|&nbsp;
@@ -102,6 +62,46 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | **Back to Top Button** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
 | **Floating Back Button** | When the header scrolls out of view, a circular back button floats in so you can always navigate back without scrolling up. |
 | **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
+
+## Screenshots
+
+<p align="center">
+  <img src="assets/1.jpg" width="15%" alt="Alarms" />
+  <img src="assets/25.jpg" width="15%" alt="World clock" />
+  <img src="assets/3.jpg" width="15%" alt="Stopwatch" />
+  <img src="assets/4.jpg" width="15%" alt="Stopwatch laps" />
+  <img src="assets/5.jpg" width="15%" alt="Timer" />
+  <img src="assets/6.jpg" width="15%" alt="Timer running" />
+</p>
+
+<p align="center">
+  <img src="assets/7.jpg" width="15%" alt="Alarms, light theme" />
+  <img src="assets/8.jpg" width="15%" alt="World clock, light theme" />
+  <img src="assets/9.jpg" width="15%" alt="Stopwatch, light theme" />
+  <img src="assets/10.jpg" width="15%" alt="Timer, light theme" />
+  <img src="assets/27.jpg" width="15%" alt="Recycle bin" />
+  <img src="assets/23.jpg" width="15%" alt="Recycle bin selection" />
+</p>
+
+<p align="center">
+  <img src="assets/21.jpg" width="30%" alt="Pink accent" />
+  <img src="assets/20.jpg" width="30%" alt="Teal accent" />
+  <img src="assets/19.jpg" width="30%" alt="Gold accent" />
+</p>
+
+<p align="center">
+  <img src="assets/24.jpg" width="30%" alt="Clock settings" />
+  <img src="assets/26.jpg" width="30%" alt="New alarm" />
+  <img src="assets/16.jpg" width="30%" alt="Alarm appearance options" />
+</p>
+
+<p align="center">
+  <img src="assets/11.jpg" width="19%" alt="Ringing screen, vertical layout" />
+  <img src="assets/12.jpg" width="19%" alt="Ringing screen, horizontal layout" />
+  <img src="assets/13.jpg" width="19%" alt="Dismiss button styling" />
+  <img src="assets/14.jpg" width="19%" alt="Snooze button styling" />
+  <img src="assets/15.jpg" width="19%" alt="Background style" />
+</p>
 
 ### Selection and Organization
 
