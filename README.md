@@ -91,11 +91,11 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 </p>
 
 <p align="center">
-  <img src="Assets/11.jpg" width="17%" alt="Ringing screen, vertical layout" />
-  <img src="Assets/12.jpg" width="17%" alt="Ringing screen, horizontal layout" />
-  <img src="Assets/13.jpg" width="17%" alt="Dismiss button styling" />
-  <img src="Assets/14.jpg" width="17%" alt="Snooze button styling" />
-  <img src="Assets/15.jpg" width="17%" alt="Background style" />
+  <img src="Assets/11.jpg" width="18%" alt="Ringing screen, vertical layout" />
+  <img src="Assets/12.jpg" width="18%" alt="Ringing screen, horizontal layout" />
+  <img src="Assets/13.jpg" width="18%" alt="Dismiss button styling" />
+  <img src="Assets/14.jpg" width="18%" alt="Snooze button styling" />
+  <img src="Assets/15.jpg" width="18%" alt="Background style" />
 </p>
 
 <p align="center">
