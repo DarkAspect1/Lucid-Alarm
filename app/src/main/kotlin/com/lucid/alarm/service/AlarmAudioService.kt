@@ -427,6 +427,7 @@ class AlarmAudioService : Service() {
         val unansweredSnoozeCount = currentSnoozeCount
         val unansweredSnoozeLimit = currentSnoozeLimit
         val unansweredIs24Hour = currentIs24Hour
+        val wasAwakeCheck = isAwakeCheckActive
 
         stopCurrentPlaybackAndVibration()
         ringingState.value = null
@@ -444,38 +445,14 @@ class AlarmAudioService : Service() {
             val settings = SettingsDataStore(applicationContext)
             val globalSnoozeMinutes = settings.ringingSnoozeMinutesFlow.first()
             val globalUpcoming = settings.upcomingAlarmEnabledFlow.first()
+            val globalAwakeEnabled = settings.awakeCheckEnabledFlow.first()
 
             val snoozeEnabled = alarm?.snoozeEnabled ?: true
             val maxLimit = alarm?.snoozeLimit ?: unansweredSnoozeLimit
-            val limitReached = maxLimit in 1..Int.MAX_VALUE && unansweredSnoozeCount >= maxLimit
+            val snoozeAllowed = snoozeEnabled && (maxLimit <= 0 || unansweredSnoozeCount < maxLimit)
+            val awakeCheckEnabled = wasAwakeCheck || (alarm != null && alarm.effectiveAreYouAwake(globalAwakeEnabled))
 
-            if (!snoozeEnabled || limitReached) {
-                if (alarm != null) {
-                    if (alarm.daysOfWeek.isEmpty()) {
-                        alarmDao.update(alarm.copy(isEnabled = false))
-                    } else {
-                        val lead = if (!alarm.effectiveUpcomingNotification(globalUpcoming)) {
-                            0
-                        } else if (alarm.upcomingNotificationLeadMinutes > 0) {
-                            alarm.upcomingNotificationLeadMinutes
-                        } else {
-                            settings.rawUpcomingAlarmMinutesFlow.first()
-                        }
-                        AlarmScheduler(applicationContext).scheduleAlarm(alarm, lead)
-                    }
-                }
-                postMissedAlarmNotification(
-                    applicationContext,
-                    unansweredAlarmId,
-                    unansweredLabel,
-                    unansweredHour,
-                    unansweredMinute,
-                    unansweredIs24Hour
-                )
-                withContext(Dispatchers.Main) {
-                    stopAlarmAndSelf()
-                }
-            } else {
+            if (snoozeAllowed) {
                 val configuredSnoozeMinutes = if (alarm != null && alarm.snoozeMinutes > 0) {
                     alarm.snoozeMinutes
                 } else {
@@ -500,6 +477,44 @@ class AlarmAudioService : Service() {
                 withContext(Dispatchers.Main) {
                     currentSnoozeCount = nextSnoozeCount
                     enterSnoozedState(configuredSnoozeMinutes)
+                }
+            } else if (awakeCheckEnabled) {
+                AlarmScheduler(applicationContext).cancelAllAuxiliaryTimers(unansweredAlarmId)
+                val checkDelayMinutes = if (alarm != null && alarm.hasCustomAreYouAwake && alarm.areYouAwakeMinutes > 0) {
+                    alarm.areYouAwakeMinutes.coerceIn(1, 15)
+                } else {
+                    settings.awakeCheckMinutesFlow.first().coerceIn(1, 15)
+                }
+                scheduleSingleAwakeCheck(applicationContext, unansweredAlarmId, checkDelayMinutes)
+                withContext(Dispatchers.Main) {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
+            } else {
+                if (alarm != null) {
+                    if (alarm.daysOfWeek.isEmpty()) {
+                        alarmDao.update(alarm.copy(isEnabled = false))
+                    } else {
+                        val lead = if (!alarm.effectiveUpcomingNotification(globalUpcoming)) {
+                            0
+                        } else if (alarm.upcomingNotificationLeadMinutes > 0) {
+                            alarm.upcomingNotificationLeadMinutes
+                        } else {
+                            settings.rawUpcomingAlarmMinutesFlow.first()
+                        }
+                        AlarmScheduler(applicationContext).scheduleAlarm(alarm, lead)
+                    }
+                }
+                postMissedAlarmNotification(
+                    applicationContext,
+                    unansweredAlarmId,
+                    unansweredLabel,
+                    unansweredHour,
+                    unansweredMinute,
+                    unansweredIs24Hour
+                )
+                withContext(Dispatchers.Main) {
+                    stopAlarmAndSelf()
                 }
             }
         }

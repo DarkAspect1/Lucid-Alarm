@@ -152,6 +152,11 @@ class AlarmScheduler(private val context: Context) {
         scheduleAwakeCheckTimeout(alarmId, triggerAtMillis)
     }
 
+    fun scheduleAwakeCheck(alarmId: Int, checkDelayMinutes: Int) {
+        val triggerAtMillis = System.currentTimeMillis() + checkDelayMinutes.toLong() * 60_000L
+        scheduleAwakeCheckTimeout(alarmId, triggerAtMillis)
+    }
+
     fun scheduleAwakeCheckTimeout(alarmId: Int, triggerAtMillis: Long) {
         val pendingIntent = buildAwakeTimeoutPendingIntent(alarmId)
         setExact(alarmId * 10 + OFFSET_AWAKE_TIMEOUT, pendingIntent, triggerAtMillis)
