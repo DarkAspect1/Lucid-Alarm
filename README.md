@@ -34,7 +34,7 @@
       <a href="#stopwatch-timer-and-world-clock">StopWatch-Timer-World Clock</a> &nbsp;|&nbsp;
       <a href="#wake-check--pre-alarm-notifications-optional">Wake Check & Pre-Alarm Notifications</a> &nbsp;|&nbsp;
       <a href="#backup-and-restore">Backup and Restore</a> &nbsp;|&nbsp;
-      <a href="#building-and-release">Installation Requirements</a> &nbsp;|&nbsp;
+      <a href="#installation--build-requirements">Installation & Build Requirements</a> &nbsp;|&nbsp;
     </b>
   </p>
 
@@ -58,10 +58,10 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | :--- | :--- |
 | **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
 | **Edge Fade Masks** | Offscreen `BlendMode.DstIn` vertical alpha masks let scrollable content fade naturally at the top and bottom of the viewport. |
-| **Floating Capsule Navigation** | A compact, borderless navigation capsule sits above the system navigation bar with active tab indicators. |
-| **Contextual Floating Actions** | Matched 48dp circular buttons for Add and Menu/Settings, positioned consistently across all tabs. |
-| **Scroll-Aware Back to Top** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
+| **Floating Navigation Bar** | A compact, borderless navigation bar with active tab indicators. |
+| **Back to Top Button** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
 | **Floating Back Button** | When the header scrolls out of view, a circular back button floats in so you can always navigate back without scrolling up. |
+| **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
 
 ### Selection and Organization
 
@@ -107,7 +107,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
   * Looping, muted custom video wallpaper (`.mp4`, `.mkv`) with hardware decoding
 * **Dimming & Blur control**
 
-### Typography and Element Control
+### Coloring and Element Control
 
 * **Color selection:** A 24-preset curated grid, or a full HSV spectrum with hex input (`#RRGGBB`).
 * **Color and gradient options for:**
@@ -122,8 +122,6 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 ---
 
 ## Nowbar and Live Activities
-
-Lucid Clock integrates with background and lock screen Live Activities, referred to as the Nowbar.
 
 * **Floating heads-up pill:** Real-time countdown and stopwatch counters rendered on the Nowbar.
 * **Accent color adaptation:** The Nowbar automatically adopts the app’s accent color, so the floating pill and its controls always match your chosen theme.
@@ -197,7 +195,7 @@ Configurations can be exported and restored at any time using a structured JSON 
 
 ---
 
-## Installation Requirements
+## Installation & Build Requirements
 
 * Android Studio Ladybug or Meerkat, or newer
 * JDK 17 or newer
