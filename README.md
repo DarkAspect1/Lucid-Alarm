@@ -92,7 +92,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 </p>
 
 <p align="center">
-  <img src="Assets/30.jpg" width="100%" alt="Alarm toast" />
+  <img src="Assets/30.jpg" width="80%" alt="Alarm toast" />
 </p>
 
 ---
