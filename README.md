@@ -33,7 +33,7 @@
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
       <a href="#stopwatch-timer-and-world-clock">StopWatch-Timer-World Clock</a> &nbsp;|&nbsp;
-      <a href="#wake-check--pre-alarm-notifications-optional">Wake Check & Pre-Alarm Notifications</a> &nbsp;|&nbsp;
+      <a href="#wake-check-pre-alarm--notifications-optional">Wake Check-PreAlarm & Notifications</a> &nbsp;|&nbsp;
       <a href="#backup-and-restore">Backup and Restore</a> &nbsp;|&nbsp;
       <a href="#installation--build-requirements">Installation & Build Requirements</a> &nbsp;|&nbsp;
     </b>
