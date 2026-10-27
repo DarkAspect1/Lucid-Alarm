@@ -28,13 +28,14 @@
 
   <p align="center">
     <b>
+      <a href="#Screenshots">Screenshots</a> &nbsp;|&nbsp;
       <a href="#features">Features</a> &nbsp;|&nbsp;
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
       <a href="#stopwatch-timer-and-world-clock">StopWatch-Timer-World Clock</a> &nbsp;|&nbsp;
-      <a href="#wake-check--pre-alarm-notifications-optional">Wake Check & Pre-Alarm Notifications</a> &nbsp;|&nbsp;
+      <a href="#wake-check-pre-alarm--notifications-optional">Wake Check-PreAlarm & Notifications</a> &nbsp;|&nbsp;
       <a href="#backup-and-restore">Backup and Restore</a> &nbsp;|&nbsp;
-      <a href="#building-and-release">Installation Requirements</a> &nbsp;|&nbsp;
+      <a href="#installation--build-requirements">Installation & Build Requirements</a> &nbsp;|&nbsp;
     </b>
   </p>
 
@@ -50,6 +51,52 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="Assets/1.jpg" width="15%" alt="Alarms" />
+  <img src="Assets/25.jpg" width="15%" alt="World clock" />
+  <img src="Assets/3.jpg" width="15%" alt="Stopwatch" />
+  <img src="Assets/4.jpg" width="15%" alt="Stopwatch laps" />
+  <img src="Assets/5.jpg" width="15%" alt="Timer" />
+  <img src="Assets/6.jpg" width="15%" alt="Timer running" />
+</p>
+
+<p align="center">
+  <img src="Assets/7.jpg" width="15%" alt="Alarms, light theme" />
+  <img src="Assets/8.jpg" width="15%" alt="World clock, light theme" />
+  <img src="Assets/9.jpg" width="15%" alt="Stopwatch, light theme" />
+  <img src="Assets/10.jpg" width="15%" alt="Timer, light theme" />
+  <img src="Assets/27.jpg" width="15%" alt="Recycle bin" />
+  <img src="Assets/23.jpg" width="15%" alt="Recycle bin selection" />
+</p>
+
+<p align="center">
+  <img src="Assets/21.jpg" width="30%" alt="Pink accent" />
+  <img src="Assets/20.jpg" width="30%" alt="Teal accent" />
+  <img src="Assets/19.jpg" width="30%" alt="Gold accent" />
+</p>
+
+<p align="center">
+  <img src="Assets/11.jpg" width="18%" alt="Ringing screen, vertical layout" />
+  <img src="Assets/12.jpg" width="18%" alt="Ringing screen, horizontal layout" />
+  <img src="Assets/13.jpg" width="18%" alt="Dismiss button styling" />
+  <img src="Assets/14.jpg" width="18%" alt="Snooze button styling" />
+  <img src="Assets/15.jpg" width="18%" alt="Background style" />
+</p>
+
+<p align="center">
+  <img src="Assets/24.jpg" width="30%" alt="Clock settings" />
+  <img src="Assets/26.jpg" width="30%" alt="New alarm" />
+  <img src="Assets/16.jpg" width="30%" alt="Alarm appearance options" />
+</p>
+
+<p align="center">
+  <img src="Assets/30.jpg" width="100%" alt="Alarm toast" />
+</p>
+
+---
+
 ## Features
 
 ### Design System and UI Architecture
@@ -58,10 +105,10 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | :--- | :--- |
 | **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
 | **Edge Fade Masks** | Offscreen `BlendMode.DstIn` vertical alpha masks let scrollable content fade naturally at the top and bottom of the viewport. |
-| **Floating Capsule Navigation** | A compact, borderless navigation capsule sits above the system navigation bar with active tab indicators. |
-| **Contextual Floating Actions** | Matched 48dp circular buttons for Add and Menu/Settings, positioned consistently across all tabs. |
-| **Scroll-Aware Back to Top** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
+| **Floating Navigation Bar** | A compact, borderless navigation bar with active tab indicators. |
+| **Back to Top Button** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
 | **Floating Back Button** | When the header scrolls out of view, a circular back button floats in so you can always navigate back without scrolling up. |
+| **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
 
 ### Selection and Organization
 
@@ -93,7 +140,6 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
   * Bold Vertical
   * Compact Analog
   * Numbered Analog
-* **Aspect-locked resize handle:** A corner handle on the preview canvas scales the clock digits freely while preserving proportions.
 
 ### Interactive Background Engine
 
@@ -108,7 +154,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
   * Looping, muted custom video wallpaper (`.mp4`, `.mkv`) with hardware decoding
 * **Dimming & Blur control**
 
-### Typography and Element Control
+### Coloring and Element Control
 
 * **Color selection:** A 24-preset curated grid, or a full HSV spectrum with hex input (`#RRGGBB`).
 * **Color and gradient options for:**
@@ -123,8 +169,6 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 ---
 
 ## Nowbar and Live Activities
-
-Lucid Clock integrates with background and lock screen Live Activities, referred to as the Nowbar.
 
 * **Floating heads-up pill:** Real-time countdown and stopwatch counters rendered on the Nowbar.
 * **Accent color adaptation:** The Nowbar automatically adopts the app’s accent color, so the floating pill and its controls always match your chosen theme.
@@ -145,10 +189,11 @@ Lucid Clock integrates with background and lock screen Live Activities, referred
 
 ---
 
-## Wake Check & Pre-Alarm Notifications [Optional]
+## Wake Check, Pre-Alarm & Notifications [Optional]
 
 * **Featured Wake Check:** After an alarm is dismissed, a configurable delay (1 to 15 minutes) triggers a confirmation notification with a countdown to respond, and if it goes unanswered the alarm rings again at maximum volume and awake check notification keeps repeating until you tap “I’m Awake” in the notification, which ends the check.
 * **Upcoming alarm alerts:** Dismiss or modify an upcoming alarm directly from its notification, with configurable lead times from 15 to 60 minutes.
+* **Alarm set confirmation:** A toast appears whenever you turn on an alarm or create a new one, showing how much time is left until it rings.
 * **Audio and haptics:** Unified or per-alarm volume override, custom ringtone selection, and distinct vibration patterns.
 
 ---
@@ -198,7 +243,7 @@ Configurations can be exported and restored at any time using a structured JSON 
 
 ---
 
-## Installation Requirements
+## Installation & Build Requirements
 
 * Android Studio Ladybug or Meerkat, or newer
 * JDK 17 or newer
