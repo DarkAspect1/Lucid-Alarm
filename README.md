@@ -26,6 +26,46 @@
     <a href="LICENSE"><img src="https://img.shields.io/github/license/DarkAspect1/Lucid-Alarm?style=flat-square" alt="License" /></a>
   </p>
 
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/1.jpg" width="15%" alt="Alarms" />
+  <img src="assets/screenshots/25.jpg" width="15%" alt="World clock" />
+  <img src="assets/screenshots/3.jpg" width="15%" alt="Stopwatch" />
+  <img src="assets/screenshots/4.jpg" width="15%" alt="Stopwatch laps" />
+  <img src="assets/screenshots/5.jpg" width="15%" alt="Timer" />
+  <img src="assets/screenshots/6.jpg" width="15%" alt="Timer running" />
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/7.jpg" width="15%" alt="Alarms, light theme" />
+  <img src="assets/screenshots/8.jpg" width="15%" alt="World clock, light theme" />
+  <img src="assets/screenshots/9.jpg" width="15%" alt="Stopwatch, light theme" />
+  <img src="assets/screenshots/10.jpg" width="15%" alt="Timer, light theme" />
+  <img src="assets/screenshots/27.jpg" width="15%" alt="Recycle bin" />
+  <img src="assets/screenshots/23.jpg" width="15%" alt="Recycle bin selection" />
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/21.jpg" width="30%" alt="Pink accent" />
+  <img src="assets/screenshots/20.jpg" width="30%" alt="Teal accent" />
+  <img src="assets/screenshots/19.jpg" width="30%" alt="Gold accent" />
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/24.jpg" width="30%" alt="Clock settings" />
+  <img src="assets/screenshots/26.jpg" width="30%" alt="New alarm" />
+  <img src="assets/screenshots/16.jpg" width="30%" alt="Alarm appearance options" />
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/11.jpg" width="19%" alt="Ringing screen, vertical layout" />
+  <img src="assets/screenshots/12.jpg" width="19%" alt="Ringing screen, horizontal layout" />
+  <img src="assets/screenshots/13.jpg" width="19%" alt="Dismiss button styling" />
+  <img src="assets/screenshots/14.jpg" width="19%" alt="Snooze button styling" />
+  <img src="assets/screenshots/15.jpg" width="19%" alt="Background style" />
+</p>
+
   <p align="center">
     <b>
       <a href="#features">Features</a> &nbsp;|&nbsp;
