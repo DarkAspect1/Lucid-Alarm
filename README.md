@@ -66,7 +66,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 ## Screenshots
 
 <p align="center">
-  <img src="assets/1.jpg" width="15%" alt="Alarms" />
+  <img src="Assets/1.jpg" width="15%" alt="Alarms" />
   <img src="assets/25.jpg" width="15%" alt="World clock" />
   <img src="assets/3.jpg" width="15%" alt="Stopwatch" />
   <img src="assets/4.jpg" width="15%" alt="Stopwatch laps" />
