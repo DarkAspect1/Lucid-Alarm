@@ -28,8 +28,8 @@
 
   <p align="center">
     <b>
-      <a href="#features">Features</a> &nbsp;|&nbsp;
       <a href="#Screenshots">Screenshots</a> &nbsp;|&nbsp;
+      <a href="#features">Features</a> &nbsp;|&nbsp;
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
       <a href="#stopwatch-timer-and-world-clock">StopWatch-Timer-World Clock</a> &nbsp;|&nbsp;
@@ -50,19 +50,6 @@ Lucid Alarm is an open-source Android application built with Jetpack Compose. De
 Everything adapts to the user's chosen accent color including Dark Mode Wallpaper, Nowbar, and Settings
 
 ---
-
-## Features
-
-### Design System and UI Architecture
-
-| Feature | Description |
-| :--- | :--- |
-| **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
-| **Edge Fade Masks** | Offscreen `BlendMode.DstIn` vertical alpha masks let scrollable content fade naturally at the top and bottom of the viewport. |
-| **Floating Navigation Bar** | A compact, borderless navigation bar with active tab indicators. |
-| **Back to Top Button** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
-| **Floating Back Button** | When the header scrolls out of view, a circular back button floats in so you can always navigate back without scrolling up. |
-| **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
 
 ## Screenshots
 
@@ -103,6 +90,25 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
   <img src="Assets/26.jpg" width="30%" alt="New alarm" />
   <img src="Assets/16.jpg" width="30%" alt="Alarm appearance options" />
 </p>
+
+<p align="center">
+  <img src="Assets/30.jpg" width="45%" alt="Alarm toast" />
+</p>
+
+---
+
+## Features
+
+### Design System and UI Architecture
+
+| Feature | Description |
+| :--- | :--- |
+| **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
+| **Edge Fade Masks** | Offscreen `BlendMode.DstIn` vertical alpha masks let scrollable content fade naturally at the top and bottom of the viewport. |
+| **Floating Navigation Bar** | A compact, borderless navigation bar with active tab indicators. |
+| **Back to Top Button** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
+| **Floating Back Button** | When the header scrolls out of view, a circular back button floats in so you can always navigate back without scrolling up. |
+| **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
 
 ### Selection and Organization
 
@@ -183,10 +189,11 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 
 ---
 
-## Wake Check & Pre-Alarm Notifications [Optional]
+## Wake Check, Pre-Alarm & Notifications [Optional]
 
 * **Featured Wake Check:** After an alarm is dismissed, a configurable delay (1 to 15 minutes) triggers a confirmation notification with a countdown to respond, and if it goes unanswered the alarm rings again at maximum volume and awake check notification keeps repeating until you tap “I’m Awake” in the notification, which ends the check.
 * **Upcoming alarm alerts:** Dismiss or modify an upcoming alarm directly from its notification, with configurable lead times from 15 to 60 minutes.
+* **Alarm set confirmation:** A toast appears whenever you turn on an alarm or create a new one, showing how much time is left until it rings.
 * **Audio and haptics:** Unified or per-alarm volume override, custom ringtone selection, and distinct vibration patterns.
 
 ---
