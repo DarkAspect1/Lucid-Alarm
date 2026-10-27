@@ -29,6 +29,7 @@
   <p align="center">
     <b>
       <a href="#features">Features</a> &nbsp;|&nbsp;
+      <a href="#Screenshots">Screenshots</a> &nbsp;|&nbsp;
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
       <a href="#stopwatch-timer-and-world-clock">StopWatch-Timer-World Clock</a> &nbsp;|&nbsp;
@@ -67,40 +68,40 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 
 <p align="center">
   <img src="Assets/1.jpg" width="15%" alt="Alarms" />
-  <img src="assets/25.jpg" width="15%" alt="World clock" />
-  <img src="assets/3.jpg" width="15%" alt="Stopwatch" />
-  <img src="assets/4.jpg" width="15%" alt="Stopwatch laps" />
-  <img src="assets/5.jpg" width="15%" alt="Timer" />
-  <img src="assets/6.jpg" width="15%" alt="Timer running" />
+  <img src="Assets/25.jpg" width="15%" alt="World clock" />
+  <img src="Assets/3.jpg" width="15%" alt="Stopwatch" />
+  <img src="Assets/4.jpg" width="15%" alt="Stopwatch laps" />
+  <img src="Assets/5.jpg" width="15%" alt="Timer" />
+  <img src="Assets/6.jpg" width="15%" alt="Timer running" />
 </p>
 
 <p align="center">
-  <img src="assets/7.jpg" width="15%" alt="Alarms, light theme" />
-  <img src="assets/8.jpg" width="15%" alt="World clock, light theme" />
-  <img src="assets/9.jpg" width="15%" alt="Stopwatch, light theme" />
-  <img src="assets/10.jpg" width="15%" alt="Timer, light theme" />
-  <img src="assets/27.jpg" width="15%" alt="Recycle bin" />
-  <img src="assets/23.jpg" width="15%" alt="Recycle bin selection" />
+  <img src="Assets/7.jpg" width="15%" alt="Alarms, light theme" />
+  <img src="Assets/8.jpg" width="15%" alt="World clock, light theme" />
+  <img src="Assets/9.jpg" width="15%" alt="Stopwatch, light theme" />
+  <img src="Assets/10.jpg" width="15%" alt="Timer, light theme" />
+  <img src="Assets/27.jpg" width="15%" alt="Recycle bin" />
+  <img src="Assets/23.jpg" width="15%" alt="Recycle bin selection" />
 </p>
 
 <p align="center">
-  <img src="assets/21.jpg" width="30%" alt="Pink accent" />
-  <img src="assets/20.jpg" width="30%" alt="Teal accent" />
-  <img src="assets/19.jpg" width="30%" alt="Gold accent" />
+  <img src="Assets/21.jpg" width="30%" alt="Pink accent" />
+  <img src="Assets/20.jpg" width="30%" alt="Teal accent" />
+  <img src="Assets/19.jpg" width="30%" alt="Gold accent" />
 </p>
 
 <p align="center">
-  <img src="assets/24.jpg" width="30%" alt="Clock settings" />
-  <img src="assets/26.jpg" width="30%" alt="New alarm" />
-  <img src="assets/16.jpg" width="30%" alt="Alarm appearance options" />
+  <img src="Assets/24.jpg" width="30%" alt="Clock settings" />
+  <img src="Assets/26.jpg" width="30%" alt="New alarm" />
+  <img src="Assets/16.jpg" width="30%" alt="Alarm appearance options" />
 </p>
 
 <p align="center">
-  <img src="assets/11.jpg" width="19%" alt="Ringing screen, vertical layout" />
-  <img src="assets/12.jpg" width="19%" alt="Ringing screen, horizontal layout" />
-  <img src="assets/13.jpg" width="19%" alt="Dismiss button styling" />
-  <img src="assets/14.jpg" width="19%" alt="Snooze button styling" />
-  <img src="assets/15.jpg" width="19%" alt="Background style" />
+  <img src="Assets/11.jpg" width="19%" alt="Ringing screen, vertical layout" />
+  <img src="Assets/12.jpg" width="19%" alt="Ringing screen, horizontal layout" />
+  <img src="Assets/13.jpg" width="19%" alt="Dismiss button styling" />
+  <img src="Assets/14.jpg" width="19%" alt="Snooze button styling" />
+  <img src="Assets/15.jpg" width="19%" alt="Background style" />
 </p>
 
 ### Selection and Organization
