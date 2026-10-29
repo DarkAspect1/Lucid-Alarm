@@ -45,7 +45,7 @@
 
 ## Overview
 
-Lucid Alarm is an open-source Android application built with Jetpack Compose. Designed to extend the Samsung's One UI Alarm App aesthetic, it focuses on removing visual clutter while keeping the app fully customizable.
+Lucid Alarm is an open-source Android application built with Jetpack Compose. Designed to extend the Samsung's One UI Alarm App aesthetic, it focuses on making the app fully customizable without visual clutter.
 
 Everything adapts to the user's chosen accent color including Dark Mode Wallpaper, Nowbar, and Settings
 
@@ -111,6 +111,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | **Multi-Week Repeat** | Repeat an alarm every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
 | **Alarm Groups and Recycle Bin** | Organize alarms into groups with bulk switches, and restore deleted alarms individually or all at once. |
 | **Translation Languages** | English, Arabic, Turkish, Italian, Spanish, French, and German, with full RTL support for Arabic. |
+| **World Clock Smart Search** | Search cities with partial or approximate spelling. Results are ranked by relevance, so the closest match appears first without typing the full name. |
 | **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
 | **Floating Controls** | A floating back button appears when the header scrolls out of view, and a back-to-top button appears on long lists. |
 | **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
@@ -169,7 +170,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
   * Dismiss button (container and label)
   * Snooze button (container and label)
 * **Custom font support:** Load any `.ttf`, `.otf`, or `.apk` font file from device storage.
-* **Display controls:** Independent visibility toggles for the date, AM/PM indicator, and alarm label.
+* **Display controls:** visibility toggles for the date, AM/PM indicator, and alarm label.
 * **Reset Button:** Moved or resized the clock or date too far? One tap returns both to their default position and size.
 
 ---
