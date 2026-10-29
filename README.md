@@ -170,7 +170,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
   * Dismiss button (container and label)
   * Snooze button (container and label)
 * **Custom font support:** Load any `.ttf`, `.otf`, or `.apk` font file from device storage.
-* **Display controls:** Independent visibility toggles for the date, AM/PM indicator, and alarm label.
+* **Display controls:** visibility toggles for the date, AM/PM indicator, and alarm label.
 * **Reset Button:** Moved or resized the clock or date too far? One tap returns both to their default position and size.
 
 ---
