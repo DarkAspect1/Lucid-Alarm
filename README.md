@@ -109,7 +109,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | **Multi-week repeat:** | Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
 | **Accent Color Theming** | Choose an accent color and the app adapts around it, including Nowbar and Dark Mode background. |
 | **Nowbar Support** | Live stopwatch and timer pills with lap, pause, resume, and cancel controls and no need to open the app. |
-| **Multi-Week Repeat** | Repeat an alarm every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
+| **Multi-Week Scheduling** | Repeat an alarm every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
 | **Alarm Groups and Recycle Bin** | Organize alarms into groups with bulk switches, and restore deleted alarms individually or all at once. |
 | **Translation Languages** | English, Arabic, Turkish, Italian, Spanish, French, and German, with full RTL support for Arabic. |
 | **World Clock Smart Search** | Search cities with partial or approximate spelling. Results are ranked by relevance, so the closest match appears first without typing the full name. |
