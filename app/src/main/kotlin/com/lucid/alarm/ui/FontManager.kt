@@ -24,6 +24,7 @@ import kotlinx.coroutines.withContext
 object FontManager {
 
     val FONT_MIME_TYPES = arrayOf(
+        "font/*",
         "font/ttf",
         "font/otf",
         "application/x-font-ttf",
@@ -31,7 +32,8 @@ object FontManager {
         "application/vnd.android.package-archive",
         "application/zip",
         "application/x-zip-compressed",
-        "application/octet-stream"
+        "application/octet-stream",
+        "*/*"
     )
 
     const val APP_FONT_BASE = "app_font"

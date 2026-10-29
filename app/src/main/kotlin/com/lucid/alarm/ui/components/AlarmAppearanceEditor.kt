@@ -1218,7 +1218,11 @@ fun AlarmAppearanceEditor(
                             shape = SelectionChipShape,
                             onClick = {
                                 clockFont = font.name
-                                if (font != RingingClockFont.CUSTOM_FILE) clockFontPath = ""
+                                if (font != RingingClockFont.CUSTOM_FILE) {
+                                    clockFontPath = ""
+                                } else {
+                                    pickClockFont()
+                                }
                             },
                             label = { Text(font.localizedLabel()) }
                         )
@@ -1271,7 +1275,11 @@ fun AlarmAppearanceEditor(
                             shape = SelectionChipShape,
                             onClick = {
                                 dateFont = font.name
-                                if (font != ClockDateFont.CUSTOM_FILE) dateFontPath = ""
+                                if (font != ClockDateFont.CUSTOM_FILE) {
+                                    dateFontPath = ""
+                                } else {
+                                    pickDateFont()
+                                }
                             },
                             label = { Text(font.localizedLabel()) }
                         )
@@ -1350,12 +1358,6 @@ fun AlarmAppearanceEditor(
                         Text(stringResource(R.string.appearance_inherit_global))
                     }
                 }
-                Text(stringResource(R.string.appearance_clock_size), style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = stringResource(R.string.appearance_clock_size_desc_per_alarm),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
                 Button(
                     onClick = {
                         boxWidth = 0f
@@ -1417,7 +1419,11 @@ fun AlarmAppearanceEditor(
                             shape = SelectionChipShape,
                             onClick = {
                                 ovSnoozeFont = font.name
-                                if (font != RingingClockFont.CUSTOM_FILE) ovSnoozeFontPath = ""
+                                if (font != RingingClockFont.CUSTOM_FILE) {
+                                    ovSnoozeFontPath = ""
+                                } else {
+                                    pickSnoozeFont()
+                                }
                             },
                             label = { Text(font.localizedLabel()) }
                         )
@@ -1501,7 +1507,11 @@ fun AlarmAppearanceEditor(
                             shape = SelectionChipShape,
                             onClick = {
                                 ovDismissFont = font.name
-                                if (font != RingingClockFont.CUSTOM_FILE) ovDismissFontPath = ""
+                                if (font != RingingClockFont.CUSTOM_FILE) {
+                                    ovDismissFontPath = ""
+                                } else {
+                                    pickDismissFont()
+                                }
                             },
                             label = { Text(font.localizedLabel()) }
                         )

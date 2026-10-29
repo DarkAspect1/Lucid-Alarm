@@ -1056,7 +1056,12 @@ fun AlarmCustomizationScreen(
                             selected = clockFont == font,
                             colors = selectedChipColors(),
                             shape = SelectionChipShape,
-                            onClick = { clockFont = font },
+                            onClick = {
+                                clockFont = font
+                                if (font == RingingClockFont.CUSTOM_FILE) {
+                                    pickClockFont()
+                                }
+                            },
                             label = { Text(font.localizedLabel()) }
                         )
                     }
@@ -1089,13 +1094,6 @@ fun AlarmCustomizationScreen(
                     onGradient = { clockGradient = it },
                     onColorEnd = { clockColorEnd = it },
                     onDirection = { clockGradientDir = it }
-                )
-
-                Text(stringResource(R.string.appearance_clock_size), style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = stringResource(R.string.appearance_clock_size_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 HorizontalDivider(
@@ -1168,7 +1166,12 @@ fun AlarmCustomizationScreen(
                                 selected = dateFont == font,
                                 colors = selectedChipColors(),
                                 shape = SelectionChipShape,
-                                onClick = { dateFont = font },
+                                onClick = {
+                                    dateFont = font
+                                    if (font == ClockDateFont.CUSTOM_FILE) {
+                                        pickDateFont()
+                                    }
+                                },
                                 label = { Text(font.localizedLabel()) }
                             )
                         }
@@ -1257,7 +1260,12 @@ fun AlarmCustomizationScreen(
                             selected = dismissFont == font,
                             colors = selectedChipColors(),
                             shape = SelectionChipShape,
-                            onClick = { dismissFont = font },
+                            onClick = {
+                                dismissFont = font
+                                if (font == RingingClockFont.CUSTOM_FILE) {
+                                    pickDismissFont()
+                                }
+                            },
                             label = { Text(font.localizedLabel()) }
                         )
                     }
@@ -1319,7 +1327,12 @@ fun AlarmCustomizationScreen(
                             selected = snoozeFont == font,
                             colors = selectedChipColors(),
                             shape = SelectionChipShape,
-                            onClick = { snoozeFont = font },
+                            onClick = {
+                                snoozeFont = font
+                                if (font == RingingClockFont.CUSTOM_FILE) {
+                                    pickSnoozeFont()
+                                }
+                            },
                             label = { Text(font.localizedLabel()) }
                         )
                     }

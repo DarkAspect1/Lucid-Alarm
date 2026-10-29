@@ -138,7 +138,10 @@ fun AppThemeScreen(
     val pickAppFont = rememberFontPicker(
         baseName = FontManager.APP_FONT_BASE
     ) { path ->
-        scope.launch { settingsDataStore.setAppCustomFontPath(path) }
+        scope.launch {
+            settingsDataStore.setAppCustomFontPath(path)
+            settingsDataStore.setAppFontStyle(AppFontStyle.CUSTOM_FILE)
+        }
     }
 
     var showAccentPicker by remember { mutableStateOf(false) }
@@ -620,6 +623,9 @@ fun AppThemeScreen(
                             selected = selected,
                             onClick = {
                                 scope.launch { settingsDataStore.setAppFontStyle(style) }
+                                if (style == AppFontStyle.CUSTOM_FILE) {
+                                    pickAppFont()
+                                }
                             },
                             shape = SelectionChipShape,
                             label = { Text(style.label) },
