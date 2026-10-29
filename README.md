@@ -7,7 +7,7 @@
 
   <p align="center">
     <b>Deep Alarm Ringing Screen Customization • Animated Backgrounds • Custom Wallpapers</b><br/>
-    <b>Alarm Groups • Multi-Select Batch Actions • Filters and Sorting • Recycle Bin</b><br/>
+    <b>Alarm Groups •  Multi-Week Repeat • Multi-Select • Filters and Sorting • Recycle Bin</b><br/>
     <b>Stopwatch with Laps • Timer with Presets • World Clock • Interactive Live Activities (Nowbar)</b><br/>
     <b>Post-Alarm Wake Check • Upcoming Alarm Alerts • Custom Vibration Patterns • Custom Ringtones • Custom Fonts</b><br/>
     <b>HSV Color Picker • Dynamic Accent Tinting • JSON Backup and Restore</b>
@@ -33,7 +33,7 @@
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
       <a href="#stopwatch-timer-and-world-clock">StopWatch-Timer-World Clock</a> &nbsp;|&nbsp;
-      <a href="#wake-check-pre-alarm--notifications-optional">Wake Check-PreAlarm & Notifications</a> &nbsp;|&nbsp;
+      <a href="#alarm-options--notifications">Alarm Options & Notifications</a> &nbsp;|&nbsp;
       <a href="#backup-and-restore">Backup and Restore</a> &nbsp;|&nbsp;
       <a href="#installation--build-requirements">Installation & Build Requirements</a> &nbsp;|&nbsp;
     </b>
@@ -103,12 +103,18 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 
 | Feature | Description |
 | :--- | :--- |
-| **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
-| **Edge Fade Masks** | Offscreen `BlendMode.DstIn` vertical alpha masks let scrollable content fade naturally at the top and bottom of the viewport. |
-| **Floating Navigation Bar** | A compact, borderless navigation bar with active tab indicators. |
-| **Back to Top Button** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
-| **Floating Back Button** | When the header scrolls out of view, a circular back button floats in so you can always navigate back without scrolling up. |
+| **Full Alarm Customization** | Design your ringing screen with clock layouts, animated or custom backgrounds, a full color picker, gradients, custom fonts, button styling, and a resizable clock and date, applied globally or per alarm. |
+| **Wake Check** | After an alarm is dismissed, a notification asks you to confirm you're awake within a set time. If you don't answer, the alarm rings again at maximum volume and loops until you tap "I'm Awake" in the notification. |
+| **Multi-week repeat:** | Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
+| **Accent Color Theming** | Choose an accent color and the app adapts around it, including Nowbar and Dark Mode background. |
+| **Nowbar Support** | Live stopwatch and timer pills with lap, pause, resume, and cancel controls and no need to open the app. |
+| **Multi-Week Repeat** | Repeat an alarm every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
+| **Alarm Groups and Recycle Bin** | Organize alarms into groups with bulk switches, and restore deleted alarms individually or all at once. |
+| **Translation Languages** | English, Arabic, Turkish, Italian, Spanish, French, and German, with full RTL support for Arabic. |
 | **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
+| **Floating Controls** | A floating back button appears when the header scrolls out of view, and a back-to-top button appears on long lists. |
+| **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
+| **Edge Fade Masks** | Alpha masks to let scrollable content fade naturally at the top and bottom of the viewport. |
 
 ### Selection and Organization
 
@@ -189,11 +195,12 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 
 ---
 
-## Wake Check, Pre-Alarm & Notifications [Optional]
+## Alarm Options & Notifications
 
 * **Featured Wake Check:** After an alarm is dismissed, a configurable delay (1 to 15 minutes) triggers a confirmation notification with a countdown to respond, and if it goes unanswered the alarm rings again at maximum volume and awake check notification keeps repeating until you tap “I’m Awake” in the notification, which ends the check.
+* **Multi-week repeat:** Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time, and the schedule stays accurate across reboots and time changes.
 * **Upcoming alarm alerts:** Dismiss or modify an upcoming alarm directly from its notification, with configurable lead times from 15 to 60 minutes.
-* **Alarm set confirmation:** A toast appears whenever you turn on an alarm or create a new one, showing how much time is left until it rings.
+* **Alarm toast confirmation:** A toast appears whenever you turn on an alarm or create a new one, showing how much time is left until it rings.
 * **Audio and haptics:** Unified or per-alarm volume override, custom ringtone selection, and distinct vibration patterns.
 
 ---
@@ -204,31 +211,55 @@ Configurations can be exported and restored at any time using a structured JSON 
 
 ```json
 {
-  "version": 2,
-  "exportedAt": "2026-10-25T01:57:00Z",
-  "appSettings": {
-    "themeMode": "DARK",
-    "accentColor": "#D9B478",
-    "removeLeadingZero": true,
-    "appFont": "System Modern"
-  },
+  "formatVersion": 1,
+  "app": "Lucid Clock",
+  "exportedAt": 1793290000000,
+  "settings": [
+    ["theme_mode", "s", "DARK"],
+    ["haptic_feedback_enabled", "b", "true"],
+    ["snooze_interval_minutes", "i", "5"],
+    ["awake_check_delay_minutes", "i", "2"]
+  ],
   "alarms": [
     {
       "id": 1,
-      "time": "08:00",
-      "days": ["MON", "TUE", "WED", "THU", "FRI"],
-      "groupName": "University",
+      "hour": 7,
+      "minute": 30,
+      "label": "Work Alarm",
       "isEnabled": true,
-      "awakeCheckDelayMinutes": 5,
-      "appearance": {
-        "layout": "VERTICAL_STACKED",
-        "clockColor": "#D9B478",
-        "backgroundStyle": "STARFIELD_DRIFT"
-      }
+      "repeatDays": "MON,TUE,WED,THU,FRI",
+      "groupName": "Morning",
+      "soundUri": "content://media/internal/audio/media/42",
+      "soundTitle": "Default",
+      "vibrationPattern": "HEARTBEAT",
+      "vibrationEnabled": true,
+      "snoozeEnabled": true,
+      "snoozeMinutes": 5,
+      "snoozeLimit": 3,
+      "areYouAwakeEnabled": true,
+      "areYouAwakeMinutes": 2,
+      "upcomingNotificationEnabled": true,
+      "upcomingNotificationLeadMinutes": 30,
+      "weekInterval": 1,
+      "anchorWeekStartEpochDay": 0,
+      "customAppearanceEnabled": false,
+      "volumeLevel": 0.85,
+      "sortOrder": 0,
+      "deletedAt": 0,
+      "trashedGroup": ""
     }
   ],
-  "worldClockCities": ["London", "California", "Tokyo"],
-  "recycleBin": []
+  "worldClock": [
+    "America/New_York",
+    "Europe/London",
+    "Asia/Tokyo"
+  ],
+  "recycleBin": [
+    {
+      "zoneId": "Australia/Sydney",
+      "deletedAt": 1793285000000
+    }
+  ]
 }
 ```
 
