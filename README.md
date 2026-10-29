@@ -33,7 +33,7 @@
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
       <a href="#stopwatch-timer-and-world-clock">StopWatch-Timer-World Clock</a> &nbsp;|&nbsp;
-      <a href="#wake-check-pre-alarm--notifications-optional">Wake Check-PreAlarm & Notifications</a> &nbsp;|&nbsp;
+      <a href="#alarm-options--notifications">Wake Check-PreAlarm & Notifications</a> &nbsp;|&nbsp;
       <a href="#backup-and-restore">Backup and Restore</a> &nbsp;|&nbsp;
       <a href="#installation--build-requirements">Installation & Build Requirements</a> &nbsp;|&nbsp;
     </b>
@@ -195,7 +195,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 
 ---
 
-## Alarm Options & Notifications [Optional]
+## Alarm Options & Notifications
 
 * **Featured Wake Check:** After an alarm is dismissed, a configurable delay (1 to 15 minutes) triggers a confirmation notification with a countdown to respond, and if it goes unanswered the alarm rings again at maximum volume and awake check notification keeps repeating until you tap “I’m Awake” in the notification, which ends the check.
 * **Multi-week repeat:** Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time, and the schedule stays accurate across reboots and time changes.
