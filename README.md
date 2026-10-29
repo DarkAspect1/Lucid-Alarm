@@ -113,7 +113,6 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | **Translation Languages** | English, Arabic, Turkish, Italian, Spanish, French, and German, with full RTL support for Arabic. |
 | **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
 | **Floating Controls** | A floating back button appears when the header scrolls out of view, and a back-to-top button appears on long lists. |
-| **Borderless Design** | Cards, menus, buttons, and pills use no outlines, with fading edges on scrollable content and a compact floating navigation bar. |
 | **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
 | **Edge Fade Masks** | Alpha masks to let scrollable content fade naturally at the top and bottom of the viewport. |
 
