@@ -195,11 +195,12 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 
 ---
 
-## Wake Check, Pre-Alarm & Notifications [Optional]
+## Alarm Options & Notifications [Optional]
 
 * **Featured Wake Check:** After an alarm is dismissed, a configurable delay (1 to 15 minutes) triggers a confirmation notification with a countdown to respond, and if it goes unanswered the alarm rings again at maximum volume and awake check notification keeps repeating until you tap “I’m Awake” in the notification, which ends the check.
+* **Multi-week repeat:** Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time, and the schedule stays accurate across reboots and time changes.
 * **Upcoming alarm alerts:** Dismiss or modify an upcoming alarm directly from its notification, with configurable lead times from 15 to 60 minutes.
-* **Alarm set confirmation:** A toast appears whenever you turn on an alarm or create a new one, showing how much time is left until it rings.
+* **Alarm toast confirmation:** A toast appears whenever you turn on an alarm or create a new one, showing how much time is left until it rings.
 * **Audio and haptics:** Unified or per-alarm volume override, custom ringtone selection, and distinct vibration patterns.
 
 ---
@@ -210,31 +211,55 @@ Configurations can be exported and restored at any time using a structured JSON 
 
 ```json
 {
-  "version": 2,
-  "exportedAt": "2026-10-25T01:57:00Z",
-  "appSettings": {
-    "themeMode": "DARK",
-    "accentColor": "#D9B478",
-    "removeLeadingZero": true,
-    "appFont": "System Modern"
-  },
+  "formatVersion": 1,
+  "app": "Lucid Clock",
+  "exportedAt": 1793290000000,
+  "settings": [
+    ["theme_mode", "s", "DARK"],
+    ["haptic_feedback_enabled", "b", "true"],
+    ["snooze_interval_minutes", "i", "5"],
+    ["awake_check_delay_minutes", "i", "2"]
+  ],
   "alarms": [
     {
       "id": 1,
-      "time": "08:00",
-      "days": ["MON", "TUE", "WED", "THU", "FRI"],
-      "groupName": "University",
+      "hour": 7,
+      "minute": 30,
+      "label": "Work Alarm",
       "isEnabled": true,
-      "awakeCheckDelayMinutes": 5,
-      "appearance": {
-        "layout": "VERTICAL_STACKED",
-        "clockColor": "#D9B478",
-        "backgroundStyle": "STARFIELD_DRIFT"
-      }
+      "repeatDays": "MON,TUE,WED,THU,FRI",
+      "groupName": "Morning",
+      "soundUri": "content://media/internal/audio/media/42",
+      "soundTitle": "Default",
+      "vibrationPattern": "HEARTBEAT",
+      "vibrationEnabled": true,
+      "snoozeEnabled": true,
+      "snoozeMinutes": 5,
+      "snoozeLimit": 3,
+      "areYouAwakeEnabled": true,
+      "areYouAwakeMinutes": 2,
+      "upcomingNotificationEnabled": true,
+      "upcomingNotificationLeadMinutes": 30,
+      "weekInterval": 1,
+      "anchorWeekStartEpochDay": 0,
+      "customAppearanceEnabled": false,
+      "volumeLevel": 0.85,
+      "sortOrder": 0,
+      "deletedAt": 0,
+      "trashedGroup": ""
     }
   ],
-  "worldClockCities": ["London", "California", "Tokyo"],
-  "recycleBin": []
+  "worldClock": [
+    "America/New_York",
+    "Europe/London",
+    "Asia/Tokyo"
+  ],
+  "recycleBin": [
+    {
+      "zoneId": "Australia/Sydney",
+      "deletedAt": 1793285000000
+    }
+  ]
 }
 ```
 
