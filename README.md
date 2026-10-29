@@ -21,6 +21,7 @@
 
   <p align="center">
     <a href="https://github.com/DarkAspect1/Lucid-Alarm/stargazers"><img src="https://img.shields.io/github/stars/DarkAspect1/Lucid-Alarm?style=flat-square&color=007EC6" alt="GitHub Stars" /></a>
+    <a href="https://github.com/DarkAspect1/Lucid-Alarm/releases"><img src="https://img.shields.io/github/downloads/DarkAspect1/Lucid-Alarm/total?style=flat-square&color=007EC6&label=installs" alt="Installs" /></a>
     <a href="https://github.com/DarkAspect1/Lucid-Alarm/commits"><img src="https://img.shields.io/github/last-commit/DarkAspect1/Lucid-Alarm?style=flat-square" alt="Last Commit" /></a>
     <a href="https://github.com/DarkAspect1/Lucid-Alarm/issues"><img src="https://img.shields.io/github/issues/DarkAspect1/Lucid-Alarm?style=flat-square" alt="Open Issues" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/DarkAspect1/Lucid-Alarm?style=flat-square" alt="License" /></a>
