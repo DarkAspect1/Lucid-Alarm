@@ -7,7 +7,7 @@
 
   <p align="center">
     <b>Deep Alarm Ringing Screen Customization • Animated Backgrounds • Custom Wallpapers</b><br/>
-    <b>Alarm Groups •  Multi-Week Repeat • Multi-Select • Filters and Sorting • Recycle Bin</b><br/>
+    <b>Alarm Groups •  Multi-Week Scheduling • Multi-Select • Filters and Sorting • Recycle Bin</b><br/>
     <b>Stopwatch with Laps • Timer with Presets • World Clock • Interactive Live Activities (Nowbar)</b><br/>
     <b>Post-Alarm Wake Check • Upcoming Alarm Alerts • Custom Vibration Patterns • Custom Ringtones • Custom Fonts</b><br/>
     <b>HSV Color Picker • Dynamic Accent Tinting • JSON Backup and Restore</b>
@@ -199,7 +199,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 ## Alarm Options & Notifications
 
 * **Featured Wake Check:** After an alarm is dismissed, a configurable delay (1 to 15 minutes) triggers a confirmation notification with a countdown to respond, and if it goes unanswered the alarm rings again at maximum volume and awake check notification keeps repeating until you tap “I’m Awake” in the notification, which ends the check.
-* **Multi-week repeat:** Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time, and the schedule stays accurate across reboots and time changes.
+* **Multi-week Scheduling:** Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time, and the schedule stays accurate across reboots and time changes.
 * **Upcoming alarm alerts:** Dismiss or modify an upcoming alarm directly from its notification, with configurable lead times from 15 to 60 minutes.
 * **Alarm toast confirmation:** A toast appears whenever you turn on an alarm or create a new one, showing how much time is left until it rings.
 * **Audio and haptics:** Unified or per-alarm volume override, custom ringtone selection, and distinct vibration patterns.
