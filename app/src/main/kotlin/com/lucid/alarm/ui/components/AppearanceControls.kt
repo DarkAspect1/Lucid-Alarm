@@ -48,6 +48,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
+import com.lucid.alarm.R
+import com.lucid.alarm.ui.localizedLabel
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
@@ -86,7 +89,7 @@ fun AppearanceColorEditor(
 ) {
     Text(title, style = MaterialTheme.typography.titleLarge)
     Text(
-        text = "Color",
+        text = stringResource(R.string.appearance_color),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -102,7 +105,7 @@ fun AppearanceColorEditor(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Gradient",
+            text = stringResource(R.string.appearance_gradient),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
@@ -111,13 +114,13 @@ fun AppearanceColorEditor(
     }
     if (gradient) {
         Text(
-            text = "Gradient end",
+            text = stringResource(R.string.appearance_gradient_end),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         ColorSwatchRow(selected = colorEnd, onSelect = onColorEnd)
         Text(
-            text = "Direction",
+            text = stringResource(R.string.appearance_direction),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -126,7 +129,7 @@ fun AppearanceColorEditor(
                         FilterChip(
                             selected = direction == dir,
                             onClick = { onDirection(dir) },
-                            label = { Text(dir.label) },
+                            label = { Text(dir.localizedLabel()) },
                             shape = SelectionChipShape,
                             colors = selectedChipColors()
                         )
@@ -135,7 +138,7 @@ fun AppearanceColorEditor(
     }
     if (inheritEnabled && inherited) {
         Text(
-            text = "Inherit uses the global value.",
+            text = stringResource(R.string.appearance_inherit_uses_global),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

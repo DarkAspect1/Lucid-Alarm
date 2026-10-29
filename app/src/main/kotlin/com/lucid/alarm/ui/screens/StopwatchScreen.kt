@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -67,6 +68,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.lucid.alarm.R
 import com.lucid.alarm.service.StopwatchService
 import com.lucid.alarm.service.StopwatchSessionState
 import java.util.Locale
@@ -192,14 +194,14 @@ fun StopwatchScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Lap",
+                                    text = stringResource(R.string.stopwatch_lap_header),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(0.9f)
                                 )
                                 Text(
-                                    text = "Lap times",
+                                    text = stringResource(R.string.stopwatch_lap_times),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -207,7 +209,7 @@ fun StopwatchScreen(
                                     textAlign = TextAlign.Center
                                 )
                                 Text(
-                                    text = "Overall time",
+                                    text = stringResource(R.string.stopwatch_overall_time),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -264,7 +266,7 @@ fun StopwatchScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = String.format(Locale.getDefault(), "%02d", lapNum),
+                                            text = String.format(Locale.US, "%02d", lapNum),
                                             style = TextStyle(
                                                 fontSize = 14.5.sp,
                                                 lineHeight = 18.sp,
@@ -274,7 +276,7 @@ fun StopwatchScreen(
                                             modifier = Modifier.weight(0.9f)
                                         )
                                         Text(
-                                            text = String.format(Locale.getDefault(), "%02d:%02d.%02d", dm, ds, dms),
+                                            text = String.format(Locale.US, "%02d:%02d.%02d", dm, ds, dms),
                                             style = TextStyle(
                                                 fontSize = 14.5.sp,
                                                 lineHeight = 18.sp,
@@ -287,7 +289,7 @@ fun StopwatchScreen(
                                             textAlign = TextAlign.Center
                                         )
                                         Text(
-                                            text = String.format(Locale.getDefault(), "%02d:%02d.%02d", om, os, oms),
+                                            text = String.format(Locale.US, "%02d:%02d.%02d", om, os, oms),
                                             style = TextStyle(
                                                 fontSize = 14.5.sp,
                                                 lineHeight = 18.sp,
@@ -343,22 +345,22 @@ fun StopwatchScreen(
         ) {
             if (isRunning) {
                 RoundActionButton(
-                    label = "Lap",
+                    label = stringResource(R.string.action_lap),
                     color = neutralColor,
                     isLight = !dark
                 ) { StopwatchService.lap(context) }
             } else if (started) {
                 RoundActionButton(
-                    label = "Reset",
+                    label = stringResource(R.string.action_reset),
                     color = neutralColor,
                     isLight = !dark
                 ) { StopwatchService.cancel(context) }
             }
             RoundActionButton(
                 label = when {
-                    isRunning -> "Stop"
-                    started -> "Resume"
-                    else -> "Start"
+                    isRunning -> stringResource(R.string.action_stop)
+                    started -> stringResource(R.string.action_resume)
+                    else -> stringResource(R.string.action_start)
                 },
                 color = if (isRunning) redColor else accent,
                 isLight = !dark
@@ -391,7 +393,7 @@ fun StopwatchScreen(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Settings,
-                    contentDescription = "Settings",
+                    contentDescription = stringResource(R.string.clock_settings),
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -484,7 +486,7 @@ private fun StopwatchDial(
         val s = (millis % 60000) / 1000
         val ms = (millis % 1000) / 10
         Text(
-            text = String.format(Locale.getDefault(), "%02d:%02d.%02d", m, s, ms),
+            text = String.format(Locale.US, "%02d:%02d.%02d", m, s, ms),
             style = TextStyle(
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
@@ -528,7 +530,7 @@ private fun StopwatchDigitalPage(
     Box(modifier = modifier.size(dialSize), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = String.format(Locale.getDefault(), "%02d:%02d.%02d", m, s, ms),
+                text = String.format(Locale.US, "%02d:%02d.%02d", m, s, ms),
                 style = TextStyle(
                     fontSize = 44.sp,
                     fontWeight = FontWeight.Bold,
@@ -544,8 +546,8 @@ private fun StopwatchDigitalPage(
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = String.format(
-                        Locale.getDefault(),
-                        "Last lap %02d:%02d.%02d",
+                        Locale.US,
+                        stringResource(R.string.stopwatch_last_lap_pattern),
                         lapM,
                         lapS,
                         lapMs

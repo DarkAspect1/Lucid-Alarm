@@ -1,5 +1,6 @@
 package com.lucid.alarm.ui.components
 
+import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -26,16 +27,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lucid.alarm.R
 import com.lucid.alarm.data.AlarmEntity
+import com.lucid.alarm.receiver.AlarmScheduler
 import com.lucid.alarm.ui.amPmSuffix
 import com.lucid.alarm.ui.formatHourMinute
 import com.lucid.alarm.ui.theme.onColorFor
 import java.text.SimpleDateFormat
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 import java.util.Calendar
 import java.util.Locale
 
@@ -56,8 +68,9 @@ fun AlarmRow(
     showSwitch: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val formattedTime = formatHourMinute(alarm.hour, alarm.minute, is24Hour, removeLeadingZero)
-    val repeatSummary = repeatSummary(alarm.daysOfWeek)
+    val repeatSummary = repeatSummary(context, alarm)
 
     val selectedNow = selectionMode && isSelected
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
@@ -132,7 +145,8 @@ fun AlarmRow(
                     }
 
                     Spacer(modifier = Modifier.height(2.dp))
-                    val subtitleText = if (alarm.label.isNotBlank()) repeatSummary else "${alarm.groupName} \u00B7 $repeatSummary"
+                    val groupDisplay = if (alarm.groupName == AlarmEntity.DEFAULT_GROUP) stringResource(R.string.group_general) else alarm.groupName
+                    val subtitleText = if (alarm.label.isNotBlank()) repeatSummary else "$groupDisplay \u00B7 $repeatSummary"
                     Text(
                         text = subtitleText,
                         style = MaterialTheme.typography.bodySmall,
@@ -166,7 +180,7 @@ fun AlarmRow(
                     contentColor = onColorFor(MaterialTheme.colorScheme.primary)
                 ) {
                     Text(
-                        text = reenableLabel(alarm.daysOfWeek, alarm.hour, alarm.minute),
+                        text = reenableLabel(context, alarm.daysOfWeek, alarm.hour, alarm.minute),
                         style = MaterialTheme.typography.labelLarge,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -240,7 +254,7 @@ fun AlarmCard(
     }
 }
 
-private fun reenableLabel(days: Set<Int>, hour: Int, minute: Int): String {
+private fun reenableLabel(context: Context, days: Set<Int>, hour: Int, minute: Int): String {
     val now = Calendar.getInstance()
     val target = (now.clone() as Calendar).apply {
         set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
@@ -257,14 +271,14 @@ private fun reenableLabel(days: Set<Int>, hour: Int, minute: Int): String {
     val tomorrow = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
     val label = when {
         target.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
-            target.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR) -> "today"
+            target.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR) -> context.getString(R.string.turn_back_on_today)
 
         target.get(Calendar.YEAR) == tomorrow.get(Calendar.YEAR) &&
-            target.get(Calendar.DAY_OF_YEAR) == tomorrow.get(Calendar.DAY_OF_YEAR) -> "tomorrow"
+            target.get(Calendar.DAY_OF_YEAR) == tomorrow.get(Calendar.DAY_OF_YEAR) -> context.getString(R.string.turn_back_on_tomorrow)
 
         else -> SimpleDateFormat("EEEE", Locale.getDefault()).format(target.time)
     }
-    return "Turn back on for $label"
+    return context.getString(R.string.turn_back_on_for, label)
 }
 
 private val WEEKDAYS = setOf(
@@ -276,20 +290,46 @@ private val WEEKDAYS = setOf(
 )
 private val WEEKENDS = setOf(Calendar.SATURDAY, Calendar.SUNDAY)
 
-private fun repeatSummary(days: Set<Int>): String = when {
-    days.isEmpty() -> "Once"
-    days.size == 7 -> "Every day"
-    days == WEEKDAYS -> "Weekdays"
-    days == WEEKENDS -> "Weekends"
-    else -> days.sorted().joinToString(", ") { DAY_LABELS.getValue(it) }
+private fun repeatSummary(context: Context, alarm: AlarmEntity): String {
+    val days = alarm.daysOfWeek
+    val base = when {
+        days.isEmpty() -> context.getString(R.string.repeat_once)
+        days.size == 7 -> context.getString(R.string.repeat_every_day)
+        days == WEEKDAYS -> context.getString(R.string.repeat_weekdays)
+        days == WEEKENDS -> context.getString(R.string.repeat_weekends)
+        else -> days.sorted().joinToString(", ") { dayLabel(it) }
+    }
+    if (days.isNotEmpty() && alarm.weekInterval > 1) {
+        val intervalSuffix = " \u2022 " + context.getString(R.string.every_x_weeks_short, alarm.weekInterval)
+        val now = LocalDate.now()
+        val anchorDate = if (alarm.anchorWeekStartEpochDay > 0L) {
+            LocalDate.ofEpochDay(alarm.anchorWeekStartEpochDay)
+        } else {
+            now
+        }
+        val anchorMonday = anchorDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val currentMonday = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val weeksBetween = ChronoUnit.WEEKS.between(anchorMonday, currentMonday)
+        val isCurrentWeekActive = weeksBetween >= 0L && (weeksBetween % alarm.weekInterval.toLong() == 0L)
+
+        if (alarm.isEnabled && !isCurrentWeekActive) {
+            val nextTriggerMillis = AlarmScheduler.calculateTriggerTimeMillisStatic(
+                alarm.hour,
+                alarm.minute,
+                alarm.daysOfWeek,
+                alarm.weekInterval,
+                alarm.anchorWeekStartEpochDay
+            )
+            val triggerDate = Instant.ofEpochMilli(nextTriggerMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+            val formatter = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault())
+            return context.getString(R.string.skips_this_week) + " \u2022 " + context.getString(R.string.next_trigger_prefix, triggerDate.format(formatter)) + intervalSuffix
+        }
+        return "$base$intervalSuffix"
+    }
+    return base
 }
 
-private val DAY_LABELS = mapOf(
-    Calendar.SUNDAY to "Sun",
-    Calendar.MONDAY to "Mon",
-    Calendar.TUESDAY to "Tue",
-    Calendar.WEDNESDAY to "Wed",
-    Calendar.THURSDAY to "Thu",
-    Calendar.FRIDAY to "Fri",
-    Calendar.SATURDAY to "Sat"
-)
+private fun dayLabel(dayOfWeek: Int): String {
+    val cal = Calendar.getInstance().apply { set(Calendar.DAY_OF_WEEK, dayOfWeek) }
+    return SimpleDateFormat("EEE", Locale.getDefault()).format(cal.time)
+}

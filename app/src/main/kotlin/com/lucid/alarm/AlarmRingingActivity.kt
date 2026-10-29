@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -600,7 +601,7 @@ fun AlarmRingingScreen(
         ) {
             if (effectiveLabelVisible) {
                 Text(
-                    text = "Alarm",
+                    text = stringResource(R.string.ringing_alarm_title),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontFamily = LocalAppFont.current,
                         fontWeight = FontWeight.SemiBold,
@@ -620,7 +621,7 @@ fun AlarmRingingScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .offset {
+                        .absoluteOffset {
                             IntOffset(effectiveOffsetX.roundToInt(), effectiveOffsetY.roundToInt())
                         }
                         .wrapContentSize(Alignment.Center, unbounded = true)
@@ -657,7 +658,7 @@ fun AlarmRingingScreen(
                         textBrush = effectiveDateBrush,
                         modifier = Modifier
                             .align(Alignment.Center)
-                            .offset {
+                            .absoluteOffset {
                                 IntOffset(
                                     effectiveDateOffsetX.roundToInt(),
                                     (clockH / 2f + dateGapPx + dateH / 2f + effectiveDateOffsetY)
@@ -698,7 +699,7 @@ fun AlarmRingingScreen(
                 }
 
                 RingingActionPill(
-                    text = "Dismiss",
+                    text = stringResource(R.string.action_dismiss),
                     onClick = onDismiss,
                     containerColor = if (dismissContainerColorLong != 0L) {
                         Color(dismissContainerColorLong.toInt())
@@ -717,7 +718,7 @@ fun AlarmRingingScreen(
 
                 if (snoozeExhausted) {
                     Text(
-                        text = "Snooze limit reached",
+                        text = stringResource(R.string.snooze_limit_reached),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.7f)
                     )

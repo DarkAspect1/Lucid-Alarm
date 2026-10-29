@@ -19,6 +19,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
+import com.lucid.alarm.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -118,71 +123,74 @@ fun VerticalWheelTimePicker(
                     )
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                WheelColumn(
-                    items = hourItems,
-                    initialIndex = initialHourIndex,
-                    itemFormatter = { value -> String.format(Locale.getDefault(), "%02d", value) },
-                    onItemSelected = { index ->
-                        emitUpdatedTime(hourItems[index], selectedMinute, isPm)
-                    },
-                    modifier = Modifier.width(88.dp)
-                )
-
-                Text(
-                    text = ":",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onPrimary,
-
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-
-                WheelColumn(
-                    items = minuteItems,
-                    initialIndex = initialMinuteIndex,
-                    itemFormatter = { value -> String.format(Locale.getDefault(), "%02d", value) },
-                    onItemSelected = { index ->
-                        val currentDisplayHour = if (is24Hour) {
-                            selectedHour24
-                        } else {
-                            when {
-                                selectedHour24 == 0 -> 12
-                                selectedHour24 > 12 -> selectedHour24 - 12
-                                else -> selectedHour24
-                            }
-                        }
-                        emitUpdatedTime(currentDisplayHour, minuteItems[index], isPm)
-                    },
-                    modifier = Modifier.width(88.dp)
-                )
-
-                if (!is24Hour) {
-                    val amPmItems = remember { listOf("AM", "PM") }
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     WheelColumn(
-                        items = amPmItems,
-                        initialIndex = isPm,
-                        infiniteLoop = false,
-                        itemFormatter = { it },
+                        items = hourItems,
+                        initialIndex = initialHourIndex,
+                        itemFormatter = { value -> String.format(Locale.US, "%02d", value) },
                         onItemSelected = { index ->
-                            isPm = index.coerceIn(0, 1)
-                            val currentDisplayHour = when {
-                                selectedHour24 == 0 -> 12
-                                selectedHour24 > 12 -> selectedHour24 - 12
-                                else -> selectedHour24
-                            }
-                            emitUpdatedTime(currentDisplayHour, selectedMinute, isPm)
+                            emitUpdatedTime(hourItems[index], selectedMinute, isPm)
                         },
-                        modifier = Modifier
-                            .padding(start = 12.dp)
-                            .width(72.dp)
+                        modifier = Modifier.width(88.dp)
                     )
+
+                    Text(
+                        text = ":",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 32.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    WheelColumn(
+                        items = minuteItems,
+                        initialIndex = initialMinuteIndex,
+                        itemFormatter = { value -> String.format(Locale.US, "%02d", value) },
+                        onItemSelected = { index ->
+                            val currentDisplayHour = if (is24Hour) {
+                                selectedHour24
+                            } else {
+                                when {
+                                    selectedHour24 == 0 -> 12
+                                    selectedHour24 > 12 -> selectedHour24 - 12
+                                    else -> selectedHour24
+                                }
+                            }
+                            emitUpdatedTime(currentDisplayHour, minuteItems[index], isPm)
+                        },
+                        modifier = Modifier.width(88.dp)
+                    )
+
+                    if (!is24Hour) {
+                        val amText = stringResource(R.string.time_am)
+                        val pmText = stringResource(R.string.time_pm)
+                        val amPmItems = remember(amText, pmText) { listOf(amText, pmText) }
+                        WheelColumn(
+                            items = amPmItems,
+                            initialIndex = isPm,
+                            infiniteLoop = false,
+                            itemFormatter = { it },
+                            onItemSelected = { index ->
+                                isPm = index.coerceIn(0, 1)
+                                val currentDisplayHour = when {
+                                    selectedHour24 == 0 -> 12
+                                    selectedHour24 > 12 -> selectedHour24 - 12
+                                    else -> selectedHour24
+                                }
+                                emitUpdatedTime(currentDisplayHour, selectedMinute, isPm)
+                            },
+                            modifier = Modifier
+                                .padding(start = 12.dp)
+                                .width(72.dp)
+                        )
+                    }
                 }
             }
         }
@@ -201,7 +209,7 @@ fun NumberWheel(
     unselectedFontSize: TextUnit = 20.sp,
     unselectedAlpha: Float = 0.45f,
     itemHeight: Dp = 56.dp,
-    itemFormat: (Int) -> String = { String.format(Locale.getDefault(), "%02d", it) },
+    itemFormat: (Int) -> String = { String.format(Locale.US, "%02d", it) },
     listState: LazyListState? = null
 ) {
     val initialIndex = remember(values, initialValue) {

@@ -789,14 +789,14 @@ class AlarmAudioService : Service() {
             .addAction(
                 buildNowBarAction(
                     R.drawable.ic_action_snooze,
-                    "Snooze",
+                    getString(R.string.action_snooze),
                     snoozePendingIntent
                 )
             )
             .addAction(
                 buildNowBarAction(
                     R.drawable.ic_action_close,
-                    "Dismiss",
+                    getString(R.string.action_dismiss),
                     stopPendingIntent
                 )
             )
@@ -903,7 +903,7 @@ class AlarmAudioService : Service() {
 
         val builder = NotificationCompat.Builder(this, CHANNEL_SNOOZE)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("Snoozed • $countdown")
+            .setContentTitle("${getString(R.string.notification_snooze_title)} • $countdown")
             .setContentText(secondary)
             .also { b ->
                 runCatching {
@@ -922,7 +922,7 @@ class AlarmAudioService : Service() {
             .addAction(
                 buildNowBarAction(
                     R.drawable.ic_action_close,
-                    "Dismiss",
+                    getString(R.string.action_dismiss),
                     cancelPendingIntent
                 )
             )
@@ -1193,7 +1193,7 @@ class AlarmAudioService : Service() {
 
             val notification = NotificationCompat.Builder(context, CHANNEL_AWAKE)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setContentTitle("Are you awake?")
+                .setContentTitle(context.getString(R.string.notification_awake_title))
                 .setContentText(notificationText)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -1204,7 +1204,7 @@ class AlarmAudioService : Service() {
                 .setContentIntent(confirmPendingIntent)
                 .addAction(
                     android.R.drawable.checkbox_on_background,
-                    "I'm Awake",
+                    context.getString(R.string.action_im_awake),
                     confirmPendingIntent
                 )
                 .build()

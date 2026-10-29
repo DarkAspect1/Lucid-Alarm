@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
+import android.os.UserManager
 import android.util.Log
 import com.lucid.alarm.AlarmApplication
 import com.lucid.alarm.data.prefs.SettingsDataStore
@@ -19,6 +20,9 @@ class BootReceiver : BroadcastReceiver() {
         val validActions = setOf(
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_LOCKED_BOOT_COMPLETED,
+            Intent.ACTION_USER_UNLOCKED,
+            "android.intent.action.QUICKBOOT_POWERON",
+            "com.htc.intent.action.QUICKBOOT_POWERON",
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
@@ -27,16 +31,21 @@ class BootReceiver : BroadcastReceiver() {
         )
         if (action !in validActions) return
 
+        val userManager = context.getSystemService(Context.USER_SERVICE) as? UserManager
+        if (userManager != null && !userManager.isUserUnlocked) {
+            return
+        }
+
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
-            "Lucid:BootReceiverWakeLock"
+            "Lucid:BootWakeLock"
         ).apply { setReferenceCounted(false) }
         wakeLock.acquire(30_000L)
 
         val pendingResult = goAsync()
         val app = context.applicationContext as AlarmApplication
-        val repository = app.repository
+        val alarmDao = app.database.alarmDao()
         val settings = SettingsDataStore(context.applicationContext)
         val scheduler = AlarmScheduler(context.applicationContext)
 
@@ -45,7 +54,7 @@ class BootReceiver : BroadcastReceiver() {
                 val globalUpcomingEnabled = runCatching { settings.upcomingAlarmEnabledFlow.first() }.getOrDefault(false)
                 val rawUpcomingMinutes = runCatching { settings.rawUpcomingAlarmMinutesFlow.first() }.getOrDefault(0)
 
-                val activeAlarms = repository.getActiveAlarmsSync()
+                val activeAlarms = alarmDao.getActiveAlarmsSync()
                 for (alarm in activeAlarms) {
                     val lead = if (!alarm.effectiveUpcomingNotification(globalUpcomingEnabled)) {
                         0

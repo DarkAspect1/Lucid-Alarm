@@ -2,6 +2,7 @@ package com.lucid.alarm.ui.components
 
 import android.app.Activity
 import android.content.Intent
+import com.lucid.alarm.util.findActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +24,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.ui.AbsoluteAlignment
+import androidx.compose.ui.res.stringResource
+import com.lucid.alarm.R
+import com.lucid.alarm.ui.localizedLabel
+import java.util.Locale
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.size
@@ -613,7 +620,7 @@ fun AlarmAppearanceEditor(
         val view = LocalView.current
         DisposableEffect(view, isDarkAppearanceBackground) {
             val dialogWindow = (view.parent as? DialogWindowProvider)?.window
-                ?: (view.context as? Activity)?.window
+                ?: view.context.findActivity()?.window
             val insetsController = dialogWindow?.let { WindowCompat.getInsetsController(it, dialogWindow.decorView) }
             val prevLightStatus = insetsController?.isAppearanceLightStatusBars
             if (insetsController != null) {
@@ -653,7 +660,7 @@ fun AlarmAppearanceEditor(
                     ) {
                         Box(
                             modifier = Modifier
-                                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                                .absoluteOffset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
                                 .wrapContentSize(Alignment.Center, unbounded = true)
                                 .onSizeChanged {
                                     clockW = it.width.toFloat()
@@ -717,7 +724,7 @@ fun AlarmAppearanceEditor(
 
                             Box(
                                 modifier = Modifier
-                                    .align(Alignment.BottomEnd)
+                                    .align(AbsoluteAlignment.BottomRight)
                                     .size(handleRadius * 2f)
                                     .pointerInput(Unit) {
                                         detectDragGestures(
@@ -754,7 +761,7 @@ fun AlarmAppearanceEditor(
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.Center)
-                                    .offset {
+                                    .absoluteOffset {
                                         IntOffset(
                                             dateOffsetX.roundToInt(),
                                             (clockH / 2f + dateGapPx + dateH / 2f + dateOffsetY)
@@ -814,7 +821,7 @@ fun AlarmAppearanceEditor(
 
                                 Box(
                                     modifier = Modifier
-                                        .align(Alignment.BottomEnd)
+                                        .align(AbsoluteAlignment.BottomRight)
                                         .size(24.dp)
                                         .pointerInput(Unit) {
                                             detectDragGestures(
@@ -913,7 +920,7 @@ fun AlarmAppearanceEditor(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.action_back),
                                 tint = Color.White
                             )
                         }
@@ -922,7 +929,7 @@ fun AlarmAppearanceEditor(
                             onClick = { showBackgroundSheet = true },
                             shape = RoundedCornerShape(999.dp)
                         ) {
-                            Text("Background", color = Color.White)
+                            Text(stringResource(R.string.appearance_background), color = Color.White)
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         Button(
@@ -985,13 +992,13 @@ fun AlarmAppearanceEditor(
                                 contentColor = Color.Black
                             )
                         ) {
-                            Text("Done")
+                            Text(stringResource(R.string.action_done))
                         }
                     }
 
                     if (effLabelVisible) {
                         Text(
-                            text = "Alarm",
+                            text = stringResource(R.string.ringing_alarm_title),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = LocalAppFont.current,
                                 fontWeight = FontWeight.SemiBold,
@@ -1061,7 +1068,7 @@ fun AlarmAppearanceEditor(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Background Style", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_background_style), style = MaterialTheme.typography.titleLarge)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = backgroundStyle.isBlank(),
@@ -1072,7 +1079,7 @@ fun AlarmAppearanceEditor(
                             backgroundUri = ""
                             videoUri = ""
                         },
-                        label = { Text("Inherit (global)") }
+                        label = { Text(stringResource(R.string.appearance_inherit_global)) }
                     )
                     RingingBackgroundStyle.entries.forEach { option ->
                         FilterChip(
@@ -1090,20 +1097,20 @@ fun AlarmAppearanceEditor(
                                     else -> showBackgroundSheet = false
                                 }
                             },
-                            label = { Text(option.label) }
+                            label = { Text(option.localizedLabel()) }
                         )
                     }
                 }
                 if (effectiveBackgroundStyle == RingingBackgroundStyle.VIDEO && effectiveVideoUri.isNotBlank()) {
                     Text(
-                        text = "Video selected",
+                        text = stringResource(R.string.appearance_video_selected),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
                 if (effectiveBackgroundStyle == RingingBackgroundStyle.SOLID_COLOR) {
                     Text(
-                        text = "Solid Color",
+                        text = stringResource(R.string.appearance_solid_color),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1115,14 +1122,17 @@ fun AlarmAppearanceEditor(
                         onInherit = { backgroundSolidColor = 0L }
                     )
                 }
-                Text("Background Blur & Opacity", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_blur_opacity), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = "Drag to set a per-alarm blur and dim; leave untouched to inherit.",
+                    text = stringResource(R.string.appearance_per_alarm_blur_dim_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Blur: ${"%.1f".format(if (blur >= 0f) blur else globalBlur)}",
+                    text = stringResource(
+                        R.string.appearance_blur_label,
+                        String.format(Locale.US, "%.1f", if (blur >= 0f) blur else globalBlur)
+                    ),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Slider(
@@ -1131,7 +1141,10 @@ fun AlarmAppearanceEditor(
                     valueRange = SettingsDataStore.BLUR_MIN..SettingsDataStore.BLUR_MAX
                 )
                 Text(
-                    text = "Dim: ${((if (dim >= 0f) dim else globalDim) * 100).roundToInt()}%",
+                    text = stringResource(
+                        R.string.appearance_dim_label,
+                        ((if (dim >= 0f) dim else globalDim) * 100).roundToInt()
+                    ),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Slider(
@@ -1143,7 +1156,7 @@ fun AlarmAppearanceEditor(
                     onClick = { blur = -1f; dim = -1f },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Inherit blur & dim")
+                    Text(stringResource(R.string.appearance_inherit_blur_dim))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -1164,7 +1177,7 @@ fun AlarmAppearanceEditor(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Clock Style", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_clock_style), style = MaterialTheme.typography.titleLarge)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     RingingClockStyle.entries.forEach { option ->
                         FilterChip(
@@ -1179,14 +1192,14 @@ fun AlarmAppearanceEditor(
                                 }
                                 clockStyle = option
                             },
-                            label = { Text(option.label) }
+                            label = { Text(option.localizedLabel()) }
                         )
                     }
                 }
 
-                Text("Alarm Clock Font", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_clock_font), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = "Applies only to this alarm's ringing clock. \"Inherit\" uses the global clock font.",
+                    text = stringResource(R.string.appearance_per_alarm_font_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1196,7 +1209,7 @@ fun AlarmAppearanceEditor(
                         colors = selectedChipColors(),
                         shape = SelectionChipShape,
                         onClick = { clockFont = ""; clockFontPath = "" },
-                        label = { Text("Inherit") }
+                        label = { Text(stringResource(R.string.appearance_inherit)) }
                     )
                     RingingClockFont.entries.forEach { font ->
                         FilterChip(
@@ -1207,7 +1220,7 @@ fun AlarmAppearanceEditor(
                                 clockFont = font.name
                                 if (font != RingingClockFont.CUSTOM_FILE) clockFontPath = ""
                             },
-                            label = { Text(font.label) }
+                            label = { Text(font.localizedLabel()) }
                         )
                     }
                 }
@@ -1216,40 +1229,40 @@ fun AlarmAppearanceEditor(
                         onClick = { pickClockFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font file\u2026")
+                        Text(stringResource(R.string.appearance_font_file_picker))
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(clockFontPath)) {
-                            "Custom font loaded"
+                            stringResource(R.string.appearance_custom_font_loaded)
                         } else {
-                            "No custom font selected yet"
+                            stringResource(R.string.appearance_no_custom_font)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                Text("Date", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_date), style = MaterialTheme.typography.titleLarge)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Show date",
+                        text = stringResource(R.string.appearance_show_date),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
                     Switch(checked = dateVisible, onCheckedChange = { dateVisible = it })
                 }
-                Text("Date Font", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_date_font), style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = dateFont.isBlank(),
                         colors = selectedChipColors(),
                         shape = SelectionChipShape,
                         onClick = { dateFont = ""; dateFontPath = "" },
-                        label = { Text("Inherit") }
+                        label = { Text(stringResource(R.string.appearance_inherit)) }
                     )
                     ClockDateFont.entries.forEach { font ->
                         FilterChip(
@@ -1260,7 +1273,7 @@ fun AlarmAppearanceEditor(
                                 dateFont = font.name
                                 if (font != ClockDateFont.CUSTOM_FILE) dateFontPath = ""
                             },
-                            label = { Text(font.label) }
+                            label = { Text(font.localizedLabel()) }
                         )
                     }
                 }
@@ -1269,20 +1282,20 @@ fun AlarmAppearanceEditor(
                         onClick = { pickDateFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Date font file (.ttf / .otf / .apk)\u2026")
+                        Text(stringResource(R.string.appearance_date_font_file_picker))
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(dateFontPath)) {
-                            "Custom date font loaded"
+                            stringResource(R.string.appearance_custom_date_font_loaded)
                         } else {
-                            "No custom date font selected yet"
+                            stringResource(R.string.appearance_no_custom_date_font)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 AppearanceColorEditor(
-                    title = "Date Color",
+                    title = stringResource(R.string.appearance_date_color),
                     color = dateColor,
                     gradient = dateGradient,
                     colorEnd = dateColorEnd,
@@ -1296,13 +1309,13 @@ fun AlarmAppearanceEditor(
                     onInherit = { dateColor = 0L }
                 )
                 Text(
-                    text = "Drag the corner handle on the date to grow/shrink it uniformly.",
+                    text = stringResource(R.string.appearance_date_drag_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 AppearanceColorEditor(
-                    title = "Clock Color",
+                    title = stringResource(R.string.appearance_clock_color),
                     color = clockColor,
                     gradient = clockGradient,
                     colorEnd = clockColorEnd,
@@ -1316,13 +1329,13 @@ fun AlarmAppearanceEditor(
                     onInherit = { clockColor = 0L }
                 )
 
-                Text("AM/PM", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_show_am_pm), style = MaterialTheme.typography.titleLarge)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Show AM/PM",
+                        text = stringResource(R.string.appearance_show_am_pm),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -1334,13 +1347,12 @@ fun AlarmAppearanceEditor(
                         onClick = { ovShowAmPm = null },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Inherit (global)")
+                        Text(stringResource(R.string.appearance_inherit_global))
                     }
                 }
-                Text("Clock Size", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_clock_size), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = "Drag the bottom-right arc handle on the preview to resize. The clock " +
-                        "and digits scale uniformly (aspect-locked) and the font auto-fits the box.",
+                    text = stringResource(R.string.appearance_clock_size_desc_per_alarm),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1357,14 +1369,14 @@ fun AlarmAppearanceEditor(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Reset date/clock")
+                    Text(stringResource(R.string.appearance_reset_date_clock))
                 }
 
                 Button(
                     onClick = { showClockSheet = false },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Close")
+                    Text(stringResource(R.string.action_close))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -1385,8 +1397,8 @@ fun AlarmAppearanceEditor(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Snooze Button", style = MaterialTheme.typography.titleLarge)
-                Text("Font", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_snooze_button), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_font), style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = ovSnoozeFont.isBlank(),
@@ -1396,7 +1408,7 @@ fun AlarmAppearanceEditor(
                             ovSnoozeFont = ""
                             ovSnoozeFontPath = ""
                         },
-                        label = { Text("Inherit") }
+                        label = { Text(stringResource(R.string.appearance_inherit)) }
                     )
                     RingingClockFont.entries.forEach { font ->
                         FilterChip(
@@ -1407,7 +1419,7 @@ fun AlarmAppearanceEditor(
                                 ovSnoozeFont = font.name
                                 if (font != RingingClockFont.CUSTOM_FILE) ovSnoozeFontPath = ""
                             },
-                            label = { Text(font.label) }
+                            label = { Text(font.localizedLabel()) }
                         )
                     }
                 }
@@ -1416,19 +1428,19 @@ fun AlarmAppearanceEditor(
                         onClick = { pickSnoozeFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font file\u2026")
+                        Text(stringResource(R.string.appearance_font_file_picker))
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(ovSnoozeFontPath)) {
-                            "Custom snooze font loaded"
+                            stringResource(R.string.appearance_custom_snooze_font_loaded)
                         } else {
-                            "No custom font selected yet"
+                            stringResource(R.string.appearance_no_custom_font)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text("Container Color", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_container_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
                     selected = ovSnoozeContainerColor,
                     inheritEnabled = true,
@@ -1436,7 +1448,7 @@ fun AlarmAppearanceEditor(
                     onInherit = { ovSnoozeContainerColor = 0L },
                     onSelect = { ovSnoozeContainerColor = it }
                 )
-                Text("Text Color", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_text_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
                     selected = ovSnoozeTextColor,
                     inheritEnabled = true,
@@ -1448,7 +1460,7 @@ fun AlarmAppearanceEditor(
                     onClick = { showSnoozeSheet = false },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Close")
+                    Text(stringResource(R.string.action_close))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -1469,8 +1481,8 @@ fun AlarmAppearanceEditor(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Dismiss Button", style = MaterialTheme.typography.titleLarge)
-                Text("Font", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_dismiss_button), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_font), style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = ovDismissFont.isBlank(),
@@ -1480,7 +1492,7 @@ fun AlarmAppearanceEditor(
                             ovDismissFont = ""
                             ovDismissFontPath = ""
                         },
-                        label = { Text("Inherit") }
+                        label = { Text(stringResource(R.string.appearance_inherit)) }
                     )
                     RingingClockFont.entries.forEach { font ->
                         FilterChip(
@@ -1491,7 +1503,7 @@ fun AlarmAppearanceEditor(
                                 ovDismissFont = font.name
                                 if (font != RingingClockFont.CUSTOM_FILE) ovDismissFontPath = ""
                             },
-                            label = { Text(font.label) }
+                            label = { Text(font.localizedLabel()) }
                         )
                     }
                 }
@@ -1500,19 +1512,19 @@ fun AlarmAppearanceEditor(
                         onClick = { pickDismissFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font file\u2026")
+                        Text(stringResource(R.string.appearance_font_file_picker))
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(ovDismissFontPath)) {
-                            "Custom dismiss font loaded"
+                            stringResource(R.string.appearance_custom_dismiss_font_loaded)
                         } else {
-                            "No custom font selected yet"
+                            stringResource(R.string.appearance_no_custom_font)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text("Container Color", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_container_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
                     selected = ovDismissContainerColor,
                     inheritEnabled = true,
@@ -1520,7 +1532,7 @@ fun AlarmAppearanceEditor(
                     onInherit = { ovDismissContainerColor = 0L },
                     onSelect = { ovDismissContainerColor = it }
                 )
-                Text("Text Color", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_text_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
                     selected = ovDismissTextColor,
                     inheritEnabled = true,
@@ -1529,7 +1541,7 @@ fun AlarmAppearanceEditor(
                     onSelect = { ovDismissTextColor = it }
                 )
                 Button(onClick = { showDismissSheet = false }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Close")
+                    Text(stringResource(R.string.action_close))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -1560,7 +1572,7 @@ private fun PreviewDismissPill(
         )
         Spacer(modifier = Modifier.width(10.dp))
         Text(
-            text = "Dismiss",
+            text = stringResource(R.string.action_dismiss),
             style = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = fontFamily,
                 fontWeight = FontWeight.SemiBold
@@ -1588,11 +1600,11 @@ private fun PreviewSnoozePill(
     ) {
         PreviewSnoozeStepper(
             icon = Icons.Filled.Remove,
-            contentDescription = "Decrease snooze",
+            contentDescription = stringResource(R.string.decrease_snooze),
             tint = contentColor
         )
         Text(
-            text = "Snooze $snoozeMinutes mins",
+            text = stringResource(R.string.snooze_x_mins, snoozeMinutes),
             style = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = fontFamily,
                 fontWeight = FontWeight.SemiBold
@@ -1605,7 +1617,7 @@ private fun PreviewSnoozePill(
         )
         PreviewSnoozeStepper(
             icon = Icons.Filled.Add,
-            contentDescription = "Increase snooze",
+            contentDescription = stringResource(R.string.increase_snooze),
             tint = contentColor
         )
     }

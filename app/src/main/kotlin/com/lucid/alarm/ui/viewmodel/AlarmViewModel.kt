@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.lucid.alarm.AlarmApplication
+import com.lucid.alarm.R
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.receiver.AlarmScheduler
@@ -299,13 +300,15 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         val triggerAt = scheduler.calculateTriggerTimeMillis(
             hour24 = alarm.hour,
             minute = alarm.minute,
-            daysOfWeek = alarm.daysOfWeek
+            daysOfWeek = alarm.daysOfWeek,
+            weekInterval = alarm.weekInterval,
+            anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay
         )
         val diff = (triggerAt - System.currentTimeMillis()).coerceAtLeast(0L)
         return if (TimeLeftFormatter.remainingMinutes(diff) <= 0L) {
-            "Alarm set for less than a minute from now."
+            appContext.getString(R.string.toast_alarm_less_than_minute)
         } else {
-            "Alarm set for ${TimeLeftFormatter.humanized(diff)} from now."
+            appContext.getString(R.string.toast_alarm_set_for, TimeLeftFormatter.humanized(appContext, diff))
         }
     }
 

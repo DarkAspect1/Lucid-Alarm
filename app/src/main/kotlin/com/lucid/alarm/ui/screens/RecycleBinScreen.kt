@@ -46,6 +46,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.lucid.alarm.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -204,7 +206,7 @@ fun RecycleBinScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.action_back),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(22.dp)
                     )
@@ -241,7 +243,7 @@ fun RecycleBinScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Recycle bin is empty",
+                            text = stringResource(R.string.recycle_bin_empty),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -406,7 +408,7 @@ fun RecycleBinScreen(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.KeyboardArrowUp,
-                        contentDescription = "Back to top",
+                        contentDescription = stringResource(R.string.action_back_to_top),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -422,19 +424,19 @@ fun RecycleBinScreen(
                 containerColor = dialogBg,
                 titleContentColor = dialogContentColor,
                 textContentColor = dialogContentColor,
-                title = { Text("Empty recycle bin?") },
-                text = { Text("Permanently delete all ${trashedItems.size} trashed item${if (trashedItems.size == 1) "" else "s"}? This cannot be undone.") },
+                title = { Text(stringResource(R.string.dialog_empty_recycle_bin)) },
+                text = { Text(stringResource(R.string.dialog_empty_recycle_bin_msg, trashedItems.size)) },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.emptyRecycleBin()
                         exitSelection()
                         showDeleteAllDialog = false
                     }) {
-                        Text("Delete all")
+                        Text(stringResource(R.string.action_delete_all))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteAllDialog = false }) { Text("Cancel") }
+                    TextButton(onClick = { showDeleteAllDialog = false }) { Text(stringResource(R.string.action_cancel)) }
                 }
             )
         }
@@ -460,7 +462,7 @@ private fun RecycleBinHeader(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.action_back),
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(24.dp)
             )
@@ -468,16 +470,16 @@ private fun RecycleBinHeader(
         Spacer(modifier = Modifier.width(4.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Recycle Bin",
+                text = stringResource(R.string.recycle_bin),
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1
             )
             Text(
                 text = if (selectionCount != null) {
-                    "$selectionCount selected"
+                    stringResource(R.string.count_selected, selectionCount)
                 } else {
-                    "$itemCount item" + if (itemCount == 1) "" else "s"
+                    stringResource(R.string.count_items, itemCount)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -526,44 +528,44 @@ private fun RecycleBinBottomBar(
             if (selectionMode) {
                 RecycleBinBarAction(
                     icon = Icons.Outlined.SelectAll,
-                    label = if (allSelected) "Deselect" else "Select all",
+                    label = if (allSelected) stringResource(R.string.action_deselect) else stringResource(R.string.action_select_all),
                     enabled = hasEntries,
                     onClick = onSelectAllToggle
                 )
                 RecycleBinBarAction(
                     icon = Icons.Filled.RestoreFromTrash,
-                    label = "Restore",
+                    label = stringResource(R.string.action_restore),
                     enabled = selectedCount > 0,
                     onClick = onRestore
                 )
                 RecycleBinBarAction(
                     icon = Icons.Outlined.DeleteOutline,
-                    label = "Delete",
+                    label = stringResource(R.string.action_delete),
                     enabled = selectedCount > 0,
                     onClick = onDelete
                 )
                 RecycleBinBarAction(
                     icon = Icons.Outlined.Close,
-                    label = "Cancel",
+                    label = stringResource(R.string.action_cancel),
                     enabled = true,
                     onClick = onCancel
                 )
             } else {
                 RecycleBinBarAction(
                     icon = Icons.Outlined.SelectAll,
-                    label = "Select",
+                    label = stringResource(R.string.action_select),
                     enabled = hasEntries,
                     onClick = onSelect
                 )
                 RecycleBinBarAction(
                     icon = Icons.Filled.RestoreFromTrash,
-                    label = "Restore all",
+                    label = stringResource(R.string.action_restore_all),
                     enabled = hasEntries,
                     onClick = onRestore
                 )
                 RecycleBinBarAction(
                     icon = Icons.Outlined.DeleteOutline,
-                    label = "Delete all",
+                    label = stringResource(R.string.action_delete_all),
                     enabled = hasEntries,
                     onClick = onDelete
                 )

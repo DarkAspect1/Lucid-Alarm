@@ -2,6 +2,7 @@ package com.lucid.alarm.ui
 
 import android.app.Activity
 import android.widget.Toast
+import com.lucid.alarm.util.findActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -76,9 +77,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.lucid.alarm.R
 import com.lucid.alarm.data.prefs.AppBackgroundStyle
 import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.data.prefs.TimeFormat
@@ -103,14 +106,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class ClockTab(
-    val title: String,
+    val titleRes: Int,
     val activeIcon: ImageVector,
     val inactiveIcon: ImageVector
 ) {
-    ALARMS("Alarms", Icons.Filled.Alarm, Icons.Outlined.Alarm),
-    WORLD_CLOCK("World Clock", Icons.Filled.Public, Icons.Outlined.Public),
-    STOPWATCH("Stopwatch", Icons.Filled.Timer, Icons.Outlined.Timer),
-    TIMER("Timer", Icons.Filled.HourglassEmpty, Icons.Outlined.HourglassEmpty)
+    ALARMS(R.string.tab_alarms, Icons.Filled.Alarm, Icons.Outlined.Alarm),
+    WORLD_CLOCK(R.string.tab_world_clock, Icons.Filled.Public, Icons.Outlined.Public),
+    STOPWATCH(R.string.tab_stopwatch, Icons.Filled.Timer, Icons.Outlined.Timer),
+    TIMER(R.string.tab_timer, Icons.Filled.HourglassEmpty, Icons.Outlined.HourglassEmpty)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -268,10 +271,10 @@ fun ClockAppScaffold(
             else -> {
                 val now = System.currentTimeMillis()
                 if (now - lastBackPressMillis <= 2000L) {
-                    (context as? Activity)?.finish()
+                    context.findActivity()?.finish()
                 } else {
                     lastBackPressMillis = now
-                    Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -464,6 +467,7 @@ fun FloatingPillBottomBar(
     interactive: Boolean = true
 ) {
     val tabs = ClockTab.entries
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
@@ -580,7 +584,7 @@ fun FloatingPillBottomBar(
                                         onLongPress = {
                                             tooltipIndex = index
                                             lastTooltipIndex = index
-                                            tooltipTitle = tab.title
+                                            tooltipTitle = context.getString(tab.titleRes)
                                         }
                                     )
                                 },
@@ -588,7 +592,7 @@ fun FloatingPillBottomBar(
                         ) {
                             Icon(
                                 imageVector = iconVector,
-                                contentDescription = tab.title,
+                                contentDescription = stringResource(tab.titleRes),
                                 tint = contentColor,
                                 modifier = Modifier.size(24.dp)
                             )

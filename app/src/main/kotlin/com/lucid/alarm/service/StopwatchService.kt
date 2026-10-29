@@ -206,7 +206,8 @@ class StopwatchService : Service() {
         val timeText = NowBarFormatting.stopwatchTime(state.liveMillis)
         val subtitle = NowBarFormatting.stopwatchSubtitle(
             lapCount = state.laps.size,
-            latestLapSplit = state.latestLapSplit
+            latestLapSplit = state.latestLapSplit,
+            context = this
         )
 
         val leftIcon: Int
@@ -217,17 +218,17 @@ class StopwatchService : Service() {
         val rightAction: String
         if (state.running) {
             leftIcon = R.drawable.ic_action_lap
-            leftLabel = "Lap"
+            leftLabel = getString(R.string.action_lap)
             leftAction = ACTION_LAP
             rightIcon = R.drawable.ic_action_pause
-            rightLabel = "Stop"
+            rightLabel = getString(R.string.action_stop)
             rightAction = ACTION_STOP
         } else {
             leftIcon = R.drawable.ic_action_close
-            leftLabel = "Cancel"
+            leftLabel = getString(R.string.action_cancel)
             leftAction = ACTION_CANCEL
             rightIcon = R.drawable.ic_action_play
-            rightLabel = "Resume"
+            rightLabel = getString(R.string.action_resume)
             rightAction = ACTION_RESUME
         }
 
@@ -235,7 +236,7 @@ class StopwatchService : Service() {
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_nowbar)
-            .setContentTitle("Stopwatch")
+            .setContentTitle(getString(R.string.tab_stopwatch))
             .setContentText(timeText)
             .setLargeIcon(badgeIcon)
             .setContentIntent(nowBar.openAppPendingIntent(NowBarNotification.INITIAL_TAB_STOPWATCH))

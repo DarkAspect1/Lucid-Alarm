@@ -66,6 +66,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -89,14 +91,18 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import java.util.Locale
 import com.lucid.alarm.BackupManager
+import com.lucid.alarm.R
 import com.lucid.alarm.data.prefs.AccentColor
 import com.lucid.alarm.data.prefs.AppFontStyle
 import com.lucid.alarm.data.prefs.SettingsDataStore
@@ -105,11 +111,35 @@ import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.data.prefs.TimerVibrationPattern
 import com.lucid.alarm.data.prefs.VolumePolicy
 import com.lucid.alarm.ui.FontManager
+import com.lucid.alarm.ui.localizedName
 import com.lucid.alarm.ui.components.CustomColorPickerDialog
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.theme.toColor
+import com.lucid.alarm.util.findActivity
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+@Composable
+private fun ThemeMode.localizedLabel(): String = when (this) {
+    ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+    ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+    ThemeMode.DARK -> stringResource(R.string.theme_dark)
+}
+
+@Composable
+private fun AppFontStyle.localizedLabel(): String = when (this) {
+    AppFontStyle.SYSTEM_DEFAULT -> stringResource(R.string.font_system_default)
+    AppFontStyle.SERIF -> stringResource(R.string.font_editorial_serif)
+    AppFontStyle.CURSIVE -> stringResource(R.string.font_minimalist_cursive)
+    AppFontStyle.CUSTOM_FILE -> stringResource(R.string.font_custom_file)
+}
+
+@Composable
+private fun VolumePolicy.localizedLabel(): String = when (this) {
+    VolumePolicy.UNIFIED -> stringResource(R.string.volume_policy_unified)
+    VolumePolicy.PER_ALARM -> stringResource(R.string.volume_policy_per_alarm)
+}
 
 @Composable
 fun SettingsScreen(
@@ -166,9 +196,33 @@ fun SettingsScreen(
         initial = TimerVibrationPattern.TICK_TICK
     )
 
+    val appLanguage by settingsDataStore.appLanguageFlow.collectAsState(initial = "")
     var showAccentMenu by remember { mutableStateOf(false) }
     var showCustomPicker by remember { mutableStateOf(false) }
     var showAppFontMenu by remember { mutableStateOf(false) }
+    var showLanguageMenu by remember { mutableStateOf(false) }
+
+    val systemDefaultLabel = stringResource(R.string.language_system_default)
+    val languageOptions = listOf(
+        "" to systemDefaultLabel,
+        "en" to "English",
+        "ar" to "العربية",
+        "tr" to "Türkçe",
+        "it" to "Italiano",
+        "es" to "Español",
+        "fr" to "Français",
+        "de" to "Deutsch"
+    )
+    val currentLanguageLabel = when (appLanguage) {
+        "en" -> "English"
+        "ar" -> "العربية"
+        "tr" -> "Türkçe"
+        "it" -> "Italiano"
+        "es" -> "Español"
+        "fr" -> "Français"
+        "de" -> "Deutsch"
+        else -> systemDefaultLabel
+    }
 
     val appFontFilePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -179,9 +233,9 @@ fun SettingsScreen(
                 if (importedPath.isNotBlank()) {
                     settingsDataStore.setAppCustomFontPath(importedPath)
                     settingsDataStore.setAppFontStyle(AppFontStyle.CUSTOM_FILE)
-                    Toast.makeText(context, "App font applied successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.font_applied_success), Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, "Failed to load font file", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.font_load_failed), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -254,9 +308,9 @@ fun SettingsScreen(
             scope.launch {
                 val result = BackupManager.export(context, uri, currentSelection())
                 val message = if (result.success) {
-                    "Backup saved (${result.applied.joinToString(", ")})"
+                    context.getString(R.string.toast_backup_saved, result.applied.joinToString(", "))
                 } else {
-                    "Backup failed: ${result.error}"
+                    context.getString(R.string.toast_backup_failed, result.error ?: "")
                 }
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             }
@@ -270,9 +324,9 @@ fun SettingsScreen(
             scope.launch {
                 val result = BackupManager.import(context, uri, currentSelection())
                 val message = if (result.success) {
-                    "Restored (${result.applied.joinToString(", ")})"
+                    context.getString(R.string.toast_restore_saved, result.applied.joinToString(", "))
                 } else {
-                    "Restore failed: ${result.error}"
+                    context.getString(R.string.toast_restore_failed, result.error ?: "")
                 }
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             }
@@ -356,7 +410,7 @@ fun SettingsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.action_back),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(22.dp)
                     )
@@ -389,14 +443,14 @@ fun SettingsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.action_back),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Clock settings",
+                        text = stringResource(R.string.clock_settings),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -419,7 +473,7 @@ fun SettingsScreen(
                             .padding(horizontal = 20.dp, vertical = 18.dp)
                     ) {
                         Text(
-                            text = "General & Appearance",
+                            text = stringResource(R.string.section_general_appearance),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = accentColor,
@@ -433,13 +487,13 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Theme mode",
+                                    text = stringResource(R.string.theme_mode),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = themeMode.label,
+                                    text = themeMode.localizedLabel(),
                                     fontSize = 13.sp,
                                     color = accentColor,
                                     maxLines = 1
@@ -464,7 +518,7 @@ fun SettingsScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = mode.label.substringBefore(" "),
+                                            text = mode.localizedLabel(),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
@@ -487,13 +541,13 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "24-hour format",
+                                    text = stringResource(R.string.setting_24_hour_format),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = if (timeFormat.is24Hour) "Using 24-hour time (13:00)" else "Using 12-hour time (1:00 pm)",
+                                    text = if (timeFormat.is24Hour) stringResource(R.string.desc_24_hour_on) else stringResource(R.string.desc_24_hour_off),
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -522,13 +576,13 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Remove leading zero",
+                                    text = stringResource(R.string.setting_remove_leading_zero),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Show 9:00 instead of 09:00",
+                                    text = stringResource(R.string.desc_remove_leading_zero),
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -558,13 +612,13 @@ fun SettingsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Accent color",
+                                        text = stringResource(R.string.accent_color),
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = if (currentAccent == AccentColor.CUSTOM) "Custom" else currentAccent.label,
+                                        text = if (currentAccent == AccentColor.CUSTOM) stringResource(R.string.sort_custom) else currentAccent.label,
                                         fontSize = 13.sp,
                                         color = accentColor
                                     )
@@ -671,13 +725,13 @@ fun SettingsScreen(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column {
                                             Text(
-                                                text = "Custom Color",
+                                                text = stringResource(R.string.custom_color),
                                                 fontSize = 15.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = if (isLight) Color(0xFF111318) else Color.White
                                             )
                                             Text(
-                                                text = "HSV spectrum & Hex",
+                                                text = stringResource(R.string.desc_custom_color),
                                                 fontSize = 12.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -710,13 +764,13 @@ fun SettingsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "App font",
+                                        text = stringResource(R.string.app_font),
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = appFontStyle.label,
+                                        text = appFontStyle.localizedLabel(),
                                         fontSize = 13.sp,
                                         color = accentColor
                                     )
@@ -765,7 +819,7 @@ fun SettingsScreen(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
-                                                text = style.label,
+                                                text = style.localizedLabel(),
                                                 fontSize = 15.sp,
                                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                                 color = if (isSelected) accentColor else (if (isLight) Color(0xFF111318) else Color.White)
@@ -800,13 +854,13 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Alarm appearance",
+                                    text = stringResource(R.string.setting_alarm_appearance),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Customize layout, clock font, size & colors",
+                                    text = stringResource(R.string.desc_alarm_appearance),
                                     fontSize = 13.sp,
                                     color = accentColor
                                 )
@@ -816,6 +870,105 @@ fun SettingsScreen(
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                        )
+
+                        Box {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showLanguageMenu = true }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.settings_app_language),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = currentLanguageLabel,
+                                        fontSize = 13.sp,
+                                        color = accentColor
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Outlined.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            FrostedDropdownMenu(
+                                expanded = showLanguageMenu,
+                                onDismissRequest = { showLanguageMenu = false },
+                                modifier = Modifier.widthIn(min = 260.dp, max = 300.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    languageOptions.forEach { (code, label) ->
+                                        val isSelected = appLanguage == code
+                                        val interactionSource = remember { MutableInteractionSource() }
+                                        val isPressed by interactionSource.collectIsPressedAsState()
+                                        val itemBg = when {
+                                            isSelected -> accentColor.copy(alpha = 0.14f)
+                                            isPressed -> if (isLight) Color.Black.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.08f)
+                                            else -> Color.Transparent
+                                        }
+
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(itemBg)
+                                                .clickable(
+                                                    interactionSource = interactionSource,
+                                                    indication = null
+                                                ) {
+                                                    showLanguageMenu = false
+                                                    scope.launch {
+                                                        settingsDataStore.setAppLanguage(code)
+                                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                            val localeManager = context.getSystemService(Context.LOCALE_SERVICE) as? android.app.LocaleManager
+                                                            if (code.isBlank()) {
+                                                                localeManager?.applicationLocales = android.os.LocaleList.getEmptyLocaleList()
+                                                            } else {
+                                                                localeManager?.applicationLocales = android.os.LocaleList.forLanguageTags(code)
+                                                            }
+                                                        }
+                                                        delay(50)
+                                                        context.findActivity()?.recreate()
+                                                    }
+                                                }
+                                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                fontSize = 15.sp,
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                                color = if (isSelected) accentColor else (if (isLight) Color(0xFF111318) else Color.White)
+                                            )
+                                            if (isSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.Check,
+                                                    contentDescription = null,
+                                                    tint = accentColor,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -836,7 +989,7 @@ fun SettingsScreen(
                             .padding(horizontal = 20.dp, vertical = 18.dp)
                     ) {
                         Text(
-                            text = "Audio & Volume Policy",
+                            text = stringResource(R.string.section_audio_volume),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = accentColor,
@@ -850,13 +1003,13 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Vibrate for alarms and timers",
+                                    text = stringResource(R.string.setting_vibrate_alerts),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Vibrate device while alerts sound",
+                                    text = stringResource(R.string.desc_vibrate_alerts),
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -881,13 +1034,13 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Volume policy",
+                                    text = stringResource(R.string.setting_volume_policy),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = volumePolicy.label,
+                                    text = volumePolicy.localizedLabel(),
                                     fontSize = 13.sp,
                                     color = accentColor,
                                     maxLines = 1
@@ -912,7 +1065,7 @@ fun SettingsScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = if (policy == VolumePolicy.UNIFIED) "Unified" else "Per-alarm",
+                                            text = policy.localizedLabel(),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
@@ -933,12 +1086,12 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Unified alarm volume",
+                                    text = stringResource(R.string.setting_unified_volume),
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "${(tempVolume * 100).roundToInt()}%",
+                                    text = "${String.format(Locale.US, "%d", (tempVolume * 100).roundToInt())}%",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = accentColor
@@ -984,7 +1137,7 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Default alarm sound",
+                                    text = stringResource(R.string.default_alarm_sound),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -1022,7 +1175,7 @@ fun SettingsScreen(
                             .padding(horizontal = 20.dp, vertical = 18.dp)
                     ) {
                         Text(
-                            text = "Alarm Behavior",
+                            text = stringResource(R.string.section_alarm_behavior),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = accentColor,
@@ -1036,13 +1189,13 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Snooze duration",
+                                    text = stringResource(R.string.setting_snooze_duration),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "$ringingSnoozeMinutes minutes",
+                                    text = stringResource(R.string.snooze_duration_mins, ringingSnoozeMinutes),
                                     fontSize = 13.sp,
                                     color = accentColor,
                                     maxLines = 1
@@ -1067,7 +1220,7 @@ fun SettingsScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = "${min}m",
+                                            text = stringResource(R.string.min_short_x, min),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
@@ -1090,13 +1243,13 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Upcoming alarm notification",
+                                    text = stringResource(R.string.upcoming_alarm_notification),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Show pre-alarm heads-up reminder",
+                                    text = stringResource(R.string.desc_upcoming_notification),
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1121,12 +1274,12 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Lead time",
+                                    text = stringResource(R.string.lead_time),
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "$tempUpcomingMinutes min before",
+                                    text = stringResource(R.string.lead_time_min_before, tempUpcomingMinutes),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = accentColor
@@ -1159,13 +1312,13 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Are you awake? check",
+                                    text = stringResource(R.string.awake_check_title),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Confirm you're awake after dismissing",
+                                    text = stringResource(R.string.desc_awake_check),
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1190,12 +1343,12 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Check delay",
+                                    text = stringResource(R.string.awake_check_delay),
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "$tempAwakeMinutes min",
+                                    text = stringResource(R.string.awake_check_delay_min, tempAwakeMinutes),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = accentColor
@@ -1231,7 +1384,7 @@ fun SettingsScreen(
                             .padding(horizontal = 20.dp, vertical = 18.dp)
                     ) {
                         Text(
-                            text = "Timer & Stopwatch",
+                            text = stringResource(R.string.section_timer_stopwatch),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = accentColor,
@@ -1262,7 +1415,7 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Timer sound",
+                                    text = stringResource(R.string.timer_sound),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -1295,13 +1448,13 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Timer vibration",
+                                    text = stringResource(R.string.timer_vibration),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Vibrate when timer completes",
+                                    text = stringResource(R.string.desc_timer_vibration),
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1330,14 +1483,14 @@ fun SettingsScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Vibration pattern",
+                                        text = stringResource(R.string.vibration_pattern),
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1
                                     )
                                     Text(
-                                        text = timerVibrationPattern.label,
+                                        text = timerVibrationPattern.localizedName(),
                                         fontSize = 13.sp,
                                         color = accentColor,
                                         maxLines = 1
@@ -1361,7 +1514,7 @@ fun SettingsScreen(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
-                                                text = pattern.label.substringBefore(" "),
+                                                text = pattern.localizedName(),
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
@@ -1391,7 +1544,7 @@ fun SettingsScreen(
                             .padding(horizontal = 20.dp, vertical = 18.dp)
                     ) {
                         Text(
-                            text = "Data & Storage",
+                            text = stringResource(R.string.section_data_storage),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = accentColor,
@@ -1410,13 +1563,13 @@ fun SettingsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Backup & restore",
+                                        text = stringResource(R.string.setting_backup_restore),
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = "Export or restore clock data",
+                                        text = stringResource(R.string.desc_backup_restore),
                                         fontSize = 13.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -1467,7 +1620,7 @@ fun SettingsScreen(
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Text(
-                                            text = "Export Backup (.json)",
+                                            text = stringResource(R.string.btn_export_backup),
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = if (hasSelection) (if (isLight) Color(0xFF111318) else Color.White) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -1505,7 +1658,7 @@ fun SettingsScreen(
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Text(
-                                            text = "Import Backup (.json)",
+                                            text = stringResource(R.string.btn_import_backup),
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = if (hasSelection) (if (isLight) Color(0xFF111318) else Color.White) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -1518,7 +1671,7 @@ fun SettingsScreen(
                                     )
 
                                     Text(
-                                        text = "Include in backup / restore:",
+                                        text = stringResource(R.string.desc_include_backup),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1530,7 +1683,7 @@ fun SettingsScreen(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         CompactBackupPill(
-                                            label = "Settings",
+                                            label = stringResource(R.string.chip_settings),
                                             checked = backupSettings,
                                             onToggle = { backupSettings = !backupSettings },
                                             accentColor = accentColor,
@@ -1538,7 +1691,7 @@ fun SettingsScreen(
                                             modifier = Modifier.weight(1f)
                                         )
                                         CompactBackupPill(
-                                            label = "Alarms",
+                                            label = stringResource(R.string.tab_alarms),
                                             checked = backupAlarms,
                                             onToggle = { backupAlarms = !backupAlarms },
                                             accentColor = accentColor,
@@ -1552,7 +1705,7 @@ fun SettingsScreen(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         CompactBackupPill(
-                                            label = "World Clock",
+                                            label = stringResource(R.string.tab_world_clock),
                                             checked = backupWorldClock,
                                             onToggle = { backupWorldClock = !backupWorldClock },
                                             accentColor = accentColor,
@@ -1560,7 +1713,7 @@ fun SettingsScreen(
                                             modifier = Modifier.weight(1f)
                                         )
                                         CompactBackupPill(
-                                            label = "Recycle Bin",
+                                            label = stringResource(R.string.recycle_bin),
                                             checked = backupRecycleBin,
                                             onToggle = { backupRecycleBin = !backupRecycleBin },
                                             accentColor = accentColor,
@@ -1628,7 +1781,7 @@ fun SettingsScreen(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.KeyboardArrowUp,
-                        contentDescription = "Back to top",
+                        contentDescription = stringResource(R.string.action_back_to_top),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -1662,6 +1815,7 @@ private fun FrostedDropdownMenu(
     if (!expanded) return
 
     val menuShape = RoundedCornerShape(20.dp)
+    val layoutDir = LocalLayoutDirection.current
 
     DropdownMenu(
         expanded = expanded,
@@ -1674,34 +1828,36 @@ private fun FrostedDropdownMenu(
         shadowElevation = 8.dp,
         border = null
     ) {
-        val view = LocalView.current
-        SideEffect {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                var current: ViewParent? = view.parent
-                while (current != null) {
-                    if (current is View) {
-                        val lp = current.layoutParams
-                        if (lp is WindowManager.LayoutParams) {
-                            lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-                            lp.blurBehindRadius = 60
-                            val wm = current.context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-                            wm?.updateViewLayout(current, lp)
-                            break
+        CompositionLocalProvider(LocalLayoutDirection provides layoutDir) {
+            val view = LocalView.current
+            SideEffect {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    var current: ViewParent? = view.parent
+                    while (current != null) {
+                        if (current is View) {
+                            val lp = current.layoutParams
+                            if (lp is WindowManager.LayoutParams) {
+                                lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                                lp.blurBehindRadius = 60
+                                val wm = current.context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+                                wm?.updateViewLayout(current, lp)
+                                break
+                            }
                         }
+                        current = current.parent
                     }
-                    current = current.parent
                 }
             }
-        }
 
-        FrostedBlurBox(
-            modifier = Modifier.fillMaxWidth(),
-            shape = menuShape
-        ) {
-            Column(
-                modifier = Modifier.padding(14.dp)
+            FrostedBlurBox(
+                modifier = Modifier.fillMaxWidth(),
+                shape = menuShape
             ) {
-                content()
+                Column(
+                    modifier = Modifier.padding(14.dp)
+                ) {
+                    content()
+                }
             }
         }
     }

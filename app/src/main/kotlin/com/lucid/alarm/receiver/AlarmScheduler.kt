@@ -12,6 +12,12 @@ import android.util.Log
 import com.lucid.alarm.MainActivity
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.service.AlarmAudioService
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 import java.util.Calendar
 
 class AlarmScheduler(private val context: Context) {
@@ -57,29 +63,17 @@ class AlarmScheduler(private val context: Context) {
     fun calculateTriggerTimeMillis(
         hour24: Int,
         minute: Int,
-        daysOfWeek: Set<Int> = emptySet()
+        daysOfWeek: Set<Int> = emptySet(),
+        weekInterval: Int = 1,
+        anchorWeekStartEpochDay: Long = 0L
     ): Long {
-        val now = Calendar.getInstance()
-        val target = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour24.coerceIn(0, 23))
-            set(Calendar.MINUTE, minute.coerceIn(0, 59))
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-
-            if (!after(now)) {
-                add(Calendar.DAY_OF_YEAR, 1)
-            }
-        }
-
-        if (daysOfWeek.isNotEmpty()) {
-            var guard = 0
-            while (guard < 8 && (!daysOfWeek.contains(target.get(Calendar.DAY_OF_WEEK)) || !target.after(now))) {
-                target.add(Calendar.DAY_OF_YEAR, 1)
-                guard++
-            }
-        }
-
-        return target.timeInMillis
+        return calculateTriggerTimeMillisStatic(
+            hour24 = hour24,
+            minute = minute,
+            daysOfWeek = daysOfWeek,
+            weekInterval = weekInterval,
+            anchorWeekStartEpochDay = anchorWeekStartEpochDay
+        )
     }
 
     fun scheduleAlarm(alarm: AlarmEntity, upcomingLeadMinutes: Int = 0) {
@@ -92,7 +86,9 @@ class AlarmScheduler(private val context: Context) {
             val triggerAtMillis = calculateTriggerTimeMillis(
                 hour24 = alarm.hour,
                 minute = alarm.minute,
-                daysOfWeek = alarm.daysOfWeek
+                daysOfWeek = alarm.daysOfWeek,
+                weekInterval = alarm.weekInterval,
+                anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay
             )
 
             setAlarmClockExact(
@@ -399,6 +395,72 @@ class AlarmScheduler(private val context: Context) {
         fun upcomingRequestCode(alarmId: Int): Int = alarmId * 10 + OFFSET_UPCOMING
         fun awakeDelayRequestCode(alarmId: Int): Int = alarmId * 10 + OFFSET_AWAKE_DELAY
         fun awakeTimeoutRequestCode(alarmId: Int): Int = alarmId * 10 + OFFSET_AWAKE_TIMEOUT
+
+        @JvmStatic
+        fun calculateTriggerTimeMillisStatic(
+            hour24: Int,
+            minute: Int,
+            daysOfWeek: Set<Int> = emptySet(),
+            weekInterval: Int = 1,
+            anchorWeekStartEpochDay: Long = 0L
+        ): Long {
+            val now = ZonedDateTime.now()
+            val zone = now.zone
+
+            if (daysOfWeek.isEmpty()) {
+                var target = now.with(LocalTime.of(hour24.coerceIn(0, 23), minute.coerceIn(0, 59), 0, 0))
+                if (!target.isAfter(now)) {
+                    target = target.plusDays(1)
+                }
+                return target.toInstant().toEpochMilli()
+            }
+
+            val effectiveInterval = weekInterval.coerceAtLeast(1)
+            val maxSearchDays = (7L * effectiveInterval + 14L)
+            val candidateDate = now.toLocalDate()
+            val targetTime = LocalTime.of(hour24.coerceIn(0, 23), minute.coerceIn(0, 59), 0, 0)
+
+            val anchorDate = if (anchorWeekStartEpochDay > 0L) {
+                LocalDate.ofEpochDay(anchorWeekStartEpochDay)
+            } else {
+                LocalDate.now()
+            }
+            val anchorMonday = anchorDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+            for (dayOffset in 0..maxSearchDays) {
+                val dateToCheck = candidateDate.plusDays(dayOffset)
+                val candidateZdt = dateToCheck.atTime(targetTime).atZone(zone)
+
+                if (!candidateZdt.isAfter(now)) {
+                    continue
+                }
+
+                val calendarDay = if (dateToCheck.dayOfWeek == DayOfWeek.SUNDAY) {
+                    Calendar.SUNDAY
+                } else {
+                    dateToCheck.dayOfWeek.value + 1
+                }
+
+                if (!daysOfWeek.contains(calendarDay)) {
+                    continue
+                }
+
+                if (effectiveInterval <= 1) {
+                    return candidateZdt.toInstant().toEpochMilli()
+                }
+
+                val candidateMonday = dateToCheck.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                val weeksBetween = ChronoUnit.WEEKS.between(anchorMonday, candidateMonday)
+                val isActiveWeek = weeksBetween >= 0L && (weeksBetween % effectiveInterval.toLong() == 0L)
+
+                if (isActiveWeek) {
+                    return candidateZdt.toInstant().toEpochMilli()
+                }
+            }
+
+            val fallback = now.plusDays(1).with(targetTime)
+            return fallback.toInstant().toEpochMilli()
+        }
 
         @JvmStatic
         fun scheduleAlarm(context: Context, alarm: AlarmEntity, upcomingLeadMinutes: Int = 0) {

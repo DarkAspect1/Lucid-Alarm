@@ -2,6 +2,7 @@ package com.lucid.alarm.ui.theme
 
 import android.app.Activity
 import android.os.Build
+import com.lucid.alarm.util.findActivity
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -136,7 +137,7 @@ fun LucidAlarmTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as? Activity)?.window ?: return@SideEffect
+            val window = view.context.findActivity()?.window ?: return@SideEffect
             WindowCompat.setDecorFitsSystemWindows(window, false)
             @Suppress("DEPRECATION")
             window.statusBarColor = android.graphics.Color.TRANSPARENT

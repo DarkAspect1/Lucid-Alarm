@@ -55,6 +55,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import com.lucid.alarm.R
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -343,13 +345,13 @@ fun WorldClockScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "No cities added",
+                                text = stringResource(R.string.no_cities_added),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Add time zones to see them here",
+                                text = stringResource(R.string.add_time_zones_desc),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -552,7 +554,7 @@ fun WorldClockScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Add city",
+                    contentDescription = stringResource(R.string.add_city),
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -586,7 +588,7 @@ fun WorldClockScreen(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.KeyboardArrowUp,
-                        contentDescription = "Back to top",
+                        contentDescription = stringResource(R.string.action_back_to_top),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -616,7 +618,7 @@ fun WorldClockScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.MoreVert,
-                        contentDescription = "More options",
+                        contentDescription = stringResource(R.string.action_more_options),
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -624,10 +626,10 @@ fun WorldClockScreen(
                     expanded = showOverflowMenu,
                     onDismissRequest = { showOverflowMenu = false },
                     items = listOf(
-                        AppMenuItem("Select", Icons.Outlined.Checklist) { selectionActive = true },
-                        AppMenuItem("Sort", Icons.AutoMirrored.Outlined.Sort) { showSortDialog = true },
-                        AppMenuItem("Recycle Bin", Icons.Outlined.DeleteOutline) { onOpenRecycleBin() },
-                        AppMenuItem("Settings", Icons.Outlined.Settings) { onOpenSettings() }
+                        AppMenuItem(stringResource(R.string.action_select), Icons.Outlined.Checklist) { selectionActive = true },
+                        AppMenuItem(stringResource(R.string.action_sort), Icons.AutoMirrored.Outlined.Sort) { showSortDialog = true },
+                        AppMenuItem(stringResource(R.string.recycle_bin), Icons.Outlined.DeleteOutline) { onOpenRecycleBin() },
+                        AppMenuItem(stringResource(R.string.clock_settings), Icons.Outlined.Settings) { onOpenSettings() }
                     )
                 )
             }
@@ -680,10 +682,15 @@ private fun WorldClockSortDialog(
         containerColor = dialogBg,
         titleContentColor = dialogContentColor,
         textContentColor = dialogContentColor,
-        title = { Text("Sort cities by") },
+        title = { Text(stringResource(R.string.sort_cities_by)) },
         text = {
             Column {
                 WorldClockSortMode.entries.forEach { mode ->
+                    val modeLabel = when (mode) {
+                        WorldClockSortMode.CUSTOM -> stringResource(R.string.sort_custom)
+                        WorldClockSortMode.CITY_AZ -> stringResource(R.string.sort_city_az)
+                        WorldClockSortMode.CITY_ZA -> stringResource(R.string.sort_city_za)
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -695,7 +702,7 @@ private fun WorldClockSortDialog(
                             onClick = { onSelect(mode) }
                         )
                         Text(
-                            text = mode.label,
+                            text = modeLabel,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(start = 8.dp)
@@ -705,7 +712,7 @@ private fun WorldClockSortDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
         }
     )
 }
@@ -736,14 +743,14 @@ private fun WorldClockSelectionBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "$selectedCount selected",
+                    text = stringResource(R.string.count_selected, selectedCount),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onPrimary
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 TextButton(onClick = onClose) {
                     Text(
-                        text = "Cancel",
+                        text = stringResource(R.string.action_cancel),
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold
                     )
@@ -773,12 +780,12 @@ private fun WorldClockSelectionBar(
             ) {
                 WorldClockSelectionAction(
                     icon = Icons.Outlined.SelectAll,
-                    label = if (allSelected) "Deselect" else "Select",
+                    label = if (allSelected) stringResource(R.string.action_deselect) else stringResource(R.string.action_select),
                     onClick = onSelectAllToggle
                 )
                 WorldClockSelectionAction(
                     icon = Icons.Outlined.DeleteOutline,
-                    label = "Remove",
+                    label = stringResource(R.string.action_remove),
                     onClick = onRemove
                 )
             }
@@ -1000,7 +1007,7 @@ private fun AddWorldClockDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Add City",
+                        text = stringResource(R.string.add_city),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp
@@ -1018,7 +1025,7 @@ private fun AddWorldClockDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Close,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.action_close),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(18.dp)
                         )
@@ -1049,7 +1056,7 @@ private fun AddWorldClockDialog(
                         Box(modifier = Modifier.weight(1f)) {
                             if (query.isEmpty()) {
                                 Text(
-                                    text = "Search city, region or timezone",
+                                    text = stringResource(R.string.search_city_placeholder),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     maxLines = 1
@@ -1074,7 +1081,7 @@ private fun AddWorldClockDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Close,
-                                    contentDescription = "Clear search",
+                                    contentDescription = stringResource(R.string.action_clear_search),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -1093,7 +1100,7 @@ private fun AddWorldClockDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No cities found",
+                            text = stringResource(R.string.no_cities_found),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1226,7 +1233,7 @@ private fun CityListItem(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "Add",
+                        contentDescription = stringResource(R.string.action_add),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )

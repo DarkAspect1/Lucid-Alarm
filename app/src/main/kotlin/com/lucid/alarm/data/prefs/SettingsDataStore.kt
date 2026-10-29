@@ -750,6 +750,14 @@ class SettingsDataStore(private val context: Context) {
         (prefs[KEY_AWAKE_CHECK_MINUTES] ?: DEFAULT_AWAKE_CHECK_MINUTES).coerceIn(1, 15)
     }
 
+    val batteryOptimizationPromptedFlow: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_BATTERY_OPTIMIZATION_PROMPTED] ?: false
+    }
+
+    val appLanguageFlow: Flow<String> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_APP_LANGUAGE].orEmpty()
+    }
+
     val vibrateAlarmsAndTimersFlow: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
         prefs[KEY_VIBRATE_ALARMS_AND_TIMERS] ?: true
     }
@@ -1314,6 +1322,10 @@ class SettingsDataStore(private val context: Context) {
         context.settingsDataStore.edit { it[KEY_AWAKE_CHECK_MINUTES] = minutes.coerceIn(1, 15) }
     }
 
+    suspend fun setBatteryOptimizationPrompted(prompted: Boolean) {
+        context.settingsDataStore.edit { it[KEY_BATTERY_OPTIMIZATION_PROMPTED] = prompted }
+    }
+
     suspend fun setVibrateAlarmsAndTimers(enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_VIBRATE_ALARMS_AND_TIMERS] = enabled }
     }
@@ -1328,6 +1340,10 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setTimerSoundEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_TIMER_SOUND_ENABLED] = enabled }
+    }
+
+    suspend fun setAppLanguage(language: String) {
+        context.settingsDataStore.edit { it[KEY_APP_LANGUAGE] = language }
     }
 
     suspend fun setAlarmGroupOrder(order: List<String>) {
@@ -1567,6 +1583,8 @@ private val KEY_WORLD_CLOCK_CARD_COLOR = longPreferencesKey("world_clock_card_co
 
         private val KEY_AWAKE_CHECK_ENABLED = booleanPreferencesKey("awake_check_enabled")
         private val KEY_AWAKE_CHECK_MINUTES = intPreferencesKey("awake_check_minutes")
+        private val KEY_BATTERY_OPTIMIZATION_PROMPTED = booleanPreferencesKey("battery_optimization_prompted")
+        private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
 
         private val KEY_WORLD_CLOCK_ZONES = stringPreferencesKey("world_clock_zones")
         private val KEY_WORLD_CLOCK_SORT = stringPreferencesKey("world_clock_sort")

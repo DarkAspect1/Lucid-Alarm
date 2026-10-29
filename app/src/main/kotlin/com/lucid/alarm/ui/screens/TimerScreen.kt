@@ -36,8 +36,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import com.lucid.alarm.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -159,27 +161,27 @@ fun TimerScreen(
                 ) {
                     if (isRinging) {
                         RoundActionButton(
-                            label = "Dismiss",
+                            label = stringResource(R.string.action_dismiss),
                             color = redColor,
                             isLight = isLight
                         ) { TimerService.dismiss(context) }
                         RoundActionButton(
-                            label = "+1 min",
+                            label = stringResource(R.string.timer_add_1_min),
                             color = accent,
                             isLight = isLight
                         ) { TimerService.addOneMinute(context) }
                     } else {
                         if (isRunning || timeLeft > 0) {
                             RoundActionButton(
-                                label = "Reset",
+                                label = stringResource(R.string.action_reset),
                                 color = neutralColor,
                                 isLight = isLight
                             ) { TimerService.cancel(context) }
                         }
                         val startLabel = when {
-                            isRunning -> "Pause"
-                            timeLeft > 0 -> "Resume"
-                            else -> "Start"
+                            isRunning -> stringResource(R.string.action_pause)
+                            timeLeft > 0 -> stringResource(R.string.action_resume)
+                            else -> stringResource(R.string.action_start)
                         }
                         RoundActionButton(
                             label = startLabel,
@@ -218,7 +220,7 @@ fun TimerScreen(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Settings,
-                    contentDescription = "Settings",
+                    contentDescription = stringResource(R.string.clock_settings),
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -392,9 +394,9 @@ private fun TimerDial(
     val m = (secondsLeft % 3600) / 60
     val s = secondsLeft % 60
     val label = when {
-        h > 0 -> String.format(Locale.getDefault(), "%d:%02d:%02d", h, m, s)
-        m > 0 -> String.format(Locale.getDefault(), "%d:%02d", m, s)
-        else -> String.format(Locale.getDefault(), "%d", s)
+        h > 0 -> String.format(Locale.US, "%d:%02d:%02d", h, m, s)
+        m > 0 -> String.format(Locale.US, "%d:%02d", m, s)
+        else -> String.format(Locale.US, "%d", s)
     }
     val innerColor = if (isLight) Color(0xFFF3F4F6) else Color(0xFF23242C)
     val elapsedColor = if (isLight) Color(0xFFD1D5DB) else Color(0xFF3A3B45)
@@ -464,7 +466,7 @@ private fun TimerDial(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Time's up!",
+                        text = stringResource(R.string.timer_times_up),
                         fontSize = 18.sp,
                         color = secondary,
                         maxLines = 1
@@ -507,14 +509,18 @@ private fun formatFinishTime(
     )
 }
 
+@Composable
 private fun formatDurationWords(totalSeconds: Int): String {
     val h = totalSeconds / 3600
     val m = (totalSeconds % 3600) / 60
     val s = totalSeconds % 60
+    val hrStr = stringResource(R.string.unit_hr_short)
+    val minStr = stringResource(R.string.unit_min_short)
+    val secStr = stringResource(R.string.unit_sec_short)
     val parts = buildList {
-        if (h > 0) add("$h hr")
-        if (m > 0) add("$m min")
-        if (h == 0 && m == 0) add("$s sec")
+        if (h > 0) add("$h $hrStr")
+        if (m > 0) add("$m $minStr")
+        if (h == 0 && m == 0) add("$s $secStr")
     }
     return parts.joinToString(" ")
 }

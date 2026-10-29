@@ -333,7 +333,7 @@ class TimerService : Service() {
         val state = TimerStopwatchManager.timer.value
         val large = nowBar.largeIcon(NowBarNotification.Kind.TIMER, preferences.accentArgb, preferences.isDark)
         val timeText = NowBarFormatting.timerTime(0)
-        val subtitle = "Time's up! (${NowBarFormatting.durationShort(state.totalSeconds * 1000L)})"
+        val subtitle = "${getString(R.string.timer_times_up)} (${NowBarFormatting.durationShort(state.totalSeconds * 1000L, this)})"
 
         val builder = NotificationCompat.Builder(this, RING_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_nowbar)
@@ -353,7 +353,7 @@ class TimerService : Service() {
                 buildNotificationAction(
                     this,
                     R.drawable.ic_action_stop,
-                    "Dismiss",
+                    getString(R.string.action_dismiss),
                     nowBar.actionPendingIntent(
                         ACTION_DISMISS_TIMER,
                         NowBarNotification.TARGET_TIMER,
@@ -365,7 +365,7 @@ class TimerService : Service() {
                 buildNotificationAction(
                     this,
                     R.drawable.ic_action_add,
-                    "+1 min",
+                    getString(R.string.timer_add_1_min),
                     nowBar.actionPendingIntent(
                         ACTION_ADD_ONE_MINUTE,
                         NowBarNotification.TARGET_TIMER,
@@ -580,14 +580,15 @@ class TimerService : Service() {
             secondsLeft = state.secondsLeft,
             running = state.running,
             is24Hour = preferences.is24Hour,
-            removeLeadingZero = preferences.removeLeadingZero
+            removeLeadingZero = preferences.removeLeadingZero,
+            context = this
         )
 
         val badgeIcon = nowBar.largeIcon(NowBarNotification.Kind.TIMER, accent, preferences.isDark)
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_nowbar)
-            .setContentTitle("Timer")
+            .setContentTitle(getString(R.string.tab_timer))
             .setContentText(timeText)
             .setLargeIcon(badgeIcon)
             .setContentIntent(nowBar.openAppPendingIntent(NowBarNotification.INITIAL_TAB_TIMER))
@@ -603,7 +604,7 @@ class TimerService : Service() {
                 buildNotificationAction(
                     this,
                     R.drawable.ic_action_close,
-                    "Cancel",
+                    getString(R.string.action_cancel),
                     nowBar.actionPendingIntent(
                         ACTION_CANCEL,
                         NowBarNotification.TARGET_TIMER,
@@ -615,7 +616,7 @@ class TimerService : Service() {
                 buildNotificationAction(
                     this,
                     if (state.running) R.drawable.ic_action_pause else R.drawable.ic_action_play,
-                    if (state.running) "Pause" else "Resume",
+                    if (state.running) getString(R.string.action_pause) else getString(R.string.action_resume),
                     nowBar.actionPendingIntent(
                         if (state.running) ACTION_PAUSE else ACTION_RESUME,
                         NowBarNotification.TARGET_TIMER,

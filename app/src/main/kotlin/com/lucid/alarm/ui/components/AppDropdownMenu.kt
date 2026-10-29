@@ -19,6 +19,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
@@ -57,6 +59,8 @@ fun AppDropdownMenu(
     val textColor = if (isLight) Color(0xFF111318) else Color.White
     val pressedOverlay = if (isLight) Color.Black.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.12f)
 
+    val layoutDir = LocalLayoutDirection.current
+
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
@@ -69,60 +73,61 @@ fun AppDropdownMenu(
         shadowElevation = 8.dp,
         border = null
     ) {
-
-        val view = LocalView.current
-        SideEffect {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                var current: ViewParent? = view.parent
-                while (current != null) {
-                    if (current is View) {
-                        val lp = current.layoutParams
-                        if (lp is WindowManager.LayoutParams) {
-                            lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-                            lp.blurBehindRadius = 60
-                            val wm = current.context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-                            wm?.updateViewLayout(current, lp)
-                            break
+        CompositionLocalProvider(LocalLayoutDirection provides layoutDir) {
+            val view = LocalView.current
+            SideEffect {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    var current: ViewParent? = view.parent
+                    while (current != null) {
+                        if (current is View) {
+                            val lp = current.layoutParams
+                            if (lp is WindowManager.LayoutParams) {
+                                lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                                lp.blurBehindRadius = 60
+                                val wm = current.context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+                                wm?.updateViewLayout(current, lp)
+                                break
+                            }
                         }
+                        current = current.parent
                     }
-                    current = current.parent
                 }
             }
-        }
 
-        FrostedBlurBox(
-            modifier = Modifier.widthIn(min = 155.dp, max = 195.dp),
-            shape = menuShape
-        ) {
-            Column(
-                modifier = Modifier.padding(vertical = 6.dp)
+            FrostedBlurBox(
+                modifier = Modifier.widthIn(min = 155.dp, max = 195.dp),
+                shape = menuShape
             ) {
-                items.forEach { item ->
-                    val interactionSource = remember { MutableInteractionSource() }
-                    val isPressed by interactionSource.collectIsPressedAsState()
+                Column(
+                    modifier = Modifier.padding(vertical = 6.dp)
+                ) {
+                    items.forEach { item ->
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val isPressed by interactionSource.collectIsPressedAsState()
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                            .clip(itemShape)
-                            .background(if (isPressed) pressedOverlay else Color.Transparent)
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null
-                            ) {
-                                onDismissRequest()
-                                item.onClick()
-                            }
-                            .padding(horizontal = 16.dp, vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = item.label,
-                            fontSize = 14.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = textColor
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .clip(itemShape)
+                                .background(if (isPressed) pressedOverlay else Color.Transparent)
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null
+                                ) {
+                                    onDismissRequest()
+                                    item.onClick()
+                                }
+                                .padding(horizontal = 16.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = item.label,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = textColor
+                            )
+                        }
                     }
                 }
             }

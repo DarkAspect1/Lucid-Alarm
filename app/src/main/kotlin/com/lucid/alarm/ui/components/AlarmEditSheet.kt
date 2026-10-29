@@ -5,6 +5,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +23,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -38,7 +42,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -51,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -62,6 +66,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -70,36 +76,52 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import com.lucid.alarm.R
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.data.prefs.AlarmVibrationPreset
 import com.lucid.alarm.data.prefs.SettingsDataStore
+import com.lucid.alarm.ui.localizedName
 import com.lucid.alarm.ui.components.SelectionChipShape
 import com.lucid.alarm.ui.components.selectedChipColors
+import java.text.SimpleDateFormat
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 import java.util.Calendar
+import java.util.Locale
 import kotlin.math.roundToInt
 
-private data class RepeatDay(val calendarConstant: Int, val letter: String)
+private data class RepeatDay(val calendarConstant: Int)
 
 private val REPEAT_DAYS = listOf(
-    RepeatDay(Calendar.SUNDAY, "S"),
-    RepeatDay(Calendar.MONDAY, "M"),
-    RepeatDay(Calendar.TUESDAY, "T"),
-    RepeatDay(Calendar.WEDNESDAY, "W"),
-    RepeatDay(Calendar.THURSDAY, "T"),
-    RepeatDay(Calendar.FRIDAY, "F"),
-    RepeatDay(Calendar.SATURDAY, "S")
+    RepeatDay(Calendar.SUNDAY),
+    RepeatDay(Calendar.MONDAY),
+    RepeatDay(Calendar.TUESDAY),
+    RepeatDay(Calendar.WEDNESDAY),
+    RepeatDay(Calendar.THURSDAY),
+    RepeatDay(Calendar.FRIDAY),
+    RepeatDay(Calendar.SATURDAY)
 )
+
+private fun getDayLetter(calendarConstant: Int): String {
+    val cal = Calendar.getInstance().apply {
+        set(Calendar.DAY_OF_WEEK, calendarConstant)
+    }
+    return SimpleDateFormat("EEEEE", Locale.getDefault()).format(cal.time)
+}
 
 private val SNOOZE_INTERVAL_OPTIONS = listOf(0, 5, 10, 15, 20, 30)
-
-private val SNOOZE_LIMIT_OPTIONS = listOf(
-    -1 to "Continuous",
-    3 to "3 times",
-    5 to "5 times"
-)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -117,14 +139,35 @@ fun AlarmEditSheet(
     var label by remember { mutableStateOf(initialAlarm?.label ?: "") }
     var groupName by remember { mutableStateOf(initialAlarm?.groupName ?: AlarmEntity.DEFAULT_GROUP) }
     var selectedDays by remember { mutableStateOf(initialAlarm?.daysOfWeek ?: emptySet()) }
+    var weekInterval by remember { mutableIntStateOf(initialAlarm?.weekInterval ?: 1) }
+    var anchorWeekStartEpochDay by remember {
+        val currentMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        mutableLongStateOf(
+            if (initialAlarm != null && initialAlarm.anchorWeekStartEpochDay > 0L) {
+                initialAlarm.anchorWeekStartEpochDay
+            } else {
+                currentMonday.toEpochDay()
+            }
+        )
+    }
+    var showWeekIntervalMenu by remember { mutableStateOf(false) }
+    var showCustomIntervalDialog by remember { mutableStateOf(false) }
+    var customIntervalText by remember { mutableStateOf((initialAlarm?.weekInterval ?: 1).toString()) }
+    val snoozeLimitOptions = listOf(
+        -1 to stringResource(R.string.snooze_continuous),
+        3 to stringResource(R.string.snooze_3_times),
+        5 to stringResource(R.string.snooze_5_times)
+    )
+
     var soundUri by remember { mutableStateOf(initialAlarm?.soundUri ?: "") }
-    var soundTitle by remember { mutableStateOf(initialAlarm?.soundTitle ?: "Default Ringtone") }
+    var soundTitle by remember { mutableStateOf(initialAlarm?.soundTitle ?: "") }
+    val defaultRingtoneLabel = stringResource(R.string.default_ringtone)
     val defaultSoundTitle by settingsDataStore.defaultAlarmRingtoneTitleFlow.collectAsState(
         initial = "System default"
     )
     val displayedSoundTitle = when {
-        soundUri.isNotBlank() -> soundTitle
-        defaultSoundTitle == "System default" -> "Default Ringtone"
+        soundUri.isNotBlank() -> soundTitle.ifBlank { defaultRingtoneLabel }
+        defaultSoundTitle == "System default" -> defaultRingtoneLabel
         else -> "Default \u00B7 $defaultSoundTitle"
     }
     var vibrationEnabled by remember { mutableStateOf(initialAlarm?.vibrationEnabled ?: true) }
@@ -318,7 +361,7 @@ fun AlarmEditSheet(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = if (initialAlarm == null) "New Alarm" else "Edit Alarm",
+                    text = if (initialAlarm == null) stringResource(R.string.new_alarm) else stringResource(R.string.edit_alarm),
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -347,7 +390,7 @@ fun AlarmEditSheet(
                 OutlinedTextField(
                     value = label,
                     onValueChange = { label = it },
-                    label = { Text("Label") },
+                    label = { Text(stringResource(R.string.label)) },
                     singleLine = true,
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -360,7 +403,7 @@ fun AlarmEditSheet(
                 )
 
                 Column {
-                    Text("Repeat", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.repeat), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -381,16 +424,20 @@ fun AlarmEditSheet(
                                     .clip(CircleShape)
                                     .background(dayBg)
                                     .clickable {
-                                        selectedDays = if (selected) {
+                                        val newDays = if (selected) {
                                             selectedDays - day.calendarConstant
                                         } else {
                                             selectedDays + day.calendarConstant
+                                        }
+                                        selectedDays = newDays
+                                        if (newDays.isEmpty()) {
+                                            weekInterval = 1
                                         }
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = day.letter,
+                                    text = getDayLetter(day.calendarConstant),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = if (selected) {
                                         MaterialTheme.colorScheme.onPrimary
@@ -401,12 +448,150 @@ fun AlarmEditSheet(
                             }
                         }
                     }
+
+                    AnimatedVisibility(visible = selectedDays.isNotEmpty()) {
+                        val currentMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                        val currentMondayEpochDay = currentMonday.toEpochDay()
+                        val isStartThisWeek = anchorWeekStartEpochDay <= currentMondayEpochDay
+
+                        Column(modifier = Modifier.padding(top = 12.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showWeekIntervalMenu = true },
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.weekly_cycle),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Box {
+                                    Surface(
+                                        onClick = { showWeekIntervalMenu = true },
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = if (isLight) Color(0x14000000) else Color(0x26FFFFFF)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            val cycleLabel = when (weekInterval) {
+                                                1 -> stringResource(R.string.every_week)
+                                                2 -> stringResource(R.string.every_2_weeks)
+                                                3 -> stringResource(R.string.every_3_weeks)
+                                                else -> stringResource(R.string.every_x_weeks, weekInterval)
+                                            }
+                                            Text(
+                                                text = cycleLabel,
+                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                    AppDropdownMenu(
+                                        expanded = showWeekIntervalMenu,
+                                        onDismissRequest = { showWeekIntervalMenu = false },
+                                        items = listOf(
+                                            AppMenuItem(
+                                                label = stringResource(R.string.every_week),
+                                                onClick = {
+                                                    weekInterval = 1
+                                                    showWeekIntervalMenu = false
+                                                }
+                                            ),
+                                            AppMenuItem(
+                                                label = stringResource(R.string.every_2_weeks),
+                                                onClick = {
+                                                    val newInterval = 2
+                                                    if (anchorWeekStartEpochDay > currentMondayEpochDay) {
+                                                        anchorWeekStartEpochDay = currentMonday.plusWeeks(newInterval.toLong()).toEpochDay()
+                                                    }
+                                                    weekInterval = newInterval
+                                                    showWeekIntervalMenu = false
+                                                }
+                                            ),
+                                            AppMenuItem(
+                                                label = stringResource(R.string.every_3_weeks),
+                                                onClick = {
+                                                    val newInterval = 3
+                                                    if (anchorWeekStartEpochDay > currentMondayEpochDay) {
+                                                        anchorWeekStartEpochDay = currentMonday.plusWeeks(newInterval.toLong()).toEpochDay()
+                                                    }
+                                                    weekInterval = newInterval
+                                                    showWeekIntervalMenu = false
+                                                }
+                                            ),
+                                            AppMenuItem(
+                                                label = stringResource(R.string.custom_ellipsis),
+                                                onClick = {
+                                                    showWeekIntervalMenu = false
+                                                    customIntervalText = weekInterval.toString()
+                                                    showCustomIntervalDialog = true
+                                                }
+                                            )
+                                        )
+                                    )
+                                }
+                            }
+                            if (weekInterval > 1) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(CircleShape)
+                                        .background(if (isLight) Color(0x0D000000) else Color(0x1AFFFFFF))
+                                        .padding(3.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(34.dp)
+                                            .clip(CircleShape)
+                                            .background(if (isStartThisWeek) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                            .clickable {
+                                                anchorWeekStartEpochDay = currentMondayEpochDay
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.start_this_week),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = if (isStartThisWeek) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isStartThisWeek) MaterialTheme.colorScheme.onPrimary else sheetContentColor.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(34.dp)
+                                            .clip(CircleShape)
+                                            .background(if (!isStartThisWeek) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                            .clickable {
+                                                anchorWeekStartEpochDay = currentMonday.plusWeeks(weekInterval.toLong()).toEpochDay()
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.start_next_time),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = if (!isStartThisWeek) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (!isStartThisWeek) MaterialTheme.colorScheme.onPrimary else sheetContentColor.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Group",
+                            text = stringResource(R.string.group),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.weight(1f)
                         )
@@ -414,7 +599,7 @@ fun AlarmEditSheet(
                             newGroupName = ""
                             showNewGroupDialog = true
                         }) {
-                            Icon(Icons.Filled.Add, contentDescription = "New group")
+                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.new_group))
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -430,7 +615,7 @@ fun AlarmEditSheet(
                                      onClick = { groupName = group },
                                      shape = SelectionChipShape,
                                      colors = selectedChipColors(),
-                                     label = { Text(group) }
+                                     label = { Text(if (group == AlarmEntity.DEFAULT_GROUP) stringResource(R.string.group_general) else group) }
                                  )
                             }
                     }
@@ -442,7 +627,7 @@ fun AlarmEditSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Sound", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.sound), style = MaterialTheme.typography.bodyLarge)
                         Text(
                             displayedSoundTitle,
                             style = MaterialTheme.typography.bodyMedium,
@@ -460,7 +645,7 @@ fun AlarmEditSheet(
                         }
                         ringtoneLauncher.launch(intent)
                     }) {
-                        Text("Pick")
+                        Text(stringResource(R.string.action_pick))
                     }
                 }
 
@@ -469,7 +654,7 @@ fun AlarmEditSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Vibrate", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.vibrate), style = MaterialTheme.typography.bodyLarge)
                     Switch(checked = vibrationEnabled, onCheckedChange = { vibrationEnabled = it })
                 }
                 if (vibrationEnabled) {
@@ -483,7 +668,7 @@ fun AlarmEditSheet(
                                  onClick = { vibrationPattern = preset.name },
                                  shape = SelectionChipShape,
                                  colors = selectedChipColors(),
-                                 label = { Text(preset.label) }
+                                 label = { Text(preset.localizedName()) }
                              )
                         }
                     }
@@ -494,12 +679,12 @@ fun AlarmEditSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Snooze", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.action_snooze), style = MaterialTheme.typography.bodyLarge)
                     Switch(checked = snoozeEnabled, onCheckedChange = { snoozeEnabled = it })
                 }
                 if (snoozeEnabled) {
                     Text(
-                        text = "Interval",
+                        text = stringResource(R.string.interval),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -514,13 +699,13 @@ fun AlarmEditSheet(
                                  shape = SelectionChipShape,
                                  colors = selectedChipColors(),
                                  label = {
-                                     Text(if (minutes == 0) "Default" else "${minutes}m")
+                                     Text(if (minutes == 0) stringResource(R.string.language_system_default) else stringResource(R.string.min_short_x, minutes))
                                  }
                              )
                         }
                     }
                     Text(
-                        text = "Repeat limit",
+                        text = stringResource(R.string.repeat_limit),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -528,7 +713,7 @@ fun AlarmEditSheet(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        SNOOZE_LIMIT_OPTIONS.forEach { (limit, text) ->
+                        snoozeLimitOptions.forEach { (limit, text) ->
                              FilterChip(
                                  selected = snoozeLimit == limit,
                                  onClick = { snoozeLimit = limit },
@@ -548,7 +733,7 @@ fun AlarmEditSheet(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Alert Options", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.alert_options), style = MaterialTheme.typography.bodyLarge)
                         Icon(
                             imageVector = if (advancedNotificationsExpanded) {
                                 Icons.Outlined.ExpandLess
@@ -556,9 +741,9 @@ fun AlarmEditSheet(
                                 Icons.Outlined.ExpandMore
                             },
                             contentDescription = if (advancedNotificationsExpanded) {
-                                "Collapse"
+                                stringResource(R.string.action_collapse)
                             } else {
-                                "Expand"
+                                stringResource(R.string.action_expand)
                             },
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -571,12 +756,12 @@ fun AlarmEditSheet(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Are you awake?", style = MaterialTheme.typography.bodyLarge)
+                                Text(stringResource(R.string.awake_check_title), style = MaterialTheme.typography.bodyLarge)
                                 Text(
                                     text = if (hasCustomAreYouAwake) {
-                                        "Prompts you after the alarm rings"
+                                        stringResource(R.string.awake_check_prompts_desc)
                                     } else {
-                                        "Following global setting (${if (globalAreYouAwakeEnabled) "on" else "off"})"
+                                        stringResource(R.string.following_global_setting, if (globalAreYouAwakeEnabled) stringResource(R.string.setting_on) else stringResource(R.string.setting_off))
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -597,15 +782,15 @@ fun AlarmEditSheet(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Check delay",
+                                    text = stringResource(R.string.awake_check_delay),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = if (areYouAwakeMinutes == 0) {
-                                        "Use global"
+                                        stringResource(R.string.use_global)
                                     } else {
-                                        "$areYouAwakeMinutes min"
+                                        stringResource(R.string.awake_check_delay_min, areYouAwakeMinutes)
                                     },
                                     style = MaterialTheme.typography.labelLarge.copy(
                                         fontWeight = FontWeight.Bold
@@ -632,12 +817,12 @@ fun AlarmEditSheet(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Upcoming alert", style = MaterialTheme.typography.bodyLarge)
+                                Text(stringResource(R.string.upcoming_alarm_notification), style = MaterialTheme.typography.bodyLarge)
                                 Text(
                                     text = if (hasCustomUpcoming) {
-                                        "Notifies you before this alarm rings"
+                                        stringResource(R.string.upcoming_alert_desc)
                                     } else {
-                                        "Following global setting (${if (globalUpcomingEnabled) "on" else "off"})"
+                                        stringResource(R.string.following_global_setting, if (globalUpcomingEnabled) stringResource(R.string.setting_on) else stringResource(R.string.setting_off))
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -658,15 +843,15 @@ fun AlarmEditSheet(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Lead time",
+                                    text = stringResource(R.string.lead_time),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = if (upcomingNotificationLeadMinutes == 0) {
-                                        "Use global"
+                                        stringResource(R.string.use_global)
                                     } else {
-                                        "$upcomingNotificationLeadMinutes min before"
+                                        stringResource(R.string.lead_time_min_before, upcomingNotificationLeadMinutes)
                                     },
                                     style = MaterialTheme.typography.labelLarge.copy(
                                         fontWeight = FontWeight.Bold
@@ -698,19 +883,19 @@ fun AlarmEditSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Alarm Appearance", style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.setting_alarm_appearance), style = MaterialTheme.typography.bodyLarge)
                             Text(
                                 text = if (appearanceEnabled) {
-                                    "Custom wallpaper & clock"
+                                    stringResource(R.string.custom_wallpaper_clock)
                                 } else {
-                                    "Uses the global ringing look"
+                                    stringResource(R.string.uses_global_look)
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         TextButton(onClick = { showAppearanceEditor = true }) {
-                            Text(if (appearanceEnabled) "Edit" else "Customize")
+                            Text(if (appearanceEnabled) stringResource(R.string.action_edit) else stringResource(R.string.action_customize))
                         }
                     }
                     if (appearanceEnabled) {
@@ -770,7 +955,7 @@ fun AlarmEditSheet(
                             ),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("Reset to global appearance")
+                            Text(stringResource(R.string.reset_to_global_appearance))
                         }
                     }
                 }
@@ -782,9 +967,9 @@ fun AlarmEditSheet(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Alarm Volume", style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.setting_alarm_volume), style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                text = "${(volumeLevel * 100).roundToInt()}%",
+                                text = "${String.format(Locale.US, "%d", (volumeLevel * 100).roundToInt())}%",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -824,7 +1009,7 @@ fun AlarmEditSheet(
                             .height(48.dp),
                         shape = RoundedCornerShape(24.dp)
                     ) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                     Button(
                         onClick = {
@@ -917,7 +1102,9 @@ fun AlarmEditSheet(
                                 createdAt = base?.createdAt ?: System.currentTimeMillis(),
                                 volumeLevel = volumeLevel,
                                 sortOrder = base?.sortOrder ?: 0,
-                                deletedAt = base?.deletedAt ?: 0L
+                                deletedAt = base?.deletedAt ?: 0L,
+                                weekInterval = if (selectedDays.isEmpty()) 1 else weekInterval,
+                                anchorWeekStartEpochDay = if (selectedDays.isEmpty() || weekInterval <= 1) 0L else anchorWeekStartEpochDay
                             )
                             onSave(newAlarm)
                         },
@@ -926,7 +1113,7 @@ fun AlarmEditSheet(
                             .height(48.dp),
                         shape = RoundedCornerShape(24.dp)
                     ) {
-                        Text("Save")
+                        Text(stringResource(R.string.action_save))
                     }
                 }
             }
@@ -934,45 +1121,134 @@ fun AlarmEditSheet(
     }
 
     if (showNewGroupDialog) {
-        AlertDialog(
-            onDismissRequest = { showNewGroupDialog = false },
-            containerColor = sheetBg,
-            titleContentColor = sheetContentColor,
-            textContentColor = sheetContentColor,
-            title = { Text("New group") },
-            text = {
-                OutlinedTextField(
-                    value = newGroupName,
-                    onValueChange = { newGroupName = it },
-                    label = { Text("Group name") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(24.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = sheetContentColor,
-                        unfocusedTextColor = sheetContentColor,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        unfocusedLabelColor = if (isLight) Color(0xFF757575) else Color(0xFFAAAAAA)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val name = newGroupName.trim()
-                    if (name.isNotEmpty()) {
-                        groups = (groups + name).distinct()
-                        groupName = name
+        val layoutDir = LocalLayoutDirection.current
+        CompositionLocalProvider(LocalLayoutDirection provides layoutDir) {
+            AlertDialog(
+                onDismissRequest = { showNewGroupDialog = false },
+                containerColor = sheetBg,
+                titleContentColor = sheetContentColor,
+                textContentColor = sheetContentColor,
+                title = { Text(stringResource(R.string.new_group)) },
+                text = {
+                    OutlinedTextField(
+                        value = newGroupName,
+                        onValueChange = { newGroupName = it },
+                        label = { Text(stringResource(R.string.group_name)) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(24.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = sheetContentColor,
+                            unfocusedTextColor = sheetContentColor,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = if (isLight) Color(0xFF757575) else Color(0xFFAAAAAA)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val name = newGroupName.trim()
+                        if (name.isNotEmpty()) {
+                            groups = (groups + name).distinct()
+                            groupName = name
+                        }
+                        showNewGroupDialog = false
+                    }) {
+                        Text(stringResource(R.string.action_add))
                     }
-                    showNewGroupDialog = false
-                }) {
-                    Text("Add")
+                },
+                dismissButton = {
+                    TextButton(onClick = { showNewGroupDialog = false }) { Text(stringResource(R.string.action_cancel)) }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNewGroupDialog = false }) { Text("Cancel") }
-            }
-        )
+            )
+        }
     }
+
+    if (showCustomIntervalDialog) {
+        val focusRequester = remember { FocusRequester() }
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val layoutDir = LocalLayoutDirection.current
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+        Dialog(onDismissRequest = { showCustomIntervalDialog = false }) {
+            CompositionLocalProvider(LocalLayoutDirection provides layoutDir) {
+                FrostedCardSurface(
+                    modifier = Modifier.widthIn(min = 280.dp, max = 320.dp),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.custom_interval_label),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = sheetContentColor
+                    )
+                    OutlinedTextField(
+                        value = customIntervalText,
+                        onValueChange = { input ->
+                            val digits = input.filter { it.isDigit() }.take(2)
+                            customIntervalText = digits
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                val parsed = customIntervalText.toIntOrNull()?.coerceIn(1, 52) ?: 1
+                                val currentMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                                val currentMondayEpochDay = currentMonday.toEpochDay()
+                                if (anchorWeekStartEpochDay > currentMondayEpochDay) {
+                                    anchorWeekStartEpochDay = currentMonday.plusWeeks(parsed.toLong()).toEpochDay()
+                                }
+                                weekInterval = parsed
+                                showCustomIntervalDialog = false
+                            }
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = sheetContentColor,
+                            unfocusedTextColor = sheetContentColor,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = if (isLight) Color(0x33000000) else Color(0x33FFFFFF)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = { showCustomIntervalDialog = false }) {
+                            Text(stringResource(R.string.action_cancel))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            val parsed = customIntervalText.toIntOrNull()?.coerceIn(1, 52) ?: 1
+                            val currentMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                            val currentMondayEpochDay = currentMonday.toEpochDay()
+                            if (anchorWeekStartEpochDay > currentMondayEpochDay) {
+                                anchorWeekStartEpochDay = currentMonday.plusWeeks(parsed.toLong()).toEpochDay()
+                            }
+                            weekInterval = parsed
+                            showCustomIntervalDialog = false
+                        }) {
+                            Text(stringResource(R.string.action_save))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
     if (showAppearanceEditor) {
         AlarmAppearanceEditor(

@@ -126,6 +126,8 @@ data class AlarmEntity(
     val customDismissContainerColor: Long = 0L,
 
     val customDismissTextColor: Long = 0L,
+    val weekInterval: Int = 1,
+    val anchorWeekStartEpochDay: Long = 0L,
     val createdAt: Long = System.currentTimeMillis(),
     val volumeLevel: Float = 0.85f,
 

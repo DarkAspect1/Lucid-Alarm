@@ -291,6 +291,8 @@ object BackupManager {
         put("customDismissFontPath", a.customDismissFontPath)
         put("customDismissContainerColor", a.customDismissContainerColor)
         put("customDismissTextColor", a.customDismissTextColor)
+        put("weekInterval", a.weekInterval)
+        put("anchorWeekStartEpochDay", a.anchorWeekStartEpochDay)
         put("createdAt", a.createdAt)
         put("volumeLevel", a.volumeLevel.toDouble())
         put("sortOrder", a.sortOrder)
@@ -379,6 +381,8 @@ object BackupManager {
                 customDismissFontPath = o.optString("customDismissFontPath", ""),
                 customDismissContainerColor = o.optLong("customDismissContainerColor", 0L),
                 customDismissTextColor = o.optLong("customDismissTextColor", 0L),
+                weekInterval = o.optInt("weekInterval", 1),
+                anchorWeekStartEpochDay = o.optLong("anchorWeekStartEpochDay", 0L),
                 createdAt = o.optLong("createdAt", System.currentTimeMillis()),
                 volumeLevel = o.optDouble("volumeLevel", 0.85).toFloat(),
                 sortOrder = o.optInt("sortOrder", 0),

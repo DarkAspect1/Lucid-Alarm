@@ -2,6 +2,7 @@ package com.lucid.alarm.ui.screens
 
 import android.app.Activity
 import android.content.Intent
+import com.lucid.alarm.util.findActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +25,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.ui.AbsoluteAlignment
+import androidx.compose.ui.res.stringResource
+import com.lucid.alarm.R
+import com.lucid.alarm.ui.localizedLabel
+import java.util.Locale
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.size
@@ -458,7 +465,7 @@ fun AlarmCustomizationScreen(
     }
     val view = LocalView.current
     DisposableEffect(view, isDarkBackground) {
-        val window = (view.context as? Activity)?.window
+        val window = view.context.findActivity()?.window
         val insetsController = window?.let { WindowCompat.getInsetsController(it, window.decorView) }
         val prevLightStatus = insetsController?.isAppearanceLightStatusBars
         if (insetsController != null) {
@@ -495,7 +502,7 @@ fun AlarmCustomizationScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                        .absoluteOffset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
                         .wrapContentSize(Alignment.Center, unbounded = true)
                         .onSizeChanged {
                             clockW = it.width.toFloat()
@@ -559,7 +566,7 @@ fun AlarmCustomizationScreen(
 
                     Box(
                         modifier = Modifier
-                            .align(Alignment.BottomEnd)
+                            .align(AbsoluteAlignment.BottomRight)
                             .size(handleRadius * 2f)
                             .pointerInput(Unit) {
                                 detectDragGestures(
@@ -597,7 +604,7 @@ fun AlarmCustomizationScreen(
                     Box(
                         modifier = Modifier
                             .align(Alignment.Center)
-                            .offset {
+                            .absoluteOffset {
                                 IntOffset(
                                     dateOffsetX.roundToInt(),
                                     (clockH / 2f + dateGapPx + dateH / 2f + dateOffsetY)
@@ -658,7 +665,7 @@ fun AlarmCustomizationScreen(
 
                         Box(
                             modifier = Modifier
-                                .align(Alignment.BottomEnd)
+                                .align(AbsoluteAlignment.BottomRight)
                                 .size(24.dp)
                                 .pointerInput(Unit) {
                                     detectDragGestures(
@@ -751,7 +758,7 @@ fun AlarmCustomizationScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.action_back),
                         tint = Color.White
                     )
                 }
@@ -760,7 +767,7 @@ fun AlarmCustomizationScreen(
                     onClick = { showBackgroundSheet = true },
                     shape = RoundedCornerShape(999.dp)
                 ) {
-                    Text("Background", color = Color.White)
+                    Text(stringResource(R.string.appearance_background), color = Color.White)
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
@@ -826,13 +833,13 @@ fun AlarmCustomizationScreen(
                         contentColor = Color.Black
                     )
                 ) {
-                    Text("Done")
+                    Text(stringResource(R.string.action_done))
                 }
             }
 
             if (alarmLabelVisible) {
                 Text(
-                    text = "Alarm",
+                    text = stringResource(R.string.ringing_alarm_title),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontFamily = LocalAppFont.current,
                         fontWeight = FontWeight.SemiBold,
@@ -853,7 +860,7 @@ fun AlarmCustomizationScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 RingingActionPill(
-                    text = "Dismiss",
+                    text = stringResource(R.string.action_dismiss),
                     onClick = { showDismissSheet = true },
                     containerColor = if (dismissContainerColor != 0L) {
                         Color(dismissContainerColor)
@@ -923,7 +930,7 @@ fun AlarmCustomizationScreen(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                    Text("Background Style", style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.appearance_background_style), style = MaterialTheme.typography.titleLarge)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         RingingBackgroundStyle.entries.forEach { style ->
                             FilterChip(
@@ -939,13 +946,13 @@ fun AlarmCustomizationScreen(
                                         else -> showBackgroundSheet = false
                                     }
                                 },
-                                label = { Text(style.label) }
+                                label = { Text(style.localizedLabel()) }
                             )
                         }
                     }
                     if (background == RingingBackgroundStyle.SOLID_COLOR) {
                         Text(
-                            text = "Solid Color",
+                            text = stringResource(R.string.appearance_solid_color),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -959,7 +966,7 @@ fun AlarmCustomizationScreen(
                         background == RingingBackgroundStyle.FIREFLIES
                     ) {
                         Text(
-                            text = "Interactive Colors",
+                            text = stringResource(R.string.appearance_interactive_colors),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -970,9 +977,9 @@ fun AlarmCustomizationScreen(
                             }
                         )
                     }
-                    Text("Background Blur & Opacity", style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.appearance_blur_opacity), style = MaterialTheme.typography.titleLarge)
                     Text(
-                        text = "Blur: ${"%.1f".format(ringingBlur)}",
+                        text = stringResource(R.string.appearance_blur_label, String.format(Locale.US, "%.1f", ringingBlur)),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Slider(
@@ -981,7 +988,7 @@ fun AlarmCustomizationScreen(
                         valueRange = SettingsDataStore.BLUR_MIN..SettingsDataStore.BLUR_MAX
                     )
                     Text(
-                        text = "Dim: ${(ringingDim * 100).roundToInt()}%",
+                        text = stringResource(R.string.appearance_dim_label, (ringingDim * 100).roundToInt()),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Slider(
@@ -991,7 +998,7 @@ fun AlarmCustomizationScreen(
                     )
                     if (background == RingingBackgroundStyle.VIDEO && backgroundVideoUri.isNotBlank()) {
                         Text(
-                            text = "Video selected",
+                            text = stringResource(R.string.appearance_video_selected),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1015,9 +1022,9 @@ fun AlarmCustomizationScreen(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Alarm Clock", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_alarm_clock), style = MaterialTheme.typography.titleLarge)
 
-                Text("Orientation & Style", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_orientation_style), style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     RingingClockStyle.entries.forEach { style ->
                         FilterChip(
@@ -1032,14 +1039,14 @@ fun AlarmCustomizationScreen(
                                 }
                                 clockStyle = style
                             },
-                            label = { Text(style.label) }
+                            label = { Text(style.localizedLabel()) }
                         )
                     }
                 }
 
-                Text("Clock Font", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_clock_font), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "Applies only to the ringing clock digits.",
+                    text = stringResource(R.string.appearance_clock_font_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1050,7 +1057,7 @@ fun AlarmCustomizationScreen(
                             colors = selectedChipColors(),
                             shape = SelectionChipShape,
                             onClick = { clockFont = font },
-                            label = { Text(font.label) }
+                            label = { Text(font.localizedLabel()) }
                         )
                     }
                 }
@@ -1059,13 +1066,13 @@ fun AlarmCustomizationScreen(
                         onClick = { pickClockFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font file\u2026")
+                        Text(stringResource(R.string.appearance_font_file_picker))
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(clockCustomFontPath)) {
-                            "Custom font loaded"
+                            stringResource(R.string.appearance_custom_font_loaded)
                         } else {
-                            "No custom font selected yet"
+                            stringResource(R.string.appearance_no_custom_font)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1073,7 +1080,7 @@ fun AlarmCustomizationScreen(
                 }
 
                 AppearanceColorEditor(
-                    title = "Clock Color",
+                    title = stringResource(R.string.appearance_clock_color),
                     color = clockColor,
                     gradient = clockGradient,
                     colorEnd = clockColorEnd,
@@ -1084,11 +1091,9 @@ fun AlarmCustomizationScreen(
                     onDirection = { clockGradientDir = it }
                 )
 
-                Text("Clock Size", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_clock_size), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "Drag the bottom-right arc handle on the preview to resize. The clock " +
-                        "and digits scale uniformly (aspect-locked), and the font auto-fits the " +
-                        "box, so no size slider is needed.",
+                    text = stringResource(R.string.appearance_clock_size_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1103,7 +1108,7 @@ fun AlarmCustomizationScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Show AM/PM",
+                        text = stringResource(R.string.appearance_show_am_pm),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -1119,7 +1124,7 @@ fun AlarmCustomizationScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Show \"Alarm\" label",
+                        text = stringResource(R.string.appearance_show_alarm_label),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -1135,13 +1140,13 @@ fun AlarmCustomizationScreen(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                 )
 
-                Text("Date", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_date), style = MaterialTheme.typography.titleLarge)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Show date",
+                        text = stringResource(R.string.appearance_show_date),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -1153,7 +1158,7 @@ fun AlarmCustomizationScreen(
                 }
                 if (dateVisible) {
                     Text(
-                        text = "Date font",
+                        text = stringResource(R.string.appearance_date_font),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1164,7 +1169,7 @@ fun AlarmCustomizationScreen(
                                 colors = selectedChipColors(),
                                 shape = SelectionChipShape,
                                 onClick = { dateFont = font },
-                                label = { Text(font.label) }
+                                label = { Text(font.localizedLabel()) }
                             )
                         }
                     }
@@ -1173,20 +1178,20 @@ fun AlarmCustomizationScreen(
                             onClick = { pickDateFont() },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Date font file (.ttf / .otf / .apk)\u2026")
+                            Text(stringResource(R.string.appearance_date_font_file_picker))
                         }
                         Text(
                             text = if (FontManager.hasCustomFont(dateCustomFontPath)) {
-                                "Custom date font loaded"
+                                stringResource(R.string.appearance_custom_date_font_loaded)
                             } else {
-                                "No custom date font selected yet"
+                                stringResource(R.string.appearance_no_custom_date_font)
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     AppearanceColorEditor(
-                        title = "Date Color",
+                        title = stringResource(R.string.appearance_date_color),
                         color = dateColor,
                         gradient = dateGradient,
                         colorEnd = dateColorEnd,
@@ -1197,7 +1202,7 @@ fun AlarmCustomizationScreen(
                         onDirection = { dateGradientDir = it }
                     )
                     Text(
-                        text = "Drag the corner handle on the date to grow/shrink it uniformly.",
+                        text = stringResource(R.string.appearance_date_drag_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1216,14 +1221,14 @@ fun AlarmCustomizationScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Reset date/clock")
+                    Text(stringResource(R.string.appearance_reset_date_clock))
                 }
 
                 Button(
                     onClick = { showClockSheet = false },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Close")
+                    Text(stringResource(R.string.action_close))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -1244,8 +1249,8 @@ fun AlarmCustomizationScreen(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Dismiss Button", style = MaterialTheme.typography.titleLarge)
-                Text("Font", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_dismiss_button), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_font), style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     RingingClockFont.entries.forEach { font ->
                         FilterChip(
@@ -1253,7 +1258,7 @@ fun AlarmCustomizationScreen(
                             colors = selectedChipColors(),
                             shape = SelectionChipShape,
                             onClick = { dismissFont = font },
-                            label = { Text(font.label) }
+                            label = { Text(font.localizedLabel()) }
                         )
                     }
                 }
@@ -1262,30 +1267,30 @@ fun AlarmCustomizationScreen(
                         onClick = { pickDismissFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font file\u2026")
+                        Text(stringResource(R.string.appearance_font_file_picker))
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(dismissCustomFontPath)) {
-                            "Custom dismiss font loaded"
+                            stringResource(R.string.appearance_custom_dismiss_font_loaded)
                         } else {
-                            "No custom font selected yet"
+                            stringResource(R.string.appearance_no_custom_font)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text("Container Color", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_container_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
                     selected = dismissContainerColor,
                     onSelect = { dismissContainerColor = it }
                 )
-                Text("Text Color", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_text_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
                     selected = dismissTextColor,
                     onSelect = { dismissTextColor = it }
                 )
                 Button(onClick = { showDismissSheet = false }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Close")
+                    Text(stringResource(R.string.action_close))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -1306,8 +1311,8 @@ fun AlarmCustomizationScreen(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Snooze Button", style = MaterialTheme.typography.titleLarge)
-                Text("Font", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_snooze_button), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.appearance_font), style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     RingingClockFont.entries.forEach { font ->
                         FilterChip(
@@ -1315,7 +1320,7 @@ fun AlarmCustomizationScreen(
                             colors = selectedChipColors(),
                             shape = SelectionChipShape,
                             onClick = { snoozeFont = font },
-                            label = { Text(font.label) }
+                            label = { Text(font.localizedLabel()) }
                         )
                     }
                 }
@@ -1324,30 +1329,30 @@ fun AlarmCustomizationScreen(
                         onClick = { pickSnoozeFont() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(".ttf / .otf font file\u2026")
+                        Text(stringResource(R.string.appearance_font_file_picker))
                     }
                     Text(
                         text = if (FontManager.hasCustomFont(snoozeCustomFontPath)) {
-                            "Custom snooze font loaded"
+                            stringResource(R.string.appearance_custom_snooze_font_loaded)
                         } else {
-                            "No custom font selected yet"
+                            stringResource(R.string.appearance_no_custom_font)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text("Container Color", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_container_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
                     selected = snoozeContainerColor,
                     onSelect = { snoozeContainerColor = it }
                 )
-                Text("Text Color", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.appearance_text_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
                     selected = snoozeTextColor,
                     onSelect = { snoozeTextColor = it }
                 )
                 Button(onClick = { showSnoozeSheet = false }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Close")
+                    Text(stringResource(R.string.action_close))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -1376,12 +1381,12 @@ private fun CustomizationSnoozePill(
     ) {
         SnoozeStepper(
             icon = Icons.Filled.Remove,
-            contentDescription = "Decrease snooze",
+            contentDescription = stringResource(R.string.decrease_snooze),
             contentColor = contentColor,
             onStep = onMinus
         )
         Text(
-            text = "Snooze $snoozeMinutes mins",
+            text = stringResource(R.string.snooze_x_mins, snoozeMinutes),
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = fontFamily
@@ -1394,7 +1399,7 @@ private fun CustomizationSnoozePill(
         )
         SnoozeStepper(
             icon = Icons.Filled.Add,
-            contentDescription = "Increase snooze",
+            contentDescription = stringResource(R.string.increase_snooze),
             contentColor = contentColor,
             onStep = onPlus
         )

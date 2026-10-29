@@ -1,5 +1,8 @@
 package com.lucid.alarm.ui
 
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
@@ -111,12 +114,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.lucid.alarm.R
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.data.prefs.AlarmSortMode
 import com.lucid.alarm.data.prefs.SettingsDataStore
@@ -141,10 +146,10 @@ import kotlinx.coroutines.launch
 
 private data class DayFilter(val calendarConstant: Int, val label: String)
 
-private enum class AlarmFilterStatus(val label: String) {
-    ALL("All"),
-    ENABLED("Turned On"),
-    DISABLED("Turned Off")
+private enum class AlarmFilterStatus(val labelRes: Int) {
+    ALL(R.string.filter_all),
+    ENABLED(R.string.filter_turned_on),
+    DISABLED(R.string.filter_turned_off)
 }
 
 private val DAY_FILTERS = listOf(
@@ -398,7 +403,7 @@ fun MainAlarmsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No alarms scheduled",
+                            text = stringResource(R.string.no_alarms_scheduled),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -456,7 +461,7 @@ fun MainAlarmsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No alarms scheduled",
+                                text = stringResource(R.string.no_alarms_scheduled),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -750,7 +755,7 @@ fun MainAlarmsScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Add alarm",
+                    contentDescription = stringResource(R.string.add_alarm),
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -783,7 +788,7 @@ fun MainAlarmsScreen(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.KeyboardArrowUp,
-                        contentDescription = "Back to top",
+                        contentDescription = stringResource(R.string.action_back_to_top),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -812,7 +817,7 @@ fun MainAlarmsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.MoreVert,
-                        contentDescription = "More options",
+                        contentDescription = stringResource(R.string.action_more_options),
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -820,14 +825,14 @@ fun MainAlarmsScreen(
                     expanded = showOverflowMenu,
                     onDismissRequest = { showOverflowMenu = false },
                     items = listOf(
-                        AppMenuItem("Select", Icons.Outlined.Checklist) { selectionActive = true },
-                        AppMenuItem("Sort", Icons.AutoMirrored.Outlined.Sort) { showSortDialog = true },
-                        AppMenuItem("Filter", Icons.Outlined.Tune) { showFilterDialog = true },
-                        AppMenuItem("Filter by Days", Icons.Outlined.DateRange) {
+                        AppMenuItem(stringResource(R.string.action_select), Icons.Outlined.Checklist) { selectionActive = true },
+                        AppMenuItem(stringResource(R.string.action_sort), Icons.AutoMirrored.Outlined.Sort) { showSortDialog = true },
+                        AppMenuItem(stringResource(R.string.action_filter), Icons.Outlined.Tune) { showFilterDialog = true },
+                        AppMenuItem(stringResource(R.string.action_filter_by_days), Icons.Outlined.DateRange) {
                             showDayFilterDialog = true
                         },
-                        AppMenuItem("Recycle Bin", Icons.Outlined.DeleteOutline) { onOpenRecycleBin() },
-                        AppMenuItem("Settings", Icons.Outlined.Settings) { onOpenSettings() }
+                        AppMenuItem(stringResource(R.string.recycle_bin), Icons.Outlined.DeleteOutline) { onOpenRecycleBin() },
+                        AppMenuItem(stringResource(R.string.clock_settings), Icons.Outlined.Settings) { onOpenSettings() }
                     )
                 )
             }
@@ -892,9 +897,9 @@ fun MainAlarmsScreen(
 
     groupRenameTarget?.let { group ->
         CompactRenameDialog(
-            title = "Rename group",
+            title = stringResource(R.string.rename_group),
             initialValue = group,
-            label = "Group name",
+            label = stringResource(R.string.group_name),
             onDismiss = { groupRenameTarget = null },
             onConfirm = { newName ->
                 viewModel.renameGroup(group, newName)
@@ -908,9 +913,9 @@ fun MainAlarmsScreen(
 
     alarmRenameTarget?.let { target ->
         CompactRenameDialog(
-            title = "Rename alarm",
+            title = stringResource(R.string.rename_alarm),
             initialValue = target.label,
-            label = "Alarm label",
+            label = stringResource(R.string.alarm_label),
             onDismiss = { alarmRenameTarget = null },
             onConfirm = { newLabel ->
                 viewModel.updateAlarm(target.copy(label = newLabel))
@@ -942,7 +947,7 @@ fun MainAlarmsScreen(
             containerColor = dialogBg,
             titleContentColor = dialogContentColor,
             textContentColor = dialogContentColor,
-            title = { Text("Filter alarms") },
+            title = { Text(stringResource(R.string.filter_alarms)) },
             text = {
                 Column {
                     AlarmFilterStatus.entries.forEach { status ->
@@ -957,7 +962,7 @@ fun MainAlarmsScreen(
                                 onClick = { draftStatus = status }
                             )
                             Text(
-                                text = status.label,
+                                text = stringResource(status.labelRes),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(start = 8.dp)
@@ -970,14 +975,14 @@ fun MainAlarmsScreen(
                 TextButton(onClick = {
                     filterStatus = draftStatus
                     showFilterDialog = false
-                }) { Text("Apply") }
+                }) { Text(stringResource(R.string.action_apply)) }
             },
             dismissButton = {
                 Row {
                     TextButton(onClick = {
                         draftStatus = AlarmFilterStatus.ALL
-                    }) { Text("Reset") }
-                    TextButton(onClick = { showFilterDialog = false }) { Text("Cancel") }
+                    }) { Text(stringResource(R.string.action_reset)) }
+                    TextButton(onClick = { showFilterDialog = false }) { Text(stringResource(R.string.action_cancel)) }
                 }
             }
         )
@@ -1002,7 +1007,7 @@ private fun MainHeader(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Alarms",
+            text = stringResource(R.string.tab_alarms),
             style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
@@ -1026,10 +1031,16 @@ private fun SortModeDialog(
         containerColor = dialogBg,
         titleContentColor = dialogContentColor,
         textContentColor = dialogContentColor,
-        title = { Text("Sort alarms by") },
+        title = { Text(stringResource(R.string.sort_alarms_by)) },
         text = {
             Column {
                 AlarmSortMode.entries.filter { it == AlarmSortMode.TIME || it == AlarmSortMode.DAY || it == AlarmSortMode.CUSTOM }.forEach { mode ->
+                    val modeLabel = when (mode) {
+                        AlarmSortMode.TIME -> stringResource(R.string.sort_time)
+                        AlarmSortMode.DAY -> stringResource(R.string.sort_day)
+                        AlarmSortMode.CUSTOM -> stringResource(R.string.sort_custom)
+                        else -> mode.label
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1041,7 +1052,7 @@ private fun SortModeDialog(
                             onClick = { onSelect(mode) }
                         )
                         Text(
-                            text = mode.label,
+                            text = modeLabel,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(start = 8.dp)
@@ -1051,7 +1062,7 @@ private fun SortModeDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
         }
     )
 }
@@ -1088,7 +1099,7 @@ private fun NextAlarmHeader(
     ) {
         if (upcoming == null) {
             Text(
-                text = "All alarms are off",
+                text = stringResource(R.string.all_alarms_off),
                 fontSize = 36.sp,
                 lineHeight = 42.sp,
                 fontWeight = FontWeight.Bold,
@@ -1099,7 +1110,7 @@ private fun NextAlarmHeader(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "No upcoming alarms",
+                text = stringResource(R.string.no_upcoming_alarms),
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
@@ -1108,8 +1119,9 @@ private fun NextAlarmHeader(
             )
         } else {
             val triggerMillis = nextTriggerMillis(upcoming, now)
+            val context = LocalContext.current
             Text(
-                text = formatCountdownLines(triggerMillis - nowTick),
+                text = formatCountdownLines(context, triggerMillis - nowTick),
                 fontSize = 36.sp,
                 lineHeight = 42.sp,
                 fontWeight = FontWeight.Bold,
@@ -1133,34 +1145,21 @@ private fun NextAlarmHeader(
 }
 
 private fun nextTriggerMillis(alarm: AlarmEntity, now: Calendar): Long {
-    val target = (now.clone() as Calendar).apply {
-        set(Calendar.HOUR_OF_DAY, alarm.hour.coerceIn(0, 23))
-        set(Calendar.MINUTE, alarm.minute.coerceIn(0, 59))
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-        if (!after(now)) add(Calendar.DAY_OF_YEAR, 1)
-    }
-    val days = alarm.daysOfWeek
-    if (days.isNotEmpty()) {
-        var guard = 0
-        while (guard < 8 && !days.contains(target.get(Calendar.DAY_OF_WEEK))) {
-            target.add(Calendar.DAY_OF_YEAR, 1)
-            guard++
-        }
-    }
-    return target.timeInMillis
+    return com.lucid.alarm.receiver.AlarmScheduler.calculateTriggerTimeMillisStatic(
+        hour24 = alarm.hour,
+        minute = alarm.minute,
+        daysOfWeek = alarm.daysOfWeek,
+        weekInterval = alarm.weekInterval,
+        anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay
+    )
 }
 
-private fun formatCountdownLines(diffMillis: Long): String {
-    val human = TimeLeftFormatter.humanized(diffMillis)
-    if (human == "less than a minute") return "Alarm in\nless than a minute"
-    val tokens = human
-        .replace(" and ", " ")
-        .replace(",", " ")
-        .split(" ")
-        .filter { it.isNotBlank() }
-    if (tokens.size <= 2) return "Alarm in $human"
-    return "Alarm in ${tokens[0]} ${tokens[1]}\n" + tokens.drop(2).joinToString(" ")
+private fun formatCountdownLines(context: Context, diffMillis: Long): String {
+    val human = TimeLeftFormatter.humanized(context, diffMillis)
+    if (TimeLeftFormatter.remainingMinutes(diffMillis) <= 0L) {
+        return context.getString(R.string.alarm_in_less_than_minute)
+    }
+    return context.getString(R.string.countdown_rings_in, human)
 }
 
 private fun nextAlarmSubtitle(
@@ -1287,8 +1286,13 @@ private fun GroupFilterRow(
                         }
                     }
 
+                    val groupLabel = when (group) {
+                        null -> stringResource(R.string.filter_all)
+                        AlarmEntity.DEFAULT_GROUP -> stringResource(R.string.group_general)
+                        else -> group
+                    }
                     GroupCapsulePill(
-                        label = group ?: "All",
+                        label = groupLabel,
                         selected = groupSelected,
                         counts = counts(group),
                         onClick = {
@@ -1334,11 +1338,11 @@ private fun DayFilterDialog(
         containerColor = dialogBg,
         titleContentColor = dialogContentColor,
         textContentColor = dialogContentColor,
-        title = { Text("Filter by days") },
+        title = { Text(stringResource(R.string.action_filter_by_days)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 UniformChip(
-                    label = "All",
+                    label = stringResource(R.string.filter_all),
                     selected = selectedDay == null,
                     onClick = { onSelect(null) },
                     modifier = Modifier
@@ -1351,8 +1355,14 @@ private fun DayFilterDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         row.forEach { day ->
+                            val cal = remember(day.calendarConstant) {
+                                java.util.Calendar.getInstance().apply { set(java.util.Calendar.DAY_OF_WEEK, day.calendarConstant) }
+                            }
+                            val dayLabel = remember(cal) {
+                                java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault()).format(cal.time)
+                            }
                             UniformChip(
-                                label = day.label,
+                                label = dayLabel,
                                 selected = selectedDay == day.calendarConstant,
                                 onClick = {
                                     onSelect(
@@ -1373,11 +1383,11 @@ private fun DayFilterDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Done") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
         },
         dismissButton = {
             if (selectedDay != null) {
-                TextButton(onClick = { onSelect(null) }) { Text("Clear Filter") }
+                TextButton(onClick = { onSelect(null) }) { Text(stringResource(R.string.action_reset)) }
             }
         }
     )
@@ -1491,14 +1501,14 @@ private fun GroupEditDialog(
         containerColor = dialogBg,
         titleContentColor = dialogContentColor,
         textContentColor = dialogContentColor,
-        title = { Text(if (isDefault) "General alarms" else "Edit group") },
+        title = { Text(if (isDefault) stringResource(R.string.title_general_alarms) else stringResource(R.string.edit_group)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (!isDefault) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Group name") },
+                        label = { Text(stringResource(R.string.group_name)) },
                         singleLine = true,
                         shape = RoundedCornerShape(24.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -1511,7 +1521,7 @@ private fun GroupEditDialog(
                     )
                 } else {
                     Text(
-                        text = "This group contains your general alarms.",
+                        text = stringResource(R.string.global_group_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1526,7 +1536,7 @@ private fun GroupEditDialog(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(if (isDefault) "Delete general alarms" else "Delete group")
+                        Text(if (isDefault) stringResource(R.string.delete_general_alarms) else stringResource(R.string.action_delete_group))
                     }
                 }
             }
@@ -1537,12 +1547,12 @@ private fun GroupEditDialog(
                     onClick = { onRename(name) },
                     enabled = name.isNotBlank() && name != group
                 ) {
-                    Text("Rename")
+                    Text(stringResource(R.string.rename_group))
                 }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }
@@ -1595,14 +1605,14 @@ private fun CompactRenameDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
                         onClick = { onConfirm(textValue.trim()) },
                         enabled = textValue.isNotBlank()
                     ) {
-                        Text("Save")
+                        Text(stringResource(R.string.action_save))
                     }
                 }
             }
@@ -1645,14 +1655,14 @@ private fun SelectionActionBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "$selectedCount selected",
+                    text = stringResource(R.string.count_selected, selectedCount),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onPrimary
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 TextButton(onClick = onClose) {
                     Text(
-                        text = "Cancel",
+                        text = stringResource(R.string.action_cancel),
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold
                     )
@@ -1683,34 +1693,34 @@ private fun SelectionActionBar(
             ) {
                 when {
                     groupsOnly -> {
-                        SelectionAction(Icons.Outlined.NotificationsActive, "Turn On", onTurnOn)
-                        SelectionAction(Icons.Outlined.NotificationsOff, "Turn Off", onTurnOff)
+                        SelectionAction(Icons.Outlined.NotificationsActive, stringResource(R.string.action_turn_on), onTurnOn)
+                        SelectionAction(Icons.Outlined.NotificationsOff, stringResource(R.string.action_turn_off), onTurnOff)
                         if (selectedCount == 1 && onRename != null) {
-                            SelectionAction(Icons.Outlined.Edit, "Rename", onRename)
+                            SelectionAction(Icons.Outlined.Edit, stringResource(R.string.action_rename), onRename)
                         }
-                        SelectionAction(Icons.Outlined.FolderOff, "Ungroup", onUngroup)
-                        SelectionAction(Icons.Outlined.DeleteOutline, "Delete", onDelete)
+                        SelectionAction(Icons.Outlined.FolderOff, stringResource(R.string.action_ungroup), onUngroup)
+                        SelectionAction(Icons.Outlined.DeleteOutline, stringResource(R.string.action_delete), onDelete)
                     }
 
                     mixedSelection -> {
-                        SelectionAction(Icons.Outlined.NotificationsActive, "Turn On", onTurnOn)
-                        SelectionAction(Icons.Outlined.NotificationsOff, "Turn Off", onTurnOff)
-                        SelectionAction(Icons.Outlined.DeleteOutline, "Delete", onDelete)
+                        SelectionAction(Icons.Outlined.NotificationsActive, stringResource(R.string.action_turn_on), onTurnOn)
+                        SelectionAction(Icons.Outlined.NotificationsOff, stringResource(R.string.action_turn_off), onTurnOff)
+                        SelectionAction(Icons.Outlined.DeleteOutline, stringResource(R.string.action_delete), onDelete)
                     }
 
                     else -> {
                         SelectionAction(
                             Icons.Outlined.SelectAll,
-                            if (allSelected) "Deselect" else "Select",
+                            if (allSelected) stringResource(R.string.action_deselect) else stringResource(R.string.action_select),
                             onSelectAllToggle
                         )
                         if (selectedCount == 1 && onRename != null) {
-                            SelectionAction(Icons.Outlined.Edit, "Rename", onRename)
+                            SelectionAction(Icons.Outlined.Edit, stringResource(R.string.action_rename), onRename)
                         }
-                        SelectionAction(Icons.Outlined.CreateNewFolder, "Group", onMoveToGroup)
-                        SelectionAction(Icons.Outlined.ContentCopy, "Copy", onCopy)
-                        SelectionAction(Icons.Outlined.PowerSettingsNew, "Toggle", onToggle)
-                        SelectionAction(Icons.Outlined.DeleteOutline, "Delete", onDelete)
+                        SelectionAction(Icons.Outlined.CreateNewFolder, stringResource(R.string.action_group), onMoveToGroup)
+                        SelectionAction(Icons.Outlined.ContentCopy, stringResource(R.string.action_copy), onCopy)
+                        SelectionAction(Icons.Outlined.PowerSettingsNew, stringResource(R.string.action_toggle), onToggle)
+                        SelectionAction(Icons.Outlined.DeleteOutline, stringResource(R.string.action_delete), onDelete)
                     }
                 }
             }
@@ -1799,7 +1809,7 @@ private fun GroupAssignmentDialog(
                             },
                             shape = SelectionChipShape,
                             colors = selectedChipColors(),
-                            label = { Text(group) }
+                            label = { Text(if (group == AlarmEntity.DEFAULT_GROUP) stringResource(R.string.group_general) else group) }
                         )
                     }
                 }
@@ -1809,11 +1819,11 @@ private fun GroupAssignmentDialog(
             TextButton(onClick = {
                 onConfirm(newGroup.ifBlank { groupName }.ifBlank { AlarmEntity.DEFAULT_GROUP })
             }) {
-                Text("Move")
+                Text(stringResource(R.string.action_move))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }

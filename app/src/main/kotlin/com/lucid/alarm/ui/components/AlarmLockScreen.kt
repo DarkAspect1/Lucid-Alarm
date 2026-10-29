@@ -64,6 +64,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -77,6 +78,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
+import com.lucid.alarm.R
 import com.lucid.alarm.data.prefs.ClockDateFont
 import com.lucid.alarm.data.prefs.GradientDirection
 import com.lucid.alarm.data.prefs.RingingBackgroundStyle
@@ -1060,12 +1062,12 @@ fun SnoozePill(
     ) {
         RepeatIconButton(
             icon = Icons.Filled.Remove,
-            contentDescription = "Decrease snooze",
+            contentDescription = stringResource(R.string.decrease_snooze),
             tint = contentColor,
             onStep = onMinus
         )
         Text(
-            text = "Snooze $snoozeMinutes mins",
+            text = stringResource(R.string.snooze_x_mins, snoozeMinutes),
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = fontFamily
@@ -1077,7 +1079,7 @@ fun SnoozePill(
         )
         RepeatIconButton(
             icon = Icons.Filled.Add,
-            contentDescription = "Increase snooze",
+            contentDescription = stringResource(R.string.increase_snooze),
             tint = contentColor,
             onStep = onPlus
         )
