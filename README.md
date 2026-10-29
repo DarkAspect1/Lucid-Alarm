@@ -100,7 +100,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 ---
 
 ## Features
-
+| Feature | Description |
 | :--- | :--- |
 | **Full Alarm Customization** | Design your ringing screen with clock layouts, animated or custom backgrounds, a full color picker, gradients, custom fonts, button styling, and a resizable clock and date, applied globally or per alarm. |
 | **Wake Check** | After an alarm is dismissed, a notification asks you to confirm you're awake within a set time. If you don't answer, the alarm rings again at maximum volume and loops until you tap "I'm Awake" in the notification. |
