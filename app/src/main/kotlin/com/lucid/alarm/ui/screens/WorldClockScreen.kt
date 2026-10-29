@@ -85,6 +85,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -111,6 +112,10 @@ import com.lucid.alarm.ui.viewmodel.WorldClockViewModel
 import com.lucid.alarm.ui.amPmSuffix
 import com.lucid.alarm.ui.formatHourMinute
 import com.lucid.alarm.ui.theme.onColorFor
+import com.lucid.alarm.ui.WorldClockLocalization
+import com.lucid.alarm.ui.WorldCity
+import android.content.Context
+import java.text.Collator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -118,27 +123,17 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
 
-data class WorldCity(
-    val zoneId: String,
-    val city: String,
-    val region: String
-)
-
-private fun buildWorldCities(): List<WorldCity> =
-    ZoneId.getAvailableZoneIds()
-        .filter { it.contains("/") }
-        .map { zoneId ->
-            WorldCity(
-                zoneId = zoneId,
-                city = zoneCityName(zoneId),
-                region = zoneId.substringBefore("/").replace("_", " ")
-            )
-        }
-        .distinctBy { it.zoneId }
-        .sortedBy { it.city.lowercase(Locale.getDefault()) }
+private fun buildWorldCities(context: Context): List<WorldCity> {
+    val collator = Collator.getInstance(WorldClockLocalization.resolveLocale(context))
+    return ZoneId.getAvailableZoneIds()
+        .filter { WorldClockLocalization.isValidCityZone(it) }
+        .map { zoneId -> WorldClockLocalization.createWorldCity(zoneId, context) }
+        .distinctBy { "${it.city.lowercase(Locale.ROOT)}__${it.country.lowercase(Locale.ROOT)}" }
+        .sortedWith { a, b -> collator.compare(a.city, b.city) }
+}
 
 private fun zoneCityName(zoneId: String): String =
-    zoneId.substringAfter("/").substringAfterLast("/").replace("_", " ")
+    WorldClockLocalization.rawCityName(zoneId)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -179,15 +174,27 @@ fun WorldClockScreen(
 
     LaunchedEffect(selectionActive) { onSelectionModeChange(selectionActive) }
 
+    val context = LocalContext.current
     val validZones = remember(savedZones) { savedZones.filter { it.contains("/") } }
-    val displayZones = remember(savedZones, sortMode) {
+    val displayZones = remember(savedZones, sortMode, context) {
+        val collator = Collator.getInstance(WorldClockLocalization.resolveLocale(context))
         when (sortMode) {
             WorldClockSortMode.CITY_AZ -> savedZones
                 .filter { it.contains("/") }
-                .sortedBy { zoneCityName(it).lowercase(Locale.getDefault()) }
+                .sortedWith { a, b ->
+                    collator.compare(
+                        WorldClockLocalization.getLocalizedCity(a, context),
+                        WorldClockLocalization.getLocalizedCity(b, context)
+                    )
+                }
             WorldClockSortMode.CITY_ZA -> savedZones
                 .filter { it.contains("/") }
-                .sortedByDescending { zoneCityName(it).lowercase(Locale.getDefault()) }
+                .sortedWith { a, b ->
+                    collator.compare(
+                        WorldClockLocalization.getLocalizedCity(b, context),
+                        WorldClockLocalization.getLocalizedCity(a, context)
+                    )
+                }
             WorldClockSortMode.CUSTOM -> savedZones.filter { it.contains("/") }
         }
     }
@@ -281,17 +288,18 @@ fun WorldClockScreen(
     val localZonedDateTime = remember(nowMillis) { Instant.ofEpochMilli(nowMillis).atZone(localZone) }
     val heroTimeText = remember(localZonedDateTime, timeFormat) {
         if (timeFormat.is24Hour) {
-            String.format(Locale.getDefault(), "%02d:%02d:%02d", localZonedDateTime.hour, localZonedDateTime.minute, localZonedDateTime.second)
+            String.format(Locale.US, "%02d:%02d:%02d", localZonedDateTime.hour, localZonedDateTime.minute, localZonedDateTime.second)
         } else {
             val h = if (localZonedDateTime.hour % 12 == 0) 12 else localZonedDateTime.hour % 12
-            String.format(Locale.getDefault(), "%d:%02d:%02d", h, localZonedDateTime.minute, localZonedDateTime.second)
+            String.format(Locale.US, "%d:%02d:%02d", h, localZonedDateTime.minute, localZonedDateTime.second)
         }
     }
-    val heroAmPm = remember(localZonedDateTime, timeFormat) {
-        if (timeFormat.is24Hour) "" else if (localZonedDateTime.hour < 12) "am" else "pm"
+    val heroAmPm = remember(localZonedDateTime, timeFormat, context) {
+        amPmSuffix(localZonedDateTime.hour, timeFormat.is24Hour, context)
     }
-    val heroTzName = remember(localZone) {
-        localZone.getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault())
+    val heroTzName = remember(localZone, context) {
+        val loc = WorldClockLocalization.resolveLocale(context)
+        localZone.getDisplayName(java.time.format.TextStyle.FULL, loc)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -836,6 +844,7 @@ private fun WorldClockCard(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val zone = remember(zoneId) { ZoneId.of(zoneId) }
     val now = remember(zone, nowMillis) {
         Instant.ofEpochMilli(nowMillis).atZone(zone)
@@ -858,27 +867,12 @@ private fun WorldClockCard(
     val mutedColor = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
 
     val localZone = remember { ZoneId.systemDefault() }
-    val targetOffsetSec = remember(now) { now.offset.totalSeconds }
-    val localOffsetSec = remember(nowMillis) { localZone.rules.getOffset(Instant.ofEpochMilli(nowMillis)).totalSeconds }
-    val diffSec = targetOffsetSec - localOffsetSec
-    val diffHours = diffSec / 3600
-    val diffMinutes = (kotlin.math.abs(diffSec) % 3600) / 60
-    val offsetSign = if (diffSec >= 0) "+" else "-"
-    val diffText = if (diffMinutes > 0) {
-        "$offsetSign${kotlin.math.abs(diffHours)}h ${diffMinutes}m"
-    } else if (diffHours == 0) {
-        "0 hrs"
-    } else {
-        "$offsetSign${kotlin.math.abs(diffHours)} hrs"
+    val cityName = remember(zoneId, context) {
+        WorldClockLocalization.getLocalizedCity(zoneId, context)
     }
-    val localDate = remember(nowMillis) { Instant.ofEpochMilli(nowMillis).atZone(localZone).toLocalDate() }
-    val targetDate = now.toLocalDate()
-    val dayText = when {
-        targetDate.isEqual(localDate) -> "Today"
-        targetDate.isAfter(localDate) -> "Tomorrow"
-        else -> "Yesterday"
+    val subtitleText = remember(now, nowMillis, context) {
+        WorldClockLocalization.formatWorldClockSubtitle(nowMillis, zone, localZone, context)
     }
-    val subtitleText = "$dayText, $diffText"
 
     FrostedBlurBox(
         modifier = modifier
@@ -901,7 +895,7 @@ private fun WorldClockCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = zoneCityName(zoneId),
+                    text = cityName,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = textColor,
@@ -929,7 +923,7 @@ private fun WorldClockCard(
                     if (!is24Hour) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = amPmSuffix(now.hour, is24Hour),
+                            text = amPmSuffix(now.hour, is24Hour, context),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = textColor,
@@ -957,19 +951,28 @@ private fun AddWorldClockDialog(
     onDismiss: () -> Unit,
     onAdd: (String) -> Unit
 ) {
+    val context = LocalContext.current
     var query by remember { mutableStateOf("") }
-    val allCities = remember { buildWorldCities() }
+    val allCities = remember(context) { buildWorldCities(context) }
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
     val filtered = remember(query, allCities) {
         if (query.isBlank()) {
             allCities
         } else {
-            allCities.filter {
-                it.city.contains(query, ignoreCase = true) ||
-                    it.region.contains(query, ignoreCase = true) ||
-                    it.zoneId.contains(query, ignoreCase = true)
-            }
+            val q = WorldClockLocalization.normalizeForSearch(query)
+            val qWithoutAl = if (q.startsWith("ال") && q.length > 2) q.substring(2).trim() else q
+            allCities
+                .mapNotNull { city ->
+                    val score = WorldClockLocalization.calculateSearchScore(city, q, qWithoutAl)
+                    if (score > 0) Pair(city, score) else null
+                }
+                .sortedWith(
+                    compareByDescending<Pair<WorldCity, Int>> { it.second }
+                        .thenBy { it.first.city.length }
+                        .thenBy { it.first.city }
+                )
+                .map { it.first }
         }
     }
 
@@ -1114,8 +1117,10 @@ private fun AddWorldClockDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         if (query.isBlank()) {
-                            val grouped = filtered.groupBy { it.city.first().uppercaseChar() }
-                            grouped.keys.sorted().forEach { letter ->
+                            val grouped = filtered.groupBy { WorldClockLocalization.sectionHeaderFor(it.city) }
+                            val collator = Collator.getInstance(WorldClockLocalization.resolveLocale(context))
+                            val sortedHeaders = grouped.keys.sortedWith { a, b -> collator.compare(a.toString(), b.toString()) }
+                            sortedHeaders.forEach { letter ->
                                 item(key = "header_$letter") {
                                     Text(
                                         text = letter.toString(),
@@ -1129,7 +1134,8 @@ private fun AddWorldClockDialog(
                                             .padding(horizontal = 12.dp, vertical = 6.dp)
                                     )
                                 }
-                                items(grouped[letter].orEmpty(), key = { it.zoneId }) { city ->
+                                val citiesInHeader = grouped[letter].orEmpty().sortedWith { a, b -> collator.compare(a.city, b.city) }
+                                items(citiesInHeader, key = { it.zoneId }) { city ->
                                     CityListItem(
                                         city = city,
                                         is24Hour = is24Hour,
@@ -1165,11 +1171,12 @@ private fun CityListItem(
     isLight: Boolean,
     onSelect: () -> Unit
 ) {
-    val cityTime = remember(city.zoneId, nowMillis, is24Hour) {
+    val context = LocalContext.current
+    val cityTime = remember(city.zoneId, nowMillis, is24Hour, context) {
         runCatching {
             val zone = ZoneId.of(city.zoneId)
             val zdt = Instant.ofEpochMilli(nowMillis).atZone(zone)
-            formatHourMinute(zdt.hour, zdt.minute, is24Hour) + if (!is24Hour) " " + amPmSuffix(zdt.hour, is24Hour) else ""
+            formatHourMinute(zdt.hour, zdt.minute, is24Hour) + if (!is24Hour) " " + amPmSuffix(zdt.hour, is24Hour, context) else ""
         }.getOrDefault("")
     }
 
@@ -1197,8 +1204,13 @@ private fun CityListItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                val secondaryText = if (city.country.isNotBlank() && city.country != city.city) {
+                    "${city.country} \u00B7 ${city.zoneId}"
+                } else {
+                    "${city.region} \u00B7 ${city.zoneId}"
+                }
                 Text(
-                    text = "${city.region} \u00B7 ${city.zoneId}",
+                    text = secondaryText,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 12.sp
                     ),

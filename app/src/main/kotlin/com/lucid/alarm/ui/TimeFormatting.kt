@@ -71,6 +71,9 @@ fun amPmSuffix(hour: Int, is24Hour: Boolean, context: Context? = null): String {
     if (context != null) {
         return context.getString(if (isAm) R.string.time_am else R.string.time_pm)
     }
+    val lang = Locale.getDefault().language
+    if (lang == "ar") return if (isAm) "ص" else "م"
+    if (lang == "tr") return if (isAm) "ÖÖ" else "ÖS"
     return runCatching {
         val symbols = DateFormatSymbols.getInstance(Locale.getDefault())
         val arr = symbols.amPmStrings

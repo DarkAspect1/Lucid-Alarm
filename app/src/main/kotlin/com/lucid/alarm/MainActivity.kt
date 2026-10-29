@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.lucid.alarm.R
 import com.lucid.alarm.ui.components.FrostedCardSurface
+import com.lucid.alarm.ui.theme.onColorFor
 import kotlinx.coroutines.launch
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -248,15 +249,36 @@ class MainActivity : ComponentActivity() {
                 window.decorView.layoutDirection = if (isRtl) android.view.View.LAYOUT_DIRECTION_RTL else android.view.View.LAYOUT_DIRECTION_LTR
             }
 
-            val batteryPrompted by settingsDataStore.batteryOptimizationPromptedFlow.collectAsState(initial = true)
+            val packageInfo = remember {
+                runCatching {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageManager.getPackageInfo(packageName, 0)
+                    }
+                }.getOrNull()
+            }
+            val currentVersionCode = remember(packageInfo) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    packageInfo?.longVersionCode ?: 5L
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageInfo?.versionCode?.toLong() ?: 5L
+                }
+            }
+
+            val lastPromptedVersionCode by settingsDataStore.lastBatteryPromptedVersionCodeFlow.collectAsState(initial = -1L)
             val powerManager = remember { getSystemService(Context.POWER_SERVICE) as? PowerManager }
             val isBatteryExempted = powerManager?.isIgnoringBatteryOptimizations(packageName) == true
             var showBatteryDialog by remember { mutableStateOf(false) }
             val scope = rememberCoroutineScope()
 
-            LaunchedEffect(batteryPrompted, isBatteryExempted) {
-                if (!batteryPrompted && !isBatteryExempted) {
-                    showBatteryDialog = true
+            LaunchedEffect(lastPromptedVersionCode, isBatteryExempted, currentVersionCode) {
+                if (lastPromptedVersionCode != -1L && !isBatteryExempted) {
+                    if (lastPromptedVersionCode < currentVersionCode) {
+                        showBatteryDialog = true
+                    }
                 }
             }
 
@@ -286,7 +308,7 @@ class MainActivity : ComponentActivity() {
                     if (showBatteryDialog) {
                         Dialog(onDismissRequest = {
                             showBatteryDialog = false
-                            scope.launch { settingsDataStore.setBatteryOptimizationPrompted(true) }
+                            scope.launch { settingsDataStore.setLastBatteryPromptedVersionCode(currentVersionCode) }
                         }) {
                             FrostedCardSurface(
                                 modifier = Modifier.widthIn(min = 280.dp, max = 340.dp),
@@ -311,13 +333,13 @@ class MainActivity : ComponentActivity() {
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Surface(
                                             shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.primaryContainer
+                                            color = MaterialTheme.colorScheme.primary
                                         ) {
                                             Text(
                                                 text = stringResource(R.string.badge_recommended),
                                                 style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                fontWeight = FontWeight.Bold,
+                                                color = onColorFor(MaterialTheme.colorScheme.primary),
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                             )
                                         }
@@ -334,7 +356,7 @@ class MainActivity : ComponentActivity() {
                                     ) {
                                         TextButton(onClick = {
                                             showBatteryDialog = false
-                                            scope.launch { settingsDataStore.setBatteryOptimizationPrompted(true) }
+                                            scope.launch { settingsDataStore.setLastBatteryPromptedVersionCode(currentVersionCode) }
                                         }) {
                                             Text(stringResource(R.string.action_cancel))
                                         }
@@ -342,7 +364,7 @@ class MainActivity : ComponentActivity() {
                                         Button(
                                             onClick = {
                                                 showBatteryDialog = false
-                                                scope.launch { settingsDataStore.setBatteryOptimizationPrompted(true) }
+                                                scope.launch { settingsDataStore.setLastBatteryPromptedVersionCode(currentVersionCode) }
                                                 runCatching {
                                                     val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                                                         data = Uri.parse("package:$packageName")

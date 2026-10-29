@@ -1132,7 +1132,7 @@ private fun NextAlarmHeader(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = nextAlarmSubtitle(upcoming, triggerMillis, is24Hour, removeLeadingZero),
+                text = nextAlarmSubtitle(upcoming, triggerMillis, is24Hour, removeLeadingZero, context),
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
@@ -1166,7 +1166,8 @@ private fun nextAlarmSubtitle(
     alarm: AlarmEntity,
     triggerMillis: Long,
     is24Hour: Boolean,
-    removeLeadingZero: Boolean = false
+    removeLeadingZero: Boolean = false,
+    context: Context? = null
 ): String {
     val trigger = Calendar.getInstance().apply { timeInMillis = triggerMillis }
     val date = SimpleDateFormat("EEE d MMM", Locale.getDefault()).format(trigger.time)
@@ -1174,7 +1175,7 @@ private fun nextAlarmSubtitle(
         if (is24Hour) {
             ""
         } else {
-            " " + amPmSuffix(alarm.hour, is24Hour).lowercase(Locale.getDefault())
+            " " + amPmSuffix(alarm.hour, is24Hour, context)
         }
     return "$date, $time"
 }

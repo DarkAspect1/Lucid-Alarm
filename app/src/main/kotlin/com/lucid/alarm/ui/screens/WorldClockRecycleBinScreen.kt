@@ -70,7 +70,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.platform.LocalContext
 import com.lucid.alarm.ui.amPmSuffix
+import com.lucid.alarm.ui.WorldClockLocalization
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.components.SelectionCheckbox
 import com.lucid.alarm.ui.components.edgeFadeMask
@@ -382,6 +384,7 @@ private fun TrashedWorldClockCard(
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val zone = remember(zoneId) { runCatching { ZoneId.of(zoneId) }.getOrNull() }
     val now = remember(zone, nowMillis) {
         zone?.let { Instant.ofEpochMilli(nowMillis).atZone(it) }
@@ -393,31 +396,12 @@ private fun TrashedWorldClockCard(
     val mutedColor = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
 
     val localZone = remember { ZoneId.systemDefault() }
-    val subtitleText = remember(now, nowMillis) {
-        if (now == null) ""
-        else {
-            val targetOffsetSec = now.offset.totalSeconds
-            val localOffsetSec = localZone.rules.getOffset(Instant.ofEpochMilli(nowMillis)).totalSeconds
-            val diffSec = targetOffsetSec - localOffsetSec
-            val diffHours = diffSec / 3600
-            val diffMinutes = (kotlin.math.abs(diffSec) % 3600) / 60
-            val offsetSign = if (diffSec >= 0) "+" else "-"
-            val diffText = if (diffMinutes > 0) {
-                "$offsetSign${kotlin.math.abs(diffHours)}h ${diffMinutes}m"
-            } else if (diffHours == 0) {
-                "0 hrs"
-            } else {
-                "$offsetSign${kotlin.math.abs(diffHours)} hrs"
-            }
-            val localDate = Instant.ofEpochMilli(nowMillis).atZone(localZone).toLocalDate()
-            val targetDate = now.toLocalDate()
-            val dayText = when {
-                targetDate.isEqual(localDate) -> "Today"
-                targetDate.isAfter(localDate) -> "Tomorrow"
-                else -> "Yesterday"
-            }
-            "$dayText, $diffText"
-        }
+    val cityName = remember(zoneId, context) {
+        WorldClockLocalization.getLocalizedCity(zoneId, context)
+    }
+    val subtitleText = remember(now, nowMillis, context) {
+        if (now == null || zone == null) ""
+        else WorldClockLocalization.formatWorldClockSubtitle(nowMillis, zone, localZone, context)
     }
 
     FrostedBlurBox(
@@ -441,7 +425,7 @@ private fun TrashedWorldClockCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = clockCityName(zoneId),
+                    text = cityName,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = textColor,
@@ -471,7 +455,7 @@ private fun TrashedWorldClockCard(
                     if (!is24Hour && now != null) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = amPmSuffix(now.hour, is24Hour),
+                            text = amPmSuffix(now.hour, is24Hour, context),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = textColor,
@@ -493,7 +477,7 @@ private fun TrashedWorldClockCard(
 }
 
 private fun clockCityName(zoneId: String): String =
-    zoneId.substringAfter("/").substringAfterLast("/").replace("_", " ")
+    WorldClockLocalization.rawCityName(zoneId)
 
 @Composable
 private fun WorldClockBinBottomBar(

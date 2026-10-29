@@ -668,7 +668,12 @@ fun AlarmEditSheet(
                                  onClick = { vibrationPattern = preset.name },
                                  shape = SelectionChipShape,
                                  colors = selectedChipColors(),
-                                 label = { Text(preset.localizedName()) }
+                                 label = {
+                                     Text(
+                                         text = preset.localizedName(),
+                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                     )
+                                 }
                              )
                         }
                     }

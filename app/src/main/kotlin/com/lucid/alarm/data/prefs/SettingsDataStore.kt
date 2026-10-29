@@ -754,6 +754,10 @@ class SettingsDataStore(private val context: Context) {
         prefs[KEY_BATTERY_OPTIMIZATION_PROMPTED] ?: false
     }
 
+    val lastBatteryPromptedVersionCodeFlow: Flow<Long> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_LAST_BATTERY_PROMPTED_VERSION_CODE] ?: 0L
+    }
+
     val appLanguageFlow: Flow<String> = context.settingsDataStore.data.map { prefs ->
         prefs[KEY_APP_LANGUAGE].orEmpty()
     }
@@ -1326,6 +1330,13 @@ class SettingsDataStore(private val context: Context) {
         context.settingsDataStore.edit { it[KEY_BATTERY_OPTIMIZATION_PROMPTED] = prompted }
     }
 
+    suspend fun setLastBatteryPromptedVersionCode(versionCode: Long) {
+        context.settingsDataStore.edit {
+            it[KEY_LAST_BATTERY_PROMPTED_VERSION_CODE] = versionCode
+            it[KEY_BATTERY_OPTIMIZATION_PROMPTED] = true
+        }
+    }
+
     suspend fun setVibrateAlarmsAndTimers(enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_VIBRATE_ALARMS_AND_TIMERS] = enabled }
     }
@@ -1584,6 +1595,7 @@ private val KEY_WORLD_CLOCK_CARD_COLOR = longPreferencesKey("world_clock_card_co
         private val KEY_AWAKE_CHECK_ENABLED = booleanPreferencesKey("awake_check_enabled")
         private val KEY_AWAKE_CHECK_MINUTES = intPreferencesKey("awake_check_minutes")
         private val KEY_BATTERY_OPTIMIZATION_PROMPTED = booleanPreferencesKey("battery_optimization_prompted")
+        private val KEY_LAST_BATTERY_PROMPTED_VERSION_CODE = longPreferencesKey("last_battery_prompted_version_code")
         private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
 
         private val KEY_WORLD_CLOCK_ZONES = stringPreferencesKey("world_clock_zones")

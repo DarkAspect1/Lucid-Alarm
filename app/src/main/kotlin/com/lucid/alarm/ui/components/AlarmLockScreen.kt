@@ -717,8 +717,9 @@ fun RingingClockFace(
     customFontPath: String? = null
 ) {
 
+    val context = LocalContext.current
     val timeText = formatClockDigits(hour, minute, is24Hour, removeLeadingZero)
-    val amPm = if (showAmPm) com.lucid.alarm.ui.amPmSuffix(hour, is24Hour) else ""
+    val amPm = if (showAmPm) com.lucid.alarm.ui.amPmSuffix(hour, is24Hour, context) else ""
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val digitColor = if (textBrush == null) contentColor else Color.Unspecified

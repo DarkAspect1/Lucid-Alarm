@@ -379,4 +379,8 @@
     <string name="unit_hr_short">س</string>
     <string name="unit_min_short">د</string>
     <string name="unit_sec_short">ث</string>
+    <string name="world_clock_diff_hours">%1$s%2$d س</string>
+    <string name="world_clock_diff_zero">0 س</string>
+    <string name="world_clock_diff_hm">%1$s%2$dس %3$dد</string>
+    <string name="world_clock_subtitle">%1$s، %2$s</string>
 </resources>

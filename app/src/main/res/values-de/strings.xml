@@ -379,4 +379,8 @@
     <string name="unit_hr_short">Std</string>
     <string name="unit_min_short">Min</string>
     <string name="unit_sec_short">Sek</string>
+    <string name="world_clock_diff_hours">%1$s%2$d Std.</string>
+    <string name="world_clock_diff_zero">0 Std.</string>
+    <string name="world_clock_diff_hm">%1$s%2$d Std. %3$d Min.</string>
+    <string name="world_clock_subtitle">%1$s, %2$s</string>
 </resources>

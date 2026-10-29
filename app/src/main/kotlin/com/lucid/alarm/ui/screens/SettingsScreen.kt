@@ -1510,15 +1510,18 @@ fun SettingsScreen(
                                                 .clickable {
                                                     scope.launch { settingsDataStore.setTimerVibrationPattern(pattern) }
                                                 }
-                                                .padding(vertical = 10.dp),
+                                                .padding(vertical = 10.dp, horizontal = 4.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = pattern.localizedName(),
-                                                fontSize = 13.sp,
+                                                fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 1
+                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.fillMaxWidth()
                                             )
                                         }
                                     }

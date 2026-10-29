@@ -379,4 +379,8 @@
     <string name="unit_hr_short">o</string>
     <string name="unit_min_short">min</string>
     <string name="unit_sec_short">sec</string>
+    <string name="world_clock_diff_hours">%1$s%2$d ore</string>
+    <string name="world_clock_diff_zero">0 ore</string>
+    <string name="world_clock_diff_hm">%1$s%2$dh %3$dm</string>
+    <string name="world_clock_subtitle">%1$s, %2$s</string>
 </resources>

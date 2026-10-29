@@ -133,7 +133,7 @@ fun AlarmRow(
                         if (!is24Hour) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = amPmSuffix(alarm.hour, is24Hour),
+                                text = amPmSuffix(alarm.hour, is24Hour, context),
                                 style = MaterialTheme.typography.labelLarge.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 16.sp
