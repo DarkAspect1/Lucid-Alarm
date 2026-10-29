@@ -7,7 +7,7 @@
 
   <p align="center">
     <b>Deep Alarm Ringing Screen Customization • Animated Backgrounds • Custom Wallpapers</b><br/>
-    <b>Alarm Groups • Multi-Select Batch Actions • Filters and Sorting • Recycle Bin</b><br/>
+    <b>Alarm Groups •  Multi-Week Repeat • Multi-Select • Filters and Sorting • Recycle Bin</b><br/>
     <b>Stopwatch with Laps • Timer with Presets • World Clock • Interactive Live Activities (Nowbar)</b><br/>
     <b>Post-Alarm Wake Check • Upcoming Alarm Alerts • Custom Vibration Patterns • Custom Ringtones • Custom Fonts</b><br/>
     <b>HSV Color Picker • Dynamic Accent Tinting • JSON Backup and Restore</b>
@@ -109,6 +109,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | **Back to Top Button** | A circular button driven by `derivedStateOf` animates into view on long lists and returns the user to the top. |
 | **Floating Back Button** | When the header scrolls out of view, a circular back button floats in so you can always navigate back without scrolling up. |
 | **Drag-and-drop reordering** | In selection mode, hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
+| **Multi-week repeat:** | Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
 
 ### Selection and Organization
 
