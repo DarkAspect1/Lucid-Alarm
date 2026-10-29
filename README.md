@@ -35,6 +35,7 @@
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
       <a href="#stopwatch-timer-and-world-clock">StopWatch-Timer-World Clock</a> &nbsp;|&nbsp;
       <a href="#alarm-options--notifications">Alarm Options & Notifications</a> &nbsp;|&nbsp;
+      <a href="#Selection--Organization">Selection & Organization</a> &nbsp;|&nbsp;
       <a href="#backup-and-restore">Backup and Restore</a> &nbsp;|&nbsp;
       <a href="#installation--build-requirements">Installation & Build Requirements</a> &nbsp;|&nbsp;
     </b>
@@ -100,9 +101,6 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 
 ## Features
 
-### Design System and UI Architecture
-
-| Feature | Description |
 | :--- | :--- |
 | **Full Alarm Customization** | Design your ringing screen with clock layouts, animated or custom backgrounds, a full color picker, gradients, custom fonts, button styling, and a resizable clock and date, applied globally or per alarm. |
 | **Wake Check** | After an alarm is dismissed, a notification asks you to confirm you're awake within a set time. If you don't answer, the alarm rings again at maximum volume and loops until you tap "I'm Awake" in the notification. |
@@ -116,21 +114,6 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | **Floating Controls** | A floating back button appears when the header scrolls out of view, and a back-to-top button appears on long lists. |
 | **Borderless Design Language** | Cards, menus, floating buttons, and pills use no outlines, reducing visual clutter across the interface. |
 | **Edge Fade Masks** | Alpha masks to let scrollable content fade naturally at the top and bottom of the viewport. |
-
-### Selection and Organization
-
-* **Multi-select batch actions:** Long-press any alarm or world clock card to enter selection mode, with the following actions available:
-  * Select all / deselect all
-  * Move to group
-  * Duplicate
-  * Toggle on or off
-  * Move to recycle bin
-* **Two-column alarm groups:** Groups render in a two-column grid (`groups.chunked(2)`) with live alarm counts, outline status icons (`Alarm` / `AlarmOff`), and bulk group switches.
-* **Filtering and sorting:**
-  * Status filter: All, Turned On, or Turned Off
-  * Day filter: Restrict alarms to specific days of the week
-  * Sort order: Alarm Time, Alarm Day, or drag-and-drop Custom Order
-* **Recycle bin:** A two-stage deletion workflow supporting individual restore, bulk restore, and permanent deletion.
 
 ---
 
@@ -203,6 +186,24 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 * **Upcoming alarm alerts:** Dismiss or modify an upcoming alarm directly from its notification, with configurable lead times from 15 to 60 minutes.
 * **Alarm toast confirmation:** A toast appears whenever you turn on an alarm or create a new one, showing how much time is left until it rings.
 * **Audio and haptics:** Unified or per-alarm volume override, custom ringtone selection, and distinct vibration patterns.
+
+---
+
+## Selection & Organization
+
+* **Multi-select actions:** Long-press any alarm or world clock card to enter selection mode, with the following actions available:
+  * Select all / deselect all
+  * Move to group
+  * Duplicate
+  * Toggle on or off
+  * Move to recycle bin
+* **Drag-and-drop reordering:** hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
+* **Two-column alarm groups:** Groups render in a two-column grid (`groups.chunked(2)`) with live alarm counts, outline status icons (`Alarm` / `AlarmOff`), and bulk group switches.
+* **Filtering and sorting:**
+  * Status filter: All, Turned On, or Turned Off
+  * Day filter: Restrict alarms to specific days of the week
+  * Sort order: Alarm Time, Alarm Day, or drag-and-drop Custom Order
+* **Recycle bin:** A two-stage deletion workflow supporting individual restore, bulk restore, and permanent deletion.
 
 ---
 
