@@ -106,10 +106,9 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | :--- | :--- |
 | **Full Alarm Customization** | Design your ringing screen with clock layouts, animated or custom backgrounds, a full color picker, gradients, custom fonts, button styling, and a resizable clock and date, applied globally or per alarm. |
 | **Wake Check** | After an alarm is dismissed, a notification asks you to confirm you're awake within a set time. If you don't answer, the alarm rings again at maximum volume and loops until you tap "I'm Awake" in the notification. |
-| **Multi-week repeat:** | Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
+| **Multi-week Scheduling:** | Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
 | **Accent Color Theming** | Choose an accent color and the app adapts around it, including Nowbar and Dark Mode background. |
 | **Nowbar Support** | Live stopwatch and timer pills with lap, pause, resume, and cancel controls and no need to open the app. |
-| **Multi-Week Scheduling** | Repeat an alarm every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
 | **Alarm Groups and Recycle Bin** | Organize alarms into groups with bulk switches, and restore deleted alarms individually or all at once. |
 | **Translation Languages** | English, Arabic, Turkish, Italian, Spanish, French, and German, with full RTL support for Arabic. |
 | **World Clock Smart Search** | Search cities with partial or approximate spelling. Results are ranked by relevance, so the closest match appears first without typing the full name. |
