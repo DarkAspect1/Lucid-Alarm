@@ -10,6 +10,9 @@ import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.receiver.AlarmScheduler
 import com.lucid.alarm.util.TimeLeftFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -72,8 +75,9 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
     fun rescheduleAllAlarms() {
         viewModelScope.launch {
             val config = upcomingConfig()
+            val now = System.currentTimeMillis()
             repository.allAlarms.first().forEach { alarm ->
-                if (alarm.isEnabled && !alarm.isTrashed) {
+                if ((alarm.isEnabled || alarm.skipUntilEpochMillis > now) && !alarm.isTrashed) {
                     scheduler.scheduleAlarm(alarm, effectiveLeadMinutes(alarm, config))
                 }
             }
@@ -100,9 +104,11 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             scheduler.cancelAllAuxiliaryTimers(alarm.id)
             repository.update(alarm)
-            if (alarm.isEnabled) {
+            if (alarm.isEnabled || alarm.skipUntilEpochMillis > System.currentTimeMillis()) {
                 scheduler.scheduleAlarm(alarm, effectiveLeadMinutes(alarm, upcomingConfig()))
-                showToast(relativeTimeText(alarm))
+                if (alarm.isEnabled) {
+                    showToast(relativeTimeText(alarm))
+                }
             } else {
                 scheduler.cancelAlarm(alarm.id)
             }
@@ -116,7 +122,7 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
             forgetReenable(listOf(alarm.id))
         }
         viewModelScope.launch {
-            val updatedAlarm = alarm.copy(isEnabled = isEnabled)
+            val updatedAlarm = alarm.copy(isEnabled = isEnabled, skipUntilEpochMillis = 0L)
             repository.update(updatedAlarm)
             if (isEnabled) {
                 scheduler.scheduleAlarm(
@@ -127,6 +133,33 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 scheduler.cancelAlarm(updatedAlarm.id)
             }
+        }
+    }
+
+    fun skipNextOccurrence(alarm: AlarmEntity) {
+        forgetReenable(listOf(alarm.id))
+        viewModelScope.launch {
+            val o1 = AlarmScheduler.calculateTriggerTimeMillisStatic(
+                hour24 = alarm.hour,
+                minute = alarm.minute,
+                daysOfWeek = alarm.daysOfWeek,
+                weekInterval = alarm.weekInterval,
+                anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay
+            )
+            val o2 = AlarmScheduler.calculateTriggerTimeMillisStatic(
+                hour24 = alarm.hour,
+                minute = alarm.minute,
+                daysOfWeek = alarm.daysOfWeek,
+                weekInterval = alarm.weekInterval,
+                anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay,
+                afterMillis = o1 + 60_000L
+            )
+            val updatedAlarm = alarm.copy(isEnabled = false, skipUntilEpochMillis = o2)
+            repository.update(updatedAlarm)
+            scheduler.cancelAllAuxiliaryTimers(alarm.id)
+            scheduler.scheduleAlarm(updatedAlarm, effectiveLeadMinutes(updatedAlarm, upcomingConfig()))
+            val formatter = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+            showToast(appContext.getString(R.string.alarm_will_ring_on, formatter.format(Date(o2))))
         }
     }
 

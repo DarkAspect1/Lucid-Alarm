@@ -13,8 +13,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.SelectAll
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,10 +34,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.RestoreFromTrash
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.RestoreFromTrash
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +48,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.lucid.alarm.R
+import com.lucid.alarm.ui.components.SelectionBarContainer
+import com.lucid.alarm.ui.components.SelectionIconButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -205,7 +207,7 @@ fun RecycleBinScreen(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = stringResource(R.string.action_back),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(22.dp)
@@ -407,7 +409,7 @@ fun RecycleBinScreen(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.KeyboardArrowUp,
+                        imageVector = Icons.Rounded.KeyboardArrowUp,
                         contentDescription = stringResource(R.string.action_back_to_top),
                         modifier = Modifier.size(24.dp)
                     )
@@ -461,7 +463,7 @@ private fun RecycleBinHeader(
             modifier = Modifier.size(40.dp)
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                 contentDescription = stringResource(R.string.action_back),
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(24.dp)
@@ -503,105 +505,76 @@ private fun RecycleBinBottomBar(
     modifier: Modifier = Modifier
 ) {
     val lightMode = MaterialTheme.colorScheme.background.luminance() > 0.5f
-    Surface(
-        border = null,
+    SelectionBarContainer(
         modifier = modifier
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 20.dp),
-        color = if (lightMode) {
-            Color(0xFFFFFFFF)
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerHighest
-        },
-        contentColor = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(999.dp),
-        tonalElevation = 0.dp,
-        shadowElevation = 8.dp
+            .padding(horizontal = 16.dp, vertical = 20.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .height(52.dp)
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            if (selectionMode) {
-                RecycleBinBarAction(
-                    icon = Icons.Outlined.SelectAll,
-                    label = if (allSelected) stringResource(R.string.action_deselect) else stringResource(R.string.action_select_all),
-                    enabled = hasEntries,
-                    onClick = onSelectAllToggle
-                )
-                RecycleBinBarAction(
-                    icon = Icons.Filled.RestoreFromTrash,
-                    label = stringResource(R.string.action_restore),
-                    enabled = selectedCount > 0,
-                    onClick = onRestore
-                )
-                RecycleBinBarAction(
-                    icon = Icons.Outlined.DeleteOutline,
-                    label = stringResource(R.string.action_delete),
-                    enabled = selectedCount > 0,
-                    onClick = onDelete
-                )
-                RecycleBinBarAction(
-                    icon = Icons.Outlined.Close,
-                    label = stringResource(R.string.action_cancel),
-                    enabled = true,
-                    onClick = onCancel
-                )
+        Surface(
+            border = null,
+            color = if (lightMode) {
+                Color(0xFFFFFFFF)
             } else {
-                RecycleBinBarAction(
-                    icon = Icons.Outlined.SelectAll,
-                    label = stringResource(R.string.action_select),
-                    enabled = hasEntries,
-                    onClick = onSelect
-                )
-                RecycleBinBarAction(
-                    icon = Icons.Filled.RestoreFromTrash,
-                    label = stringResource(R.string.action_restore_all),
-                    enabled = hasEntries,
-                    onClick = onRestore
-                )
-                RecycleBinBarAction(
-                    icon = Icons.Outlined.DeleteOutline,
-                    label = stringResource(R.string.action_delete_all),
-                    enabled = hasEntries,
-                    onClick = onDelete
-                )
+                Color(0xFF2C2D35)
+            },
+            contentColor = MaterialTheme.colorScheme.primary,
+            shape = RoundedCornerShape(999.dp),
+            tonalElevation = 0.dp,
+            shadowElevation = 8.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .height(52.dp)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+            ) {
+                if (selectionMode) {
+                    SelectionIconButton(
+                        icon = Icons.Rounded.SelectAll,
+                        label = if (allSelected) stringResource(R.string.action_deselect) else stringResource(R.string.action_select_all),
+                        enabled = hasEntries,
+                        onClick = onSelectAllToggle
+                    )
+                    SelectionIconButton(
+                        icon = Icons.Rounded.RestoreFromTrash,
+                        label = stringResource(R.string.action_restore),
+                        enabled = selectedCount > 0,
+                        onClick = onRestore
+                    )
+                    SelectionIconButton(
+                        icon = Icons.Rounded.DeleteOutline,
+                        label = stringResource(R.string.action_delete),
+                        enabled = selectedCount > 0,
+                        onClick = onDelete
+                    )
+                    SelectionIconButton(
+                        icon = Icons.Rounded.Close,
+                        label = stringResource(R.string.action_cancel),
+                        enabled = true,
+                        onClick = onCancel
+                    )
+                } else {
+                    SelectionIconButton(
+                        icon = Icons.Rounded.SelectAll,
+                        label = stringResource(R.string.action_select),
+                        enabled = hasEntries,
+                        onClick = onSelect
+                    )
+                    SelectionIconButton(
+                        icon = Icons.Rounded.RestoreFromTrash,
+                        label = stringResource(R.string.action_restore_all),
+                        enabled = hasEntries,
+                        onClick = onRestore
+                    )
+                    SelectionIconButton(
+                        icon = Icons.Rounded.DeleteOutline,
+                        label = stringResource(R.string.action_delete_all),
+                        enabled = hasEntries,
+                        onClick = onDelete
+                    )
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun RecycleBinBarAction(
-    icon: ImageVector,
-    label: String,
-    enabled: Boolean,
-    onClick: () -> Unit
-) {
-    val tint = MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 1f else 0.35f)
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(20.dp),
-            tint = tint
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-            color = tint,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }

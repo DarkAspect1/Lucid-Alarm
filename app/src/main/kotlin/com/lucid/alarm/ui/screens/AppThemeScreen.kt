@@ -31,12 +31,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.FormatSize
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -88,6 +88,8 @@ import com.lucid.alarm.ui.rememberFontPicker
 import com.lucid.alarm.ui.theme.backgroundBrushFor
 import com.lucid.alarm.ui.theme.onColorFor
 import com.lucid.alarm.ui.theme.toColor
+import com.lucid.alarm.R
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -188,7 +190,7 @@ fun AppThemeScreen(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = "Back",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(22.dp)
@@ -220,7 +222,7 @@ fun AppThemeScreen(
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
@@ -241,7 +243,7 @@ fun AppThemeScreen(
             item {
                 SettingsSectionCard(
                     title = "Theme Mode",
-                    icon = Icons.Outlined.DarkMode
+                    icon = Icons.Rounded.DarkMode
             ) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     ThemeMode.entries.forEachIndexed { index, mode ->
@@ -273,7 +275,7 @@ fun AppThemeScreen(
         item {
             SettingsSectionCard(
                 title = "Display Size",
-                icon = Icons.Outlined.FormatSize
+                icon = Icons.Rounded.FormatSize
             ) {
                 var tempUiScale by remember { mutableFloatStateOf(uiScale) }
                 LaunchedEffect(uiScale) { tempUiScale = uiScale }
@@ -313,7 +315,7 @@ fun AppThemeScreen(
         item {
             SettingsSectionCard(
                 title = "Colors",
-                icon = Icons.Outlined.Palette
+                icon = Icons.Rounded.Palette
             ) {
                 Text(
                     text = "Accent Color",
@@ -357,7 +359,7 @@ fun AppThemeScreen(
                         ) {
                             if (selected) {
                                 Icon(
-                                    imageVector = Icons.Filled.Check,
+                                    imageVector = Icons.Rounded.Check,
                                     contentDescription = accent.label,
                                     tint = onColorFor(swatchColor)
                                 )
@@ -377,7 +379,7 @@ fun AppThemeScreen(
         item {
             SettingsSectionCard(
                 title = "Background Style",
-                icon = Icons.Outlined.Palette
+                icon = Icons.Rounded.Palette
             ) {
                 Text(
                     text = "Living, touch-reactive backgrounds that span the whole app.",
@@ -443,7 +445,7 @@ fun AppThemeScreen(
         item {
             SettingsSectionCard(
                 title = "Background",
-                icon = Icons.Outlined.Palette
+                icon = Icons.Rounded.Palette
             ) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -483,7 +485,7 @@ fun AppThemeScreen(
                         ) {
                             if (selected) {
                                 Icon(
-                                    imageVector = Icons.Filled.Check,
+                                    imageVector = Icons.Rounded.Check,
                                     contentDescription = palette.label,
                                     tint = if (palette == BackgroundPalette.CUSTOM) {
                                         onColorFor(Color(backgroundCustomArgb))
@@ -509,7 +511,7 @@ fun AppThemeScreen(
         item {
             SettingsSectionCard(
                 title = "Navigation Bar",
-                icon = Icons.Outlined.Palette
+                icon = Icons.Rounded.Palette
             ) {
                 Text(
                     text = "Color of the floating tab bar at the bottom",
@@ -518,8 +520,8 @@ fun AppThemeScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 ColorSwatchGrid(
-                    selectedArgb = navBarColor,
-                    defaultColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    selectedArgb = if (navBarColor == 0xFF2C2D35L || navBarColor == 0xFF2D2D2EL || navBarColor == 0xFF181920L) 0L else navBarColor,
+                    defaultColor = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
                     onSelectPreset = { argb ->
                         scope.launch { settingsDataStore.setNavBarColor(argb) }
                     },
@@ -531,7 +533,7 @@ fun AppThemeScreen(
         item {
             SettingsSectionCard(
                 title = "Card Colors",
-                icon = Icons.Outlined.Palette
+                icon = Icons.Rounded.Palette
             ) {
                 Text(
                     text = "Container Colors for the cards used across the app. Text and icons " +
@@ -605,7 +607,7 @@ fun AppThemeScreen(
         item {
             SettingsSectionCard(
                 title = "App Font",
-                icon = Icons.Outlined.TextFields
+                icon = Icons.Rounded.TextFields
             ) {
                 Text(
                     text = "Separate from the alarm clock font",
@@ -692,10 +694,10 @@ fun AppThemeScreen(
 
     if (showNavBarPicker) {
         CustomColorPickerDialog(
-            initialColor = if (navBarColor != 0L) {
+            initialColor = if (navBarColor != 0L && navBarColor != 0xFF2C2D35L && navBarColor != 0xFF2D2D2EL && navBarColor != 0xFF181920L) {
                 navBarColor
             } else {
-                MaterialTheme.colorScheme.surfaceContainerHighest.toArgb().toLong() and 0xFFFFFFFFL
+                if (isLight) 0xFFFFFFFFL else 0xFF2C2D35L
             },
             onDismiss = { showNavBarPicker = false },
             onConfirm = { argb ->
@@ -780,7 +782,7 @@ private fun ColorSwatchGrid(
         PaletteSwatch(
             color = defaultColor,
             selected = !isCustom,
-            contentDescription = "Default"
+            contentDescription = stringResource(R.string.color_default)
         ) {
             onSelectPreset(0L)
         }
@@ -797,7 +799,7 @@ private fun ColorSwatchGrid(
         PaletteSwatch(
             color = customSwatchColor,
             selected = customSelected,
-            contentDescription = "Custom Color",
+            contentDescription = stringResource(R.string.appearance_custom_color),
             showPlus = !customSelected,
             onClick = onChooseCustom
         )
@@ -831,7 +833,7 @@ private fun PaletteSwatch(
     ) {
         if (selected) {
             Icon(
-                imageVector = Icons.Filled.Check,
+                imageVector = Icons.Rounded.Check,
                 contentDescription = contentDescription,
                 tint = onColorFor(color)
             )

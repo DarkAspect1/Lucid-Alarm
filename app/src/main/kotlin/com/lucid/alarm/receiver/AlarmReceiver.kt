@@ -17,6 +17,7 @@ import com.lucid.alarm.AlarmRingingActivity
 import com.lucid.alarm.MainActivity
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.data.AppDatabase
+import com.lucid.alarm.data.prefs.AlarmVibrationPolicy
 import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.service.AlarmAudioService
 import com.lucid.alarm.ui.formatNotificationTime
@@ -104,7 +105,15 @@ class AlarmReceiver : BroadcastReceiver() {
                     context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.cancel(UPCOMING_NOTIFICATION_BASE_ID + alarmId)
 
-                val is24Hour = SettingsDataStore(context).timeFormatFlow.first().is24Hour
+                val settings = SettingsDataStore(context)
+                val is24Hour = settings.timeFormatFlow.first().is24Hour
+                val vibePolicy = settings.alarmVibrationPolicyFlow.first()
+                val (effectiveVibrate, effectivePreset) = if (vibePolicy == AlarmVibrationPolicy.PER_ALARM) {
+                    Pair(vibrate, vibePreset?.ifBlank { null } ?: settings.alarmVibrationPresetFlow.first().name)
+                } else {
+                    val globalAlarmVibe = settings.alarmVibrationEnabledFlow.first()
+                    Pair(globalAlarmVibe, settings.alarmVibrationPresetFlow.first().name)
+                }
                 val serviceIntent = Intent(context, AlarmAudioService::class.java).apply {
                     this.action = AlarmAudioService.ACTION_START_ALARM
                     putExtra(EXTRA_ALARM_ID, alarmId)
@@ -113,8 +122,8 @@ class AlarmReceiver : BroadcastReceiver() {
                     putExtra(EXTRA_ALARM_MINUTE, minute)
                     putExtra(EXTRA_ALARM_VOLUME, volumeLevel)
                     putExtra(EXTRA_RINGTONE_URI, ringtoneUri)
-                    putExtra(EXTRA_VIBRATE, vibrate)
-                    putExtra(EXTRA_VIBE_PRESET, vibePreset)
+                    putExtra(EXTRA_VIBRATE, effectiveVibrate)
+                    putExtra(EXTRA_VIBE_PRESET, effectivePreset)
                     putExtra(EXTRA_SNOOZE_COUNT, snoozeCount)
                     putExtra(EXTRA_SNOOZE_LIMIT, snoozeLimit)
                     putExtra(EXTRA_ALARM_IS_24_HOUR, is24Hour)
@@ -134,12 +143,20 @@ class AlarmReceiver : BroadcastReceiver() {
                     if (alarm != null) {
                         val scheduler = AlarmScheduler(context)
                         if (alarm.daysOfWeek.isEmpty()) {
-                            alarmDao.update(alarm.copy(isEnabled = false))
+                            alarmDao.update(alarm.copy(isEnabled = false, skipUntilEpochMillis = 0L))
                             scheduler.cancelAlarm(alarmId)
                         } else {
+                            val updated = if (alarm.skipUntilEpochMillis > 0L) {
+                                alarm.copy(isEnabled = true, skipUntilEpochMillis = 0L)
+                            } else {
+                                alarm
+                            }
+                            if (updated != alarm) {
+                                alarmDao.update(updated)
+                            }
                             val settings = SettingsDataStore(context)
-                            val leadMinutes = effectiveUpcomingLead(alarm, settings)
-                            scheduler.scheduleAlarm(alarm, leadMinutes)
+                            val leadMinutes = effectiveUpcomingLead(updated, settings)
+                            scheduler.scheduleAlarm(updated, leadMinutes)
                         }
                     }
                 }
@@ -212,8 +229,10 @@ class AlarmReceiver : BroadcastReceiver() {
                     putExtra(EXTRA_ALARM_MINUTE, alarm?.minute ?: -1)
                     putExtra(EXTRA_ALARM_VOLUME, 1.0f)
                     putExtra(EXTRA_RINGTONE_URI, alarm?.soundUri)
-                    putExtra(EXTRA_VIBRATE, alarm?.vibrationEnabled ?: true)
-                    putExtra(EXTRA_VIBE_PRESET, alarm?.vibrationPattern)
+                    val globalAlarmVibe = SettingsDataStore(context).alarmVibrationEnabledFlow.first()
+                    val defaultPreset = SettingsDataStore(context).alarmVibrationPresetFlow.first().name
+                    putExtra(EXTRA_VIBRATE, (alarm?.vibrationEnabled ?: true) && globalAlarmVibe)
+                    putExtra(EXTRA_VIBE_PRESET, alarm?.vibrationPattern?.ifBlank { null } ?: defaultPreset)
                     putExtra(EXTRA_FORCE_MAX_VOLUME, true)
                     putExtra(EXTRA_ALARM_IS_24_HOUR, is24Hour)
                     putExtra(EXTRA_IS_AWAKE_CHECK_ACTIVE, true)
@@ -269,11 +288,19 @@ class AlarmReceiver : BroadcastReceiver() {
                 val alarm = alarmDao.getAlarmById(alarmId) ?: return@launch
 
                 if (alarm.daysOfWeek.isEmpty()) {
-                    alarmDao.update(alarm.copy(isEnabled = false))
+                    alarmDao.update(alarm.copy(isEnabled = false, skipUntilEpochMillis = 0L))
                 } else {
+                    val updated = if (alarm.skipUntilEpochMillis > 0L) {
+                        alarm.copy(isEnabled = true, skipUntilEpochMillis = 0L)
+                    } else {
+                        alarm
+                    }
+                    if (updated != alarm) {
+                        alarmDao.update(updated)
+                    }
                     val settings = SettingsDataStore(context)
-                    val leadMinutes = effectiveUpcomingLead(alarm, settings)
-                    scheduler.scheduleAlarm(alarm, leadMinutes)
+                    val leadMinutes = effectiveUpcomingLead(updated, settings)
+                    scheduler.scheduleAlarm(updated, leadMinutes)
                 }
             } finally {
                 pendingResult.finish()

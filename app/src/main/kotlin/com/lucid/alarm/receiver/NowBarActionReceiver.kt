@@ -19,7 +19,10 @@ class NowBarActionReceiver : BroadcastReceiver() {
             else -> return
         }
 
-        val forward = Intent(context, serviceClass).apply { this.action = action }
+        val forward = Intent(context, serviceClass).apply {
+            this.action = action
+            putExtras(intent)
+        }
         ContextCompat.startForegroundService(context, forward)
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.lucid.alarm.R
+import com.lucid.alarm.data.prefs.AlarmVibrationPolicy
 import com.lucid.alarm.data.prefs.AlarmVibrationPreset
 import com.lucid.alarm.data.prefs.ClockDateFont
 import com.lucid.alarm.data.prefs.GradientDirection
@@ -11,6 +12,7 @@ import com.lucid.alarm.data.prefs.RingingBackgroundStyle
 import com.lucid.alarm.data.prefs.RingingClockFont
 import com.lucid.alarm.data.prefs.RingingClockStyle
 import com.lucid.alarm.data.prefs.TimerVibrationPattern
+import com.lucid.alarm.data.prefs.TimerVibrationPolicy
 import java.text.DateFormatSymbols
 import java.util.Locale
 
@@ -129,9 +131,22 @@ fun AlarmVibrationPreset.localizedName(): String = when (this) {
 
 @Composable
 fun TimerVibrationPattern.localizedName(): String = when (this) {
+    TimerVibrationPattern.HEARTBEAT -> stringResource(R.string.vibe_heartbeat)
     TimerVibrationPattern.TICK_TICK -> stringResource(R.string.vibe_tick_tick)
     TimerVibrationPattern.CONTINUOUS_PULSE -> stringResource(R.string.vibe_continuous_pulse)
     TimerVibrationPattern.URGENT_BUZZ -> stringResource(R.string.vibe_urgent_buzz)
+}
+
+@Composable
+fun AlarmVibrationPolicy.localizedLabel(): String = when (this) {
+    AlarmVibrationPolicy.UNIFIED -> stringResource(R.string.vibration_policy_unified)
+    AlarmVibrationPolicy.PER_ALARM -> stringResource(R.string.vibration_policy_per_alarm)
+}
+
+@Composable
+fun TimerVibrationPolicy.localizedLabel(): String = when (this) {
+    TimerVibrationPolicy.UNIFIED -> stringResource(R.string.vibration_policy_unified)
+    TimerVibrationPolicy.PER_TIMER -> stringResource(R.string.vibration_policy_per_timer)
 }
 
 @Composable

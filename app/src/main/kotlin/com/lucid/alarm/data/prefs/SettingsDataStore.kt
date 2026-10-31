@@ -25,6 +25,21 @@ enum class VolumePolicy(val label: String) {
     PER_ALARM("Per-Alarm Volume")
 }
 
+enum class AlarmVibrationPolicy(val label: String) {
+    UNIFIED("Unified"),
+    PER_ALARM("Per-alarm")
+}
+
+enum class TimerVolumePolicy(val label: String) {
+    UNIFIED("Unified"),
+    PER_TIMER("Per-timer")
+}
+
+enum class TimerVibrationPolicy(val label: String) {
+    UNIFIED("Unified"),
+    PER_TIMER("Per-timer")
+}
+
 enum class ThemeMode(val label: String) {
     SYSTEM("Follow System"),
     LIGHT("Light"),
@@ -214,6 +229,7 @@ enum class UpcomingAlarmInterval(val minutes: Int, val label: String) {
 }
 
 enum class TimerVibrationPattern(val label: String, val waveform: LongArray) {
+    HEARTBEAT("Heartbeat", longArrayOf(0L, 120L, 100L, 120L, 600L)),
     TICK_TICK("Tick-Tick", longArrayOf(0L, 120L, 120L, 120L, 600L)),
     CONTINUOUS_PULSE("Continuous Pulse", longArrayOf(0L, 500L, 300L, 500L, 300L)),
     URGENT_BUZZ("Urgent Buzz", longArrayOf(0L, 250L, 100L, 250L, 100L, 600L, 200L))
@@ -363,13 +379,14 @@ class SettingsDataStore(private val context: Context) {
     }
 
     val navBarColorFlow: Flow<Long> = context.settingsDataStore.data.map { prefs ->
-        resolveModeColor(
+        val resolved = resolveModeColor(
             prefs,
             KEY_DARK_NAV_BAR_COLOR,
             KEY_LIGHT_NAV_BAR_COLOR,
             KEY_NAV_BAR_COLOR,
-            if (activeProfileIsDark(prefs)) 0xFF2D2D2EL else 0L
+            if (activeProfileIsDark(prefs)) 0xFF2C2D35L else 0xFFFFFFFFL
         )
+        if ((resolved == 0xFF181920L || resolved == 0xFF2D2D2EL) && activeProfileIsDark(prefs)) 0xFF2C2D35L else resolved
     }
 
     val settingsCardColorFlow: Flow<Long> = context.settingsDataStore.data.map { prefs ->
@@ -764,6 +781,32 @@ class SettingsDataStore(private val context: Context) {
 
     val vibrateAlarmsAndTimersFlow: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
         prefs[KEY_VIBRATE_ALARMS_AND_TIMERS] ?: true
+    }
+
+    val alarmVibrationEnabledFlow: Flow<Boolean> = vibrateAlarmsAndTimersFlow
+
+    val alarmVibrationPresetFlow: Flow<AlarmVibrationPreset> = context.settingsDataStore.data.map { prefs ->
+        val raw = prefs[KEY_ALARM_VIBRATION_PRESET] ?: AlarmVibrationPreset.HEARTBEAT.name
+        runCatching { AlarmVibrationPreset.valueOf(raw) }.getOrDefault(AlarmVibrationPreset.HEARTBEAT)
+    }
+
+    val alarmVibrationPolicyFlow: Flow<AlarmVibrationPolicy> = context.settingsDataStore.data.map { prefs ->
+        val raw = prefs[KEY_ALARM_VIBRATION_POLICY] ?: AlarmVibrationPolicy.UNIFIED.name
+        runCatching { AlarmVibrationPolicy.valueOf(raw) }.getOrDefault(AlarmVibrationPolicy.UNIFIED)
+    }
+
+    val timerVibrationPolicyFlow: Flow<TimerVibrationPolicy> = context.settingsDataStore.data.map { prefs ->
+        val raw = prefs[KEY_TIMER_VIBRATION_POLICY] ?: TimerVibrationPolicy.UNIFIED.name
+        runCatching { TimerVibrationPolicy.valueOf(raw) }.getOrDefault(TimerVibrationPolicy.UNIFIED)
+    }
+
+    val timerVolumePolicyFlow: Flow<TimerVolumePolicy> = context.settingsDataStore.data.map { prefs ->
+        val raw = prefs[KEY_TIMER_VOLUME_POLICY] ?: TimerVolumePolicy.UNIFIED.name
+        runCatching { TimerVolumePolicy.valueOf(raw) }.getOrDefault(TimerVolumePolicy.UNIFIED)
+    }
+
+    val timerUnifiedVolumeFlow: Flow<Float> = context.settingsDataStore.data.map { prefs ->
+        (prefs[KEY_TIMER_UNIFIED_VOLUME] ?: 0.85f).coerceIn(0f, 1f)
     }
 
     val worldClockShowWeatherFlow: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
@@ -1341,6 +1384,30 @@ class SettingsDataStore(private val context: Context) {
         context.settingsDataStore.edit { it[KEY_VIBRATE_ALARMS_AND_TIMERS] = enabled }
     }
 
+    suspend fun setAlarmVibrationEnabled(enabled: Boolean) {
+        setVibrateAlarmsAndTimers(enabled)
+    }
+
+    suspend fun setAlarmVibrationPreset(preset: AlarmVibrationPreset) {
+        context.settingsDataStore.edit { it[KEY_ALARM_VIBRATION_PRESET] = preset.name }
+    }
+
+    suspend fun setAlarmVibrationPolicy(policy: AlarmVibrationPolicy) {
+        context.settingsDataStore.edit { it[KEY_ALARM_VIBRATION_POLICY] = policy.name }
+    }
+
+    suspend fun setTimerVibrationPolicy(policy: TimerVibrationPolicy) {
+        context.settingsDataStore.edit { it[KEY_TIMER_VIBRATION_POLICY] = policy.name }
+    }
+
+    suspend fun setTimerVolumePolicy(policy: TimerVolumePolicy) {
+        context.settingsDataStore.edit { it[KEY_TIMER_VOLUME_POLICY] = policy.name }
+    }
+
+    suspend fun setTimerUnifiedVolume(volume: Float) {
+        context.settingsDataStore.edit { it[KEY_TIMER_UNIFIED_VOLUME] = volume.coerceIn(0f, 1f) }
+    }
+
     suspend fun setWorldClockShowWeather(enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_WORLD_CLOCK_SHOW_WEATHER] = enabled }
     }
@@ -1602,6 +1669,11 @@ private val KEY_WORLD_CLOCK_CARD_COLOR = longPreferencesKey("world_clock_card_co
         private val KEY_WORLD_CLOCK_SORT = stringPreferencesKey("world_clock_sort")
 
         private val KEY_VIBRATE_ALARMS_AND_TIMERS = booleanPreferencesKey("vibrate_alarms_and_timers")
+        private val KEY_ALARM_VIBRATION_PRESET = stringPreferencesKey("alarm_vibration_preset")
+        private val KEY_ALARM_VIBRATION_POLICY = stringPreferencesKey("alarm_vibration_policy")
+        private val KEY_TIMER_VIBRATION_POLICY = stringPreferencesKey("timer_vibration_policy")
+        private val KEY_TIMER_VOLUME_POLICY = stringPreferencesKey("timer_volume_policy")
+        private val KEY_TIMER_UNIFIED_VOLUME = floatPreferencesKey("timer_unified_volume")
         private val KEY_WORLD_CLOCK_SHOW_WEATHER = booleanPreferencesKey("world_clock_show_weather")
         private val KEY_WORLD_CLOCK_TEMPERATURE_UNIT = stringPreferencesKey("world_clock_temperature_unit")
         private val KEY_TIMER_SOUND_ENABLED = booleanPreferencesKey("timer_sound_enabled")

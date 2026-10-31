@@ -25,7 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -61,6 +61,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.lucid.alarm.data.prefs.AccentColor
 import com.lucid.alarm.data.prefs.GradientDirection
 import com.lucid.alarm.ui.theme.onColorFor
+import java.util.Locale
 
 val SelectionChipShape = RoundedCornerShape(50)
 
@@ -204,7 +205,7 @@ fun ColorSwatchRow(
             ) {
                 if (isSelected) {
                     Icon(
-                        imageVector = Icons.Filled.Check,
+                        imageVector = Icons.Rounded.Check,
                         contentDescription = null,
                         tint = onColorFor(swatch)
                     )
@@ -246,7 +247,7 @@ fun ColorSwatchRow(
         ) {
             if (isCustom) {
                 Icon(
-                    imageVector = Icons.Filled.Check,
+                    imageVector = Icons.Rounded.Check,
                     contentDescription = null,
                     tint = onColorFor(Color(selected))
                 )
@@ -340,7 +341,7 @@ fun CustomColorPickerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Custom Color",
+                        text = stringResource(R.string.appearance_custom_color),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -355,7 +356,7 @@ fun CustomColorPickerDialog(
                     Box(
                         modifier = Modifier
                             .size(width = 54.dp, height = 38.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(999.dp))
                             .background(current)
                             .border(
                                 width = 1.dp,
@@ -368,7 +369,7 @@ fun CustomColorPickerDialog(
                         modifier = Modifier
                             .weight(1f)
                             .height(38.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(999.dp))
                             .background(
                                 if (isLight) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.07f)
                             )
@@ -415,12 +416,12 @@ fun CustomColorPickerDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Hue",
+                            text = stringResource(R.string.appearance_hue),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${hue.toInt()}°",
+                            text = String.format(Locale.US, "%d°", hue.toInt()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontFamily = FontFamily.Monospace
@@ -446,12 +447,12 @@ fun CustomColorPickerDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Saturation",
+                            text = stringResource(R.string.appearance_saturation),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${(saturation * 100).toInt()}%",
+                            text = String.format(Locale.US, "%d%%", (saturation * 100).toInt()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontFamily = FontFamily.Monospace
@@ -477,12 +478,12 @@ fun CustomColorPickerDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Brightness",
+                            text = stringResource(R.string.appearance_brightness),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${(brightness * 100).toInt()}%",
+                            text = String.format(Locale.US, "%d%%", (brightness * 100).toInt()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontFamily = FontFamily.Monospace
@@ -521,7 +522,7 @@ fun CustomColorPickerDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Cancel",
+                            text = stringResource(R.string.action_cancel),
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -540,7 +541,7 @@ fun CustomColorPickerDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Apply",
+                            text = stringResource(R.string.action_apply),
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onPrimary
                         )

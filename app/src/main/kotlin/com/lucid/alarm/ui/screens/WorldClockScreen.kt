@@ -40,16 +40,16 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.SelectAll
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.automirrored.outlined.Sort
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Checklist
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.SelectAll
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
@@ -106,8 +106,10 @@ import com.lucid.alarm.data.prefs.WorldClockSortMode
 import com.lucid.alarm.ui.components.AppDropdownMenu
 import com.lucid.alarm.ui.components.AppMenuItem
 import com.lucid.alarm.ui.components.FrostedBlurBox
-import com.lucid.alarm.ui.components.edgeFadeMask
+import com.lucid.alarm.ui.components.SelectionBarContainer
 import com.lucid.alarm.ui.components.SelectionCheckbox
+import com.lucid.alarm.ui.components.SelectionIconButton
+import com.lucid.alarm.ui.components.edgeFadeMask
 import com.lucid.alarm.ui.viewmodel.WorldClockViewModel
 import com.lucid.alarm.ui.amPmSuffix
 import com.lucid.alarm.ui.formatHourMinute
@@ -561,7 +563,7 @@ fun WorldClockScreen(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Add,
+                    imageVector = Icons.Rounded.Add,
                     contentDescription = stringResource(R.string.add_city),
                     modifier = Modifier.size(22.dp)
                 )
@@ -595,7 +597,7 @@ fun WorldClockScreen(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.KeyboardArrowUp,
+                        imageVector = Icons.Rounded.KeyboardArrowUp,
                         contentDescription = stringResource(R.string.action_back_to_top),
                         modifier = Modifier.size(24.dp)
                     )
@@ -625,7 +627,7 @@ fun WorldClockScreen(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.MoreVert,
+                        imageVector = Icons.Rounded.MoreVert,
                         contentDescription = stringResource(R.string.action_more_options),
                         modifier = Modifier.size(22.dp)
                     )
@@ -634,10 +636,10 @@ fun WorldClockScreen(
                     expanded = showOverflowMenu,
                     onDismissRequest = { showOverflowMenu = false },
                     items = listOf(
-                        AppMenuItem(stringResource(R.string.action_select), Icons.Outlined.Checklist) { selectionActive = true },
-                        AppMenuItem(stringResource(R.string.action_sort), Icons.AutoMirrored.Outlined.Sort) { showSortDialog = true },
-                        AppMenuItem(stringResource(R.string.recycle_bin), Icons.Outlined.DeleteOutline) { onOpenRecycleBin() },
-                        AppMenuItem(stringResource(R.string.clock_settings), Icons.Outlined.Settings) { onOpenSettings() }
+                        AppMenuItem(stringResource(R.string.action_select), Icons.Rounded.Checklist) { selectionActive = true },
+                        AppMenuItem(stringResource(R.string.action_sort), Icons.AutoMirrored.Rounded.Sort) { showSortDialog = true },
+                        AppMenuItem(stringResource(R.string.recycle_bin), Icons.Rounded.DeleteOutline) { onOpenRecycleBin() },
+                        AppMenuItem(stringResource(R.string.clock_settings), Icons.Rounded.Settings) { onOpenSettings() }
                     )
                 )
             }
@@ -733,101 +735,75 @@ private fun WorldClockSelectionBar(
     onSelectAllToggle: () -> Unit,
     onRemove: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    SelectionBarContainer(
+        tooltipOffsetY = (-116).dp
     ) {
-        val lightMode = MaterialTheme.colorScheme.background.luminance() > 0.5f
-
-        Surface(
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            shape = RoundedCornerShape(999.dp),
-            tonalElevation = 0.dp,
-            shadowElevation = 8.dp
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.padding(start = 18.dp, end = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+            val lightMode = MaterialTheme.colorScheme.background.luminance() > 0.5f
+
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(999.dp),
+                tonalElevation = 0.dp,
+                shadowElevation = 8.dp
             ) {
-                Text(
-                    text = stringResource(R.string.count_selected, selectedCount),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                TextButton(onClick = onClose) {
+                Row(
+                    modifier = Modifier.padding(start = 18.dp, end = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = stringResource(R.string.action_cancel),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.Bold
+                        text = stringResource(R.string.count_selected, selectedCount),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    TextButton(onClick = onClose) {
+                        Text(
+                            text = stringResource(R.string.action_cancel),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Surface(
+                border = null,
+                color = if (lightMode) {
+                    Color(0xFFFFFFFF)
+                } else {
+                    Color(0xFF2C2D35)
+                },
+                contentColor = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(999.dp),
+                tonalElevation = 0.dp,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .height(52.dp)
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+                ) {
+                    SelectionIconButton(
+                        icon = Icons.Rounded.SelectAll,
+                        label = if (allSelected) stringResource(R.string.action_deselect) else stringResource(R.string.action_select),
+                        onClick = onSelectAllToggle
+                    )
+                    SelectionIconButton(
+                        icon = Icons.Rounded.DeleteOutline,
+                        label = stringResource(R.string.action_remove),
+                        onClick = onRemove
                     )
                 }
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Surface(
-            border = null,
-            color = if (lightMode) {
-                Color(0xFFFFFFFF)
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHighest
-            },
-            contentColor = MaterialTheme.colorScheme.primary,
-            shape = RoundedCornerShape(999.dp),
-            tonalElevation = 0.dp,
-            shadowElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .height(52.dp)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                WorldClockSelectionAction(
-                    icon = Icons.Outlined.SelectAll,
-                    label = if (allSelected) stringResource(R.string.action_deselect) else stringResource(R.string.action_select),
-                    onClick = onSelectAllToggle
-                )
-                WorldClockSelectionAction(
-                    icon = Icons.Outlined.DeleteOutline,
-                    label = stringResource(R.string.action_remove),
-                    onClick = onRemove
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WorldClockSelectionAction(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
 
@@ -1027,7 +1003,7 @@ private fun AddWorldClockDialog(
                             )
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Close,
+                            imageVector = Icons.Rounded.Close,
                             contentDescription = stringResource(R.string.action_close),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(18.dp)
@@ -1050,7 +1026,7 @@ private fun AddWorldClockDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Search,
+                            imageVector = Icons.Rounded.Search,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
@@ -1083,7 +1059,7 @@ private fun AddWorldClockDialog(
                                 modifier = Modifier.size(20.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Close,
+                                    imageVector = Icons.Rounded.Close,
                                     contentDescription = stringResource(R.string.action_clear_search),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
@@ -1244,7 +1220,7 @@ private fun CityListItem(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Add,
+                        imageVector = Icons.Rounded.Add,
                         contentDescription = stringResource(R.string.action_add),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)

@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.graphics.Bitmap
 import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
@@ -125,13 +126,15 @@ class NowBarNotification(private val context: Context) {
     fun actionPendingIntent(
         action: String,
         targetService: String,
-        requestCode: Int
+        requestCode: Int,
+        extras: Bundle? = null
     ): PendingIntent = PendingIntent.getBroadcast(
         context,
         requestCode,
         Intent(context, NowBarActionReceiver::class.java).apply {
             this.action = action
             putExtra(EXTRA_TARGET_SERVICE, targetService)
+            if (extras != null) putExtras(extras)
         },
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )

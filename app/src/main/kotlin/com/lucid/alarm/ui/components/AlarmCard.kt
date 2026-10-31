@@ -49,6 +49,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -120,6 +121,20 @@ fun AlarmRow(
                         Spacer(modifier = Modifier.height(2.dp))
                     }
 
+                    if (alarm.skipUntilEpochMillis > System.currentTimeMillis()) {
+                        val dateStr = SimpleDateFormat("EEE, MMM d", Locale.getDefault()).format(Date(alarm.skipUntilEpochMillis))
+                        Text(
+                            text = stringResource(R.string.alarm_will_ring_on, dateStr),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                    }
+
                     Row {
                         Text(
                             text = formattedTime,
@@ -169,7 +184,7 @@ fun AlarmRow(
                 }
             }
 
-            if (showReenablePill && !alarm.isEnabled && alarm.daysOfWeek.isNotEmpty()) {
+            if (showReenablePill && !alarm.isEnabled && alarm.daysOfWeek.isNotEmpty() && alarm.skipUntilEpochMillis <= System.currentTimeMillis()) {
                 Surface(
                     onClick = onReenable,
                     modifier = Modifier
@@ -180,7 +195,7 @@ fun AlarmRow(
                     contentColor = onColorFor(MaterialTheme.colorScheme.primary)
                 ) {
                     Text(
-                        text = reenableLabel(context, alarm.daysOfWeek, alarm.hour, alarm.minute),
+                        text = reenableLabel(context, alarm),
                         style = MaterialTheme.typography.labelLarge,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -254,21 +269,25 @@ fun AlarmCard(
     }
 }
 
-private fun reenableLabel(context: Context, days: Set<Int>, hour: Int, minute: Int): String {
+private fun reenableLabel(context: Context, alarm: AlarmEntity): String {
+    val o1 = AlarmScheduler.calculateTriggerTimeMillisStatic(
+        hour24 = alarm.hour,
+        minute = alarm.minute,
+        daysOfWeek = alarm.daysOfWeek,
+        weekInterval = alarm.weekInterval,
+        anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay
+    )
+    val o2 = AlarmScheduler.calculateTriggerTimeMillisStatic(
+        hour24 = alarm.hour,
+        minute = alarm.minute,
+        daysOfWeek = alarm.daysOfWeek,
+        weekInterval = alarm.weekInterval,
+        anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay,
+        afterMillis = o1 + 60_000L
+    )
     val now = Calendar.getInstance()
-    val target = (now.clone() as Calendar).apply {
-        set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
-        set(Calendar.MINUTE, minute.coerceIn(0, 59))
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-        if (!after(now)) add(Calendar.DAY_OF_YEAR, 1)
-    }
-    var guard = 0
-    while (guard < 8 && !days.contains(target.get(Calendar.DAY_OF_WEEK))) {
-        target.add(Calendar.DAY_OF_YEAR, 1)
-        guard++
-    }
     val tomorrow = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
+    val target = Calendar.getInstance().apply { timeInMillis = o2 }
     val label = when {
         target.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
             target.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR) -> context.getString(R.string.turn_back_on_today)

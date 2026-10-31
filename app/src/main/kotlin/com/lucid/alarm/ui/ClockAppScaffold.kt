@@ -1,6 +1,7 @@
 package com.lucid.alarm.ui
 
 import android.app.Activity
+import android.os.SystemClock
 import android.widget.Toast
 import com.lucid.alarm.util.findActivity
 import androidx.activity.compose.BackHandler
@@ -35,14 +36,10 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.HourglassEmpty
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.outlined.Alarm
-import androidx.compose.material.icons.outlined.HourglassEmpty
-import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.rounded.Alarm
+import androidx.compose.material.icons.rounded.HourglassEmpty
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Timer
 import com.lucid.alarm.ui.theme.OneUiAppBackground
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -87,18 +84,23 @@ import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.service.NowBarNotification
 import com.lucid.alarm.service.TimerStopwatchManager
+import com.lucid.alarm.service.TimerService
 import com.lucid.alarm.ui.screens.AlarmCustomizationScreen
 import com.lucid.alarm.ui.screens.AppThemeScreen
+import com.lucid.alarm.ui.screens.MultiTimerScreen
 import com.lucid.alarm.ui.screens.RecycleBinScreen
 import com.lucid.alarm.ui.screens.SettingsScreen
 import com.lucid.alarm.ui.screens.StopwatchScreen
+import com.lucid.alarm.ui.screens.TimerRecycleBinScreen
 import com.lucid.alarm.ui.screens.TimerScreen
 import com.lucid.alarm.ui.screens.WorldClockRecycleBinScreen
 import com.lucid.alarm.ui.screens.WorldClockScreen
 import com.lucid.alarm.ui.theme.BoxColors
 import com.lucid.alarm.ui.theme.LocalBoxColors
 import com.lucid.alarm.ui.viewmodel.AlarmViewModel
+import com.lucid.alarm.ui.viewmodel.TimerViewModel
 import com.lucid.alarm.ui.viewmodel.WorldClockViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
@@ -110,10 +112,10 @@ enum class ClockTab(
     val activeIcon: ImageVector,
     val inactiveIcon: ImageVector
 ) {
-    ALARMS(R.string.tab_alarms, Icons.Filled.Alarm, Icons.Outlined.Alarm),
-    WORLD_CLOCK(R.string.tab_world_clock, Icons.Filled.Public, Icons.Outlined.Public),
-    STOPWATCH(R.string.tab_stopwatch, Icons.Filled.Timer, Icons.Outlined.Timer),
-    TIMER(R.string.tab_timer, Icons.Filled.HourglassEmpty, Icons.Outlined.HourglassEmpty)
+    ALARMS(R.string.tab_alarms, Icons.Rounded.Alarm, Icons.Rounded.Alarm),
+    WORLD_CLOCK(R.string.tab_world_clock, Icons.Rounded.Public, Icons.Rounded.Public),
+    STOPWATCH(R.string.tab_stopwatch, Icons.Rounded.Timer, Icons.Rounded.Timer),
+    TIMER(R.string.tab_timer, Icons.Rounded.HourglassEmpty, Icons.Rounded.HourglassEmpty)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,6 +124,7 @@ fun ClockAppScaffold(
     alarmViewModel: AlarmViewModel,
     worldClockViewModel: WorldClockViewModel,
     settingsDataStore: SettingsDataStore,
+    timerViewModel: TimerViewModel = viewModel(),
     navRequest: Pair<String, Long>? = null,
     onNavRequestHandled: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -129,11 +132,14 @@ fun ClockAppScaffold(
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showRecycleBin by rememberSaveable { mutableStateOf(false) }
     var showWorldClockRecycleBin by rememberSaveable { mutableStateOf(false) }
+    var showTimerRecycleBin by rememberSaveable { mutableStateOf(false) }
+    var showMultiTimer by rememberSaveable { mutableStateOf(false) }
     var settingsSubScreen by rememberSaveable { mutableStateOf<SettingsSubScreen>(SettingsSubScreen.MAIN) }
 
     var alarmsSelectionActive by remember { mutableStateOf(false) }
 
     var worldClockSelectionActive by remember { mutableStateOf(false) }
+    var timerSelectionActive by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -168,6 +174,8 @@ fun ClockAppScaffold(
         showSettings = false
         showRecycleBin = false
         showWorldClockRecycleBin = false
+        showTimerRecycleBin = false
+        showMultiTimer = false
         settingsSubScreen = SettingsSubScreen.MAIN
         pagerState.animateScrollToPage(target.ordinal)
         onNavRequestHandled()
@@ -257,14 +265,16 @@ fun ClockAppScaffold(
 
     BackHandler(enabled = true) {
         when {
-            showWorldClockRecycleBin -> showWorldClockRecycleBin = false
-            showRecycleBin -> showRecycleBin = false
             showSettings && settingsSubScreen != SettingsSubScreen.MAIN -> {
                 settingsSubScreen = SettingsSubScreen.MAIN
             }
             showSettings -> {
                 showSettings = false
             }
+            showTimerRecycleBin -> showTimerRecycleBin = false
+            showWorldClockRecycleBin -> showWorldClockRecycleBin = false
+            showRecycleBin -> showRecycleBin = false
+            showMultiTimer -> showMultiTimer = false
             pagerState.currentPage != 0 -> {
                 scope.launch { pagerState.animateScrollToPage(0) }
             }
@@ -280,7 +290,7 @@ fun ClockAppScaffold(
         }
     }
 
-    val showingTabs = !showSettings && !showRecycleBin && !showWorldClockRecycleBin
+    val showingTabs = !showSettings && !showRecycleBin && !showWorldClockRecycleBin && !showTimerRecycleBin && !showMultiTimer
 
     val boxColors = remember(settingsCardColor, alarmCardColor, worldClockCardColor) {
         BoxColors(
@@ -308,6 +318,10 @@ fun ClockAppScaffold(
             val isSwitchingTabs = pagerState.isScrollInProgress || abs(pagerState.currentPageOffsetFraction) > 0.01f
             OneUiAppBackground(dark = isDark, accentColor = accent, modifier = Modifier.fillMaxSize())
             when {
+                showTimerRecycleBin -> TimerRecycleBinScreen(
+                    viewModel = timerViewModel,
+                    onBack = { showTimerRecycleBin = false }
+                )
                 showWorldClockRecycleBin -> WorldClockRecycleBinScreen(
                     viewModel = worldClockViewModel,
                     is24Hour = timeFormat.is24Hour,
@@ -352,6 +366,43 @@ fun ClockAppScaffold(
                         )
                     }
                 }
+                showMultiTimer -> MultiTimerScreen(
+                    timerViewModel = timerViewModel,
+                    removeLeadingZero = removeLeadingZero,
+                    onBack = { showMultiTimer = false },
+                    onOpenSettings = {
+                        showMultiTimer = false
+                        showSettings = true
+                        settingsSubScreen = SettingsSubScreen.MAIN
+                    },
+                    onOpenRecycleBin = {
+                        showMultiTimer = false
+                        showTimerRecycleBin = true
+                    },
+                    onOpenTimer = { timer ->
+                        showMultiTimer = false
+                        val now = System.currentTimeMillis()
+                        val rem = if (timer.remainingMillis > 0L) timer.remainingMillis else timer.durationMillis
+                        val sec = ((rem + 999L) / 1000L).coerceIn(0L, timer.durationMillis / 1000L).toInt()
+                        val tot = (timer.durationMillis / 1000L).toInt()
+                        if (!timer.isRunning) {
+                            timerViewModel.startTimerCard(timer)
+                        } else {
+                            val liveRem = (timer.endTimestamp - now).coerceIn(0L, timer.durationMillis)
+                            val liveSec = ((liveRem + 999L) / 1000L).coerceIn(0L, timer.durationMillis / 1000L).toInt()
+                            val endRt = SystemClock.elapsedRealtime() + liveRem
+                            TimerStopwatchManager.setTimer(
+                                running = true,
+                                totalSeconds = tot,
+                                secondsLeft = liveSec,
+                                endRealtime = endRt,
+                                timerId = timer.id,
+                                label = timer.label
+                            )
+                            TimerService.focusTimer(context, timer.id, timer.label, liveSec, tot, liveRem, endRt)
+                        }
+                    }
+                )
                 else -> HorizontalPager(
                     state = pagerState,
 
@@ -375,8 +426,11 @@ fun ClockAppScaffold(
                         )
                         ClockTab.TIMER -> TimerScreen(
                             settingsDataStore = settingsDataStore,
-                            barsVisible = true,
+                            barsVisible = resolvedBarsVisible,
                             onOpenSettings = { showSettings = true },
+                            onOpenRecycleBin = { showTimerRecycleBin = true },
+                            onOpenMultiTimer = { showMultiTimer = true },
+                            timerViewModel = timerViewModel,
                             timerState = timerState
                         )
                         ClockTab.STOPWATCH -> StopwatchScreen(
@@ -403,7 +457,8 @@ fun ClockAppScaffold(
 
                 val selectionHidesBar =
                     (currentTab == ClockTab.ALARMS && alarmsSelectionActive) ||
-                        (currentTab == ClockTab.WORLD_CLOCK && worldClockSelectionActive)
+                        (currentTab == ClockTab.WORLD_CLOCK && worldClockSelectionActive) ||
+                        (currentTab == ClockTab.TIMER && timerSelectionActive)
                 AnimatedVisibility(
                     visible = resolvedBarsVisible && !selectionHidesBar,
                     enter = slideInVertically(initialOffsetY = { it }) + fadeIn(animationSpec = tween(180)),
@@ -425,7 +480,8 @@ fun ClockAppScaffold(
 
             val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             val statusBarBgColor = MaterialTheme.colorScheme.background
-            if (showingTabs) {
+            val hideStatusBarShadow = showSettings && settingsSubScreen == SettingsSubScreen.CUSTOMIZATION
+            if (!hideStatusBarShadow) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -471,10 +527,12 @@ fun FloatingPillBottomBar(
     val scope = rememberCoroutineScope()
     val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
-    val resolvedContainer = containerColor ?: if (isLight) {
-        Color(0xFFF0F2F6).copy(alpha = 0.88f)
+    val resolvedContainer = if (containerColor != null && containerColor != Color(0xFF181920) && containerColor != Color(0xFF2D2D2E)) {
+        containerColor
+    } else if (isLight) {
+        Color(0xFFFFFFFF)
     } else {
-        Color(0xFF23242C).copy(alpha = 0.86f)
+        Color(0xFF2C2D35)
     }
     val indicatorColor = MaterialTheme.colorScheme.primary
     val borderColor = if (isLight) Color.Black.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.12f)

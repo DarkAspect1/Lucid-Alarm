@@ -112,6 +112,62 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="timer_and_stopwatch" />
         </service>
+        <service
+            android:name=".service.MultiTimerSlot1Service"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="timer_and_stopwatch" />
+        </service>
+        <service
+            android:name=".service.MultiTimerSlot2Service"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="timer_and_stopwatch" />
+        </service>
+        <service
+            android:name=".service.MultiTimerSlot3Service"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="timer_and_stopwatch" />
+        </service>
+        <service
+            android:name=".service.MultiTimerSlot4Service"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="timer_and_stopwatch" />
+        </service>
+        <service
+            android:name=".service.MultiTimerSlot5Service"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="timer_and_stopwatch" />
+        </service>
+        <service
+            android:name=".service.MultiTimerSlot6Service"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="timer_and_stopwatch" />
+        </service>
+        <service
+            android:name=".service.MultiTimerSlot7Service"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="timer_and_stopwatch" />
+        </service>
     </application>
 
 </manifest>

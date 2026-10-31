@@ -42,10 +42,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -757,7 +757,7 @@ fun AlarmCustomizationScreen(
                         .background(Color.Black.copy(alpha = 0.45f), CircleShape)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = stringResource(R.string.action_back),
                         tint = Color.White
                     )
@@ -1204,11 +1204,6 @@ fun AlarmCustomizationScreen(
                         onColorEnd = { dateColorEnd = it },
                         onDirection = { dateGradientDir = it }
                     )
-                    Text(
-                        text = stringResource(R.string.appearance_date_drag_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
 
                 Button(
@@ -1393,7 +1388,7 @@ private fun CustomizationSnoozePill(
         horizontalArrangement = Arrangement.Center
     ) {
         SnoozeStepper(
-            icon = Icons.Filled.Remove,
+            icon = Icons.Rounded.Remove,
             contentDescription = stringResource(R.string.decrease_snooze),
             contentColor = contentColor,
             onStep = onMinus
@@ -1411,7 +1406,7 @@ private fun CustomizationSnoozePill(
                 .padding(horizontal = 20.dp, vertical = 10.dp)
         )
         SnoozeStepper(
-            icon = Icons.Filled.Add,
+            icon = Icons.Rounded.Add,
             contentDescription = stringResource(R.string.increase_snooze),
             contentColor = contentColor,
             onStep = onPlus

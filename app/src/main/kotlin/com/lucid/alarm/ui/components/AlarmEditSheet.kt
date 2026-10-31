@@ -31,9 +31,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -88,6 +88,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.lucid.alarm.R
 import com.lucid.alarm.data.AlarmEntity
+import com.lucid.alarm.data.prefs.AlarmVibrationPolicy
 import com.lucid.alarm.data.prefs.AlarmVibrationPreset
 import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.ui.localizedName
@@ -170,6 +171,9 @@ fun AlarmEditSheet(
         defaultSoundTitle == "System default" -> defaultRingtoneLabel
         else -> "Default \u00B7 $defaultSoundTitle"
     }
+    val alarmVibrationPolicy by settingsDataStore.alarmVibrationPolicyFlow.collectAsState(
+        initial = AlarmVibrationPolicy.UNIFIED
+    )
     var vibrationEnabled by remember { mutableStateOf(initialAlarm?.vibrationEnabled ?: true) }
     var vibrationPattern by remember { mutableStateOf(initialAlarm?.vibrationPattern ?: "HEARTBEAT") }
     var volumeLevel by remember { mutableFloatStateOf(initialAlarm?.volumeLevel ?: 0.85f) }
@@ -392,7 +396,7 @@ fun AlarmEditSheet(
                     onValueChange = { label = it },
                     label = { Text(stringResource(R.string.label)) },
                     singleLine = true,
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(999.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = sheetContentColor,
                         unfocusedTextColor = sheetContentColor,
@@ -599,7 +603,7 @@ fun AlarmEditSheet(
                             newGroupName = ""
                             showNewGroupDialog = true
                         }) {
-                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.new_group))
+                            Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_group))
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -649,32 +653,34 @@ fun AlarmEditSheet(
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(stringResource(R.string.vibrate), style = MaterialTheme.typography.bodyLarge)
-                    Switch(checked = vibrationEnabled, onCheckedChange = { vibrationEnabled = it })
-                }
-                if (vibrationEnabled) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                if (alarmVibrationPolicy == AlarmVibrationPolicy.PER_ALARM) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        AlarmVibrationPreset.entries.forEach { preset ->
-                             FilterChip(
-                                 selected = vibrationPattern == preset.name,
-                                 onClick = { vibrationPattern = preset.name },
-                                 shape = SelectionChipShape,
-                                 colors = selectedChipColors(),
-                                 label = {
-                                     Text(
-                                         text = preset.localizedName(),
-                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                     )
-                                 }
-                             )
+                        Text(stringResource(R.string.vibrate), style = MaterialTheme.typography.bodyLarge)
+                        Switch(checked = vibrationEnabled, onCheckedChange = { vibrationEnabled = it })
+                    }
+                    if (vibrationEnabled) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            AlarmVibrationPreset.entries.forEach { preset ->
+                                 FilterChip(
+                                     selected = vibrationPattern == preset.name,
+                                     onClick = { vibrationPattern = preset.name },
+                                     shape = SelectionChipShape,
+                                     colors = selectedChipColors(),
+                                     label = {
+                                         Text(
+                                             text = preset.localizedName(),
+                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                         )
+                                     }
+                                 )
+                            }
                         }
                     }
                 }
@@ -741,9 +747,9 @@ fun AlarmEditSheet(
                         Text(stringResource(R.string.alert_options), style = MaterialTheme.typography.bodyLarge)
                         Icon(
                             imageVector = if (advancedNotificationsExpanded) {
-                                Icons.Outlined.ExpandLess
+                                Icons.Rounded.ExpandLess
                             } else {
-                                Icons.Outlined.ExpandMore
+                                Icons.Rounded.ExpandMore
                             },
                             contentDescription = if (advancedNotificationsExpanded) {
                                 stringResource(R.string.action_collapse)
@@ -1140,7 +1146,7 @@ fun AlarmEditSheet(
                         onValueChange = { newGroupName = it },
                         label = { Text(stringResource(R.string.group_name)) },
                         singleLine = true,
-                        shape = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(999.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = sheetContentColor,
                             unfocusedTextColor = sheetContentColor,
@@ -1216,7 +1222,7 @@ fun AlarmEditSheet(
                                 showCustomIntervalDialog = false
                             }
                         ),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(999.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = sheetContentColor,
                             unfocusedTextColor = sheetContentColor,

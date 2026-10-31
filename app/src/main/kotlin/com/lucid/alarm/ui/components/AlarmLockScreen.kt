@@ -31,9 +31,9 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -1027,7 +1027,7 @@ fun RingingActionPill(
         contentPadding = PaddingValues(horizontal = 40.dp, vertical = 16.dp)
     ) {
         Icon(
-            imageVector = Icons.Filled.Close,
+            imageVector = Icons.Rounded.Close,
             contentDescription = null,
             modifier = Modifier.size(22.dp)
         )
@@ -1062,7 +1062,7 @@ fun SnoozePill(
         horizontalArrangement = Arrangement.Center
     ) {
         RepeatIconButton(
-            icon = Icons.Filled.Remove,
+            icon = Icons.Rounded.Remove,
             contentDescription = stringResource(R.string.decrease_snooze),
             tint = contentColor,
             onStep = onMinus
@@ -1079,7 +1079,7 @@ fun SnoozePill(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         )
         RepeatIconButton(
-            icon = Icons.Filled.Add,
+            icon = Icons.Rounded.Add,
             contentDescription = stringResource(R.string.increase_snooze),
             tint = contentColor,
             onStep = onPlus

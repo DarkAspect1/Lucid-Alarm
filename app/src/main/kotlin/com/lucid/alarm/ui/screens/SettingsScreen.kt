@@ -49,12 +49,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.FileUpload
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
@@ -104,13 +104,18 @@ import java.util.Locale
 import com.lucid.alarm.BackupManager
 import com.lucid.alarm.R
 import com.lucid.alarm.data.prefs.AccentColor
+import com.lucid.alarm.data.prefs.AlarmVibrationPolicy
+import com.lucid.alarm.data.prefs.AlarmVibrationPreset
 import com.lucid.alarm.data.prefs.AppFontStyle
 import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.data.prefs.ThemeMode
 import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.data.prefs.TimerVibrationPattern
+import com.lucid.alarm.data.prefs.TimerVibrationPolicy
+import com.lucid.alarm.data.prefs.TimerVolumePolicy
 import com.lucid.alarm.data.prefs.VolumePolicy
 import com.lucid.alarm.ui.FontManager
+import com.lucid.alarm.ui.localizedLabel
 import com.lucid.alarm.ui.localizedName
 import com.lucid.alarm.ui.components.CustomColorPickerDialog
 import com.lucid.alarm.ui.components.FrostedBlurBox
@@ -139,6 +144,12 @@ private fun AppFontStyle.localizedLabel(): String = when (this) {
 private fun VolumePolicy.localizedLabel(): String = when (this) {
     VolumePolicy.UNIFIED -> stringResource(R.string.volume_policy_unified)
     VolumePolicy.PER_ALARM -> stringResource(R.string.volume_policy_per_alarm)
+}
+
+@Composable
+private fun TimerVolumePolicy.localizedLabel(): String = when (this) {
+    TimerVolumePolicy.UNIFIED -> stringResource(R.string.volume_policy_unified)
+    TimerVolumePolicy.PER_TIMER -> stringResource(R.string.volume_policy_per_timer)
 }
 
 @Composable
@@ -172,7 +183,12 @@ fun SettingsScreen(
 
     val volumePolicy by settingsDataStore.volumePolicyFlow.collectAsState(initial = VolumePolicy.UNIFIED)
     val unifiedVolume by settingsDataStore.unifiedVolumeFlow.collectAsState(initial = 0.85f)
+    val alarmVibrationPolicy by settingsDataStore.alarmVibrationPolicyFlow.collectAsState(initial = AlarmVibrationPolicy.UNIFIED)
     val vibrateAlarmsAndTimers by settingsDataStore.vibrateAlarmsAndTimersFlow.collectAsState(initial = true)
+    val alarmVibrationPreset by settingsDataStore.alarmVibrationPresetFlow.collectAsState(initial = AlarmVibrationPreset.HEARTBEAT)
+    val timerVolumePolicy by settingsDataStore.timerVolumePolicyFlow.collectAsState(initial = TimerVolumePolicy.UNIFIED)
+    val timerUnifiedVolume by settingsDataStore.timerUnifiedVolumeFlow.collectAsState(initial = 0.85f)
+    val timerVibrationPolicy by settingsDataStore.timerVibrationPolicyFlow.collectAsState(initial = TimerVibrationPolicy.UNIFIED)
     val defaultAlarmRingtoneUri by settingsDataStore.defaultAlarmRingtoneUriFlow.collectAsState(initial = "")
     val defaultAlarmRingtoneTitle by settingsDataStore.defaultAlarmRingtoneTitleFlow.collectAsState(
         initial = "System default"
@@ -409,7 +425,7 @@ fun SettingsScreen(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = stringResource(R.string.action_back),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(22.dp)
@@ -442,7 +458,7 @@ fun SettingsScreen(
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = stringResource(R.string.action_back),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
@@ -659,7 +675,7 @@ fun SettingsScreen(
                                             ) {
                                                 if (selected) {
                                                     Icon(
-                                                        imageVector = Icons.Filled.Check,
+                                                        imageVector = Icons.Rounded.Check,
                                                         contentDescription = null,
                                                         tint = Color.White,
                                                         modifier = Modifier.size(20.dp)
@@ -715,7 +731,7 @@ fun SettingsScreen(
                                         ) {
                                             if (isCustomSelected) {
                                                 Icon(
-                                                    imageVector = Icons.Filled.Check,
+                                                    imageVector = Icons.Rounded.Check,
                                                     contentDescription = null,
                                                     tint = Color.White,
                                                     modifier = Modifier.size(18.dp)
@@ -738,7 +754,7 @@ fun SettingsScreen(
                                         }
                                     }
                                     Icon(
-                                        imageVector = Icons.Outlined.ChevronRight,
+                                        imageVector = Icons.Rounded.ChevronRight,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(20.dp)
@@ -776,7 +792,7 @@ fun SettingsScreen(
                                     )
                                 }
                                 Icon(
-                                    imageVector = Icons.Outlined.ChevronRight,
+                                    imageVector = Icons.Rounded.ChevronRight,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -826,7 +842,7 @@ fun SettingsScreen(
                                             )
                                             if (isSelected) {
                                                 Icon(
-                                                    imageVector = Icons.Filled.Check,
+                                                    imageVector = Icons.Rounded.Check,
                                                     contentDescription = null,
                                                     tint = accentColor,
                                                     modifier = Modifier.size(20.dp)
@@ -866,7 +882,7 @@ fun SettingsScreen(
                                 )
                             }
                             Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
+                                imageVector = Icons.Rounded.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -901,7 +917,7 @@ fun SettingsScreen(
                                     )
                                 }
                                 Icon(
-                                    imageVector = Icons.Outlined.ChevronRight,
+                                    imageVector = Icons.Rounded.ChevronRight,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -959,7 +975,7 @@ fun SettingsScreen(
                                             )
                                             if (isSelected) {
                                                 Icon(
-                                                    imageVector = Icons.Filled.Check,
+                                                    imageVector = Icons.Rounded.Check,
                                                     contentDescription = null,
                                                     tint = accentColor,
                                                     modifier = Modifier.size(20.dp)
@@ -996,29 +1012,151 @@ fun SettingsScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = stringResource(R.string.setting_vibrate_alerts),
+                                    text = stringResource(R.string.setting_alarm_vibration_policy),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = stringResource(R.string.desc_vibrate_alerts),
+                                    text = alarmVibrationPolicy.localizedLabel(),
                                     fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = accentColor
                                 )
                             }
-                            Switch(
-                                checked = vibrateAlarmsAndTimers,
-                                onCheckedChange = { checked ->
-                                    scope.launch { settingsDataStore.setVibrateAlarmsAndTimers(checked) }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(50))
+                                    .background(if (isLight) Color(0xFFF3F4F6) else Color(0xFF282830))
+                                    .padding(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                AlarmVibrationPolicy.entries.forEach { policy ->
+                                    val isSelected = alarmVibrationPolicy == policy
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(50))
+                                            .background(if (isSelected) accentColor else Color.Transparent)
+                                            .clickable {
+                                                scope.launch { settingsDataStore.setAlarmVibrationPolicy(policy) }
+                                            }
+                                            .padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = policy.localizedLabel(),
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
+                            }
+                        }
+
+                        if (alarmVibrationPolicy == AlarmVibrationPolicy.UNIFIED) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.setting_vibrate_alerts),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.desc_vibrate_alerts),
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = vibrateAlarmsAndTimers,
+                                    onCheckedChange = { checked ->
+                                        scope.launch { settingsDataStore.setVibrateAlarmsAndTimers(checked) }
+                                    }
+                                )
+                            }
+
+                            if (vibrateAlarmsAndTimers) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.vibration_pattern),
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = alarmVibrationPreset.localizedName(),
+                                            fontSize = 13.sp,
+                                            color = accentColor,
+                                            maxLines = 1
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        AlarmVibrationPreset.entries.forEach { preset ->
+                                            val isSelected = alarmVibrationPreset == preset
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .clip(RoundedCornerShape(50))
+                                                    .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                                    .clickable {
+                                                        scope.launch { settingsDataStore.setAlarmVibrationPreset(preset) }
+                                                    }
+                                                    .padding(vertical = 10.dp, horizontal = 4.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = preset.localizedName(),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = stringResource(R.string.desc_vibration_per_alarm),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
 
@@ -1151,7 +1289,7 @@ fun SettingsScreen(
                                 )
                             }
                             Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
+                                imageVector = Icons.Rounded.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1436,97 +1574,247 @@ fun SettingsScreen(
                             )
                         }
 
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.timer_vibration),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = stringResource(R.string.desc_timer_vibration),
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = timerVibrationEnabled,
-                                onCheckedChange = { checked ->
-                                    scope.launch { settingsDataStore.setTimerVibrationEnabled(checked) }
-                                }
-                            )
-                        }
-
-                        if (timerVibrationEnabled) {
+                        if (timerSoundEnabled) {
                             HorizontalDivider(
                                 modifier = Modifier.padding(vertical = 12.dp),
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                             )
 
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = stringResource(R.string.vibration_pattern),
+                                        text = stringResource(R.string.setting_timer_volume_policy),
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = timerVibrationPattern.localizedName(),
+                                        text = timerVolumePolicy.localizedLabel(),
                                         fontSize = 13.sp,
                                         color = accentColor,
                                         maxLines = 1
                                     )
                                 }
+                                Spacer(modifier = Modifier.height(10.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    TimerVibrationPattern.entries.forEach { pattern ->
-                                        val isSelected = timerVibrationPattern == pattern
+                                    TimerVolumePolicy.entries.forEach { policy ->
+                                        val isSelected = timerVolumePolicy == policy
                                         Box(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clip(RoundedCornerShape(50))
                                                 .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
                                                 .clickable {
-                                                    scope.launch { settingsDataStore.setTimerVibrationPattern(pattern) }
+                                                    scope.launch { settingsDataStore.setTimerVolumePolicy(policy) }
                                                 }
-                                                .padding(vertical = 10.dp, horizontal = 4.dp),
+                                                .padding(vertical = 10.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
-                                                text = pattern.localizedName(),
-                                                fontSize = 12.sp,
+                                                text = policy.localizedLabel(),
+                                                fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.fillMaxWidth()
+                                                maxLines = 1
                                             )
                                         }
                                     }
                                 }
                             }
+
+                            if (timerVolumePolicy == TimerVolumePolicy.UNIFIED) {
+                                var tempTimerVolume by remember { mutableFloatStateOf(timerUnifiedVolume) }
+                                LaunchedEffect(timerUnifiedVolume) { tempTimerVolume = timerUnifiedVolume }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.setting_timer_unified_volume),
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "${String.format(Locale.US, "%d", (tempTimerVolume * 100).roundToInt())}%",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor
+                                    )
+                                }
+                                Slider(
+                                    value = tempTimerVolume,
+                                    onValueChange = { tempTimerVolume = it },
+                                    onValueChangeFinished = {
+                                        scope.launch { settingsDataStore.setTimerUnifiedVolume(tempTimerVolume) }
+                                    },
+                                    valueRange = 0f..1f,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                        )
+
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.setting_timer_vibration_policy),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = timerVibrationPolicy.localizedLabel(),
+                                    fontSize = 13.sp,
+                                    color = accentColor
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(50))
+                                    .background(if (isLight) Color(0xFFF3F4F6) else Color(0xFF282830))
+                                    .padding(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                TimerVibrationPolicy.entries.forEach { policy ->
+                                    val isSelected = timerVibrationPolicy == policy
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(50))
+                                            .background(if (isSelected) accentColor else Color.Transparent)
+                                            .clickable {
+                                                scope.launch { settingsDataStore.setTimerVibrationPolicy(policy) }
+                                            }
+                                            .padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = policy.localizedLabel(),
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (timerVibrationPolicy == TimerVibrationPolicy.UNIFIED) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.timer_vibration),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.desc_timer_vibration),
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = timerVibrationEnabled,
+                                    onCheckedChange = { checked ->
+                                        scope.launch { settingsDataStore.setTimerVibrationEnabled(checked) }
+                                    }
+                                )
+                            }
+
+                            if (timerVibrationEnabled) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.vibration_pattern),
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = timerVibrationPattern.localizedName(),
+                                            fontSize = 13.sp,
+                                            color = accentColor,
+                                            maxLines = 1
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        TimerVibrationPattern.entries.forEach { pattern ->
+                                            val isSelected = timerVibrationPattern == pattern
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .clip(RoundedCornerShape(50))
+                                                    .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                                    .clickable {
+                                                        scope.launch { settingsDataStore.setTimerVibrationPattern(pattern) }
+                                                    }
+                                                    .padding(vertical = 10.dp, horizontal = 4.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = pattern.localizedName(),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = stringResource(R.string.desc_vibration_per_timer),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -1578,7 +1866,7 @@ fun SettingsScreen(
                                     )
                                 }
                                 Icon(
-                                    imageVector = Icons.Outlined.ChevronRight,
+                                    imageVector = Icons.Rounded.ChevronRight,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1616,7 +1904,7 @@ fun SettingsScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Outlined.FileUpload,
+                                            imageVector = Icons.Rounded.FileUpload,
                                             contentDescription = null,
                                             tint = if (hasSelection) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                             modifier = Modifier.size(22.dp)
@@ -1654,7 +1942,7 @@ fun SettingsScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Outlined.FileDownload,
+                                            imageVector = Icons.Rounded.FileDownload,
                                             contentDescription = null,
                                             tint = if (hasSelection) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                             modifier = Modifier.size(22.dp)
@@ -1783,7 +2071,7 @@ fun SettingsScreen(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.KeyboardArrowUp,
+                        imageVector = Icons.Rounded.KeyboardArrowUp,
                         contentDescription = stringResource(R.string.action_back_to_top),
                         modifier = Modifier.size(24.dp)
                     )
@@ -1897,7 +2185,7 @@ private fun CompactBackupPill(
     ) {
         if (checked) {
             Icon(
-                imageVector = Icons.Filled.Check,
+                imageVector = Icons.Rounded.Check,
                 contentDescription = null,
                 tint = accentColor,
                 modifier = Modifier.size(16.dp)

@@ -13,8 +13,10 @@ import com.lucid.alarm.MainActivity
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.service.AlarmAudioService
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
@@ -77,19 +79,24 @@ class AlarmScheduler(private val context: Context) {
     }
 
     fun scheduleAlarm(alarm: AlarmEntity, upcomingLeadMinutes: Int = 0) {
-        if (!alarm.isEnabled) {
+        val isSkipped = !alarm.isEnabled && alarm.skipUntilEpochMillis > System.currentTimeMillis()
+        if (!alarm.isEnabled && !isSkipped) {
             cancelAlarm(alarm.id)
             return
         }
 
         runCatching {
-            val triggerAtMillis = calculateTriggerTimeMillis(
-                hour24 = alarm.hour,
-                minute = alarm.minute,
-                daysOfWeek = alarm.daysOfWeek,
-                weekInterval = alarm.weekInterval,
-                anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay
-            )
+            val triggerAtMillis = if (isSkipped) {
+                alarm.skipUntilEpochMillis
+            } else {
+                calculateTriggerTimeMillis(
+                    hour24 = alarm.hour,
+                    minute = alarm.minute,
+                    daysOfWeek = alarm.daysOfWeek,
+                    weekInterval = alarm.weekInterval,
+                    anchorWeekStartEpochDay = alarm.anchorWeekStartEpochDay
+                )
+            }
 
             setAlarmClockExact(
                 requestCode = alarm.id * 10 + OFFSET_RING,
@@ -402,9 +409,10 @@ class AlarmScheduler(private val context: Context) {
             minute: Int,
             daysOfWeek: Set<Int> = emptySet(),
             weekInterval: Int = 1,
-            anchorWeekStartEpochDay: Long = 0L
+            anchorWeekStartEpochDay: Long = 0L,
+            afterMillis: Long = System.currentTimeMillis()
         ): Long {
-            val now = ZonedDateTime.now()
+            val now = Instant.ofEpochMilli(afterMillis).atZone(ZoneId.systemDefault())
             val zone = now.zone
 
             if (daysOfWeek.isEmpty()) {

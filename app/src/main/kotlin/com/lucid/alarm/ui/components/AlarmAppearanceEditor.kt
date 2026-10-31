@@ -43,10 +43,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -919,7 +919,7 @@ fun AlarmAppearanceEditor(
                                 .background(Color.Black.copy(alpha = 0.45f), CircleShape)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = stringResource(R.string.action_back),
                                 tint = Color.White
                             )
@@ -1316,11 +1316,6 @@ fun AlarmAppearanceEditor(
                     inherited = dateColor == 0L,
                     onInherit = { dateColor = 0L }
                 )
-                Text(
-                    text = stringResource(R.string.appearance_date_drag_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
 
                 AppearanceColorEditor(
                     title = stringResource(R.string.appearance_clock_color),
@@ -1576,7 +1571,7 @@ private fun PreviewDismissPill(
         contentPadding = PaddingValues(horizontal = 40.dp, vertical = 16.dp)
     ) {
         Icon(
-            imageVector = Icons.Filled.Close,
+            imageVector = Icons.Rounded.Close,
             contentDescription = null,
             modifier = Modifier.size(22.dp)
         )
@@ -1609,7 +1604,7 @@ private fun PreviewSnoozePill(
         horizontalArrangement = Arrangement.Center
     ) {
         PreviewSnoozeStepper(
-            icon = Icons.Filled.Remove,
+            icon = Icons.Rounded.Remove,
             contentDescription = stringResource(R.string.decrease_snooze),
             tint = contentColor
         )
@@ -1626,7 +1621,7 @@ private fun PreviewSnoozePill(
                 .padding(horizontal = 20.dp, vertical = 10.dp)
         )
         PreviewSnoozeStepper(
-            icon = Icons.Filled.Add,
+            icon = Icons.Rounded.Add,
             contentDescription = stringResource(R.string.increase_snooze),
             tint = contentColor
         )

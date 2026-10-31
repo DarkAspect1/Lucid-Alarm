@@ -135,8 +135,13 @@ data class AlarmEntity(
 
     val deletedAt: Long = 0L,
 
-    val trashedGroup: String = ""
+    val trashedGroup: String = "",
+
+    val skipUntilEpochMillis: Long = 0L
 ) {
+    @get:Ignore
+    val isSkipped: Boolean
+        get() = !isEnabled && skipUntilEpochMillis > System.currentTimeMillis()
     @get:Ignore
     val daysOfWeek: Set<Int>
         get() = if (repeatDays.isBlank()) {

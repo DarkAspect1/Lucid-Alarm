@@ -73,6 +73,7 @@ import com.lucid.alarm.service.NowBarNotification
 import com.lucid.alarm.ui.ClockAppScaffold
 import com.lucid.alarm.ui.theme.LucidAlarmTheme
 import com.lucid.alarm.ui.viewmodel.AlarmViewModel
+import com.lucid.alarm.ui.viewmodel.TimerViewModel
 import com.lucid.alarm.ui.viewmodel.WorldClockViewModel
 
 class MainActivity : ComponentActivity() {
@@ -153,6 +154,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val alarmViewModel: AlarmViewModel = viewModel()
             val worldClockViewModel: WorldClockViewModel = viewModel()
+            val timerViewModel: TimerViewModel = viewModel()
 
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission(),
@@ -300,6 +302,7 @@ class MainActivity : ComponentActivity() {
                     ClockAppScaffold(
                         alarmViewModel = alarmViewModel,
                         worldClockViewModel = worldClockViewModel,
+                        timerViewModel = timerViewModel,
                         settingsDataStore = settingsDataStore,
                         navRequest = navRequest.value,
                         onNavRequestHandled = { navRequest.value = null }

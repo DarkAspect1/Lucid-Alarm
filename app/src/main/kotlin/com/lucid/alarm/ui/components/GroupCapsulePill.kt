@@ -16,10 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.AlarmOff
-import androidx.compose.material.icons.outlined.Alarm
-import androidx.compose.material.icons.outlined.AlarmOff
+import androidx.compose.material.icons.rounded.Alarm
+import androidx.compose.material.icons.rounded.AlarmOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -107,7 +105,7 @@ fun GroupCapsulePill(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (hasEnabled) Icons.Filled.Alarm else Icons.Filled.AlarmOff,
+                        imageVector = if (hasEnabled) Icons.Rounded.Alarm else Icons.Rounded.AlarmOff,
                         contentDescription = null,
                         tint = circleIconTint,
                         modifier = Modifier.size(20.dp)
@@ -129,7 +127,7 @@ fun GroupCapsulePill(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Outlined.Alarm,
+                            imageVector = Icons.Rounded.Alarm,
                             contentDescription = "Active alarms",
                             tint = countColor,
                             modifier = Modifier.size(14.dp)
@@ -142,7 +140,7 @@ fun GroupCapsulePill(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
-                            imageVector = Icons.Outlined.AlarmOff,
+                            imageVector = Icons.Rounded.AlarmOff,
                             contentDescription = "Inactive alarms",
                             tint = countColor.copy(alpha = 0.7f),
                             modifier = Modifier.size(14.dp)
