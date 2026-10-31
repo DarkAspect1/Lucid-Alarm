@@ -175,7 +175,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 | Component | Key Capabilities |
 | :--- | :--- |
 | **Stopwatch** | Dual-mode horizontal pager with analog dial and minimal digital views with a Three-column lap table highlighting the fastest (blue) and slowest (red) laps |
-| **Timer** | Three-column wheel picker (HH:MM:SS) with 10, 15, and 30 minute presets<br/>Circular progress ring with a bell indicator and completion time<br/>Automatic leading-zero removal (for example, `53s`, `1:07m`, `1:05:09h`). Multiple timers at the same time, each with its own countdown, progress ring, and completion time. Every timer has independent pause, resume, and cancel controls |
+| **Timer** | Three-column wheel picker (HH:MM:SS) with 10, 15, and 30 minute presets<br/>Circular progress ring with a bell indicator and completion time<br/>Automatic leading-zero removal (for example, `53s`, `1:07m`, `1:05:09h`).<br/>Multiple timers at the same time, each with its own countdown, progress ring, and completion time. Every timer has independent pause, resume, and cancel controls |
 | **World Clock** | Centered clock with live seconds and full timezone descriptor<br/>City cards with relative time offsets<br/>Real-time search across the global timezone database |
 
 ---
