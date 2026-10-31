@@ -8,7 +8,7 @@
   <p align="center">
     <b>Deep Alarm Ringing Screen Customization • Animated Backgrounds • Custom Wallpapers</b><br/>
     <b>Alarm Groups •  Multi-Week Scheduling • Multi-Select • Filters and Sorting • Recycle Bin</b><br/>
-    <b>Stopwatch with Laps • Timer with Presets • World Clock • Interactive Live Activities (Nowbar)</b><br/>
+    <b>Stopwatch with Laps • Timer with Presets • Multi-Timers • World Clock • Interactive Live Activities (Nowbar)</b><br/>
     <b>Post-Alarm Wake Check • Upcoming Alarm Alerts • Custom Vibration Patterns • Custom Ringtones • Custom Fonts</b><br/>
     <b>HSV Color Picker • Dynamic Accent Tinting • JSON Backup and Restore</b>
   </p>
@@ -105,6 +105,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 | **Full Alarm Customization** | Design your ringing screen with clock layouts, animated or custom backgrounds, a full color picker, gradients, custom fonts, button styling, and a resizable clock and date, applied globally or per alarm. |
 | **Wake Check** | After an alarm is dismissed, a notification asks you to confirm you're awake within a set time. If you don't answer, the alarm rings again at maximum volume and loops until you tap "I'm Awake" in the notification. |
 | **Multi-week Scheduling:** | Set an alarm to repeat every 2 weeks (one week on, one week off), every 3 weeks, or any custom number of weeks. Choose whether the cycle starts this week or next time. |
+| **Multi-Timers** | Run multiple timers at the same time, each with its own countdown, progress ring, and completion time. Every timer has independent pause, resume, and cancel controls. |
 | **Accent Color Theming** | Choose an accent color and the app adapts around it, including Nowbar and Dark Mode background. |
 | **Nowbar Support** | Live stopwatch and timer pills with lap, pause, resume, and cancel controls and no need to open the app. |
 | **Alarm Groups and Recycle Bin** | Organize alarms into groups with bulk switches, and restore deleted alarms individually or all at once. |
@@ -174,7 +175,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 | Component | Key Capabilities |
 | :--- | :--- |
 | **Stopwatch** | Dual-mode horizontal pager with analog dial and minimal digital views with a Three-column lap table highlighting the fastest (blue) and slowest (red) laps |
-| **Timer** | Three-column wheel picker (HH:MM:SS) with 10, 15, and 30 minute presets<br/>Circular progress ring with a bell indicator and completion time<br/>Automatic leading-zero removal (for example, `53s`, `1:07m`, `1:05:09h`) |
+| **Timer** | Three-column wheel picker (HH:MM:SS) with 10, 15, and 30 minute presets<br/>Circular progress ring with a bell indicator and completion time<br/>Automatic leading-zero removal (for example, `53s`, `1:07m`, `1:05:09h`). Multiple timers at the same time, each with its own countdown, progress ring, and completion time. Every timer has independent pause, resume, and cancel controls |
 | **World Clock** | Centered clock with live seconds and full timezone descriptor<br/>City cards with relative time offsets<br/>Real-time search across the global timezone database |
 
 ---
