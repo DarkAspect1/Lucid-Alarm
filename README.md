@@ -47,7 +47,7 @@
 
 ## Overview
 
-Lucid Alarm is an open-source Android application built with Jetpack Compose. Designed to extend the Samsung's One UI Alarm App aesthetic, it focuses on making the app fully customizable without visual clutter.
+Lucid Alarm is an open-source Android application. Designed to extend the Samsung's One UI Alarm App aesthetic, it focuses on making the app fully customizable without visual clutter.
 
 Everything adapts to the user's chosen accent color including Dark Mode Wallpaper, Nowbar, and Settings
 
