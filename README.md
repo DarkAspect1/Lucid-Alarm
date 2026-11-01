@@ -60,7 +60,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
   <img src="Assets/25.jpg" width="15%" alt="World clock" />
   <img src="Assets/3.jpg" width="15%" alt="Stopwatch" />
   <img src="Assets/4.jpg" width="15%" alt="Stopwatch laps" />
-  <img src="Assets/5.jpg" width="15%" alt="Timer" />
+  <img src="Assets/41.jpg" width="15%" alt="Timer" />
   <img src="Assets/6.jpg" width="15%" alt="Timer running" />
 </p>
 
@@ -74,9 +74,10 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 </p>
 
 <p align="center">
-  <img src="Assets/21.jpg" width="30%" alt="Pink accent" />
-  <img src="Assets/20.jpg" width="30%" alt="Teal accent" />
-  <img src="Assets/19.jpg" width="30%" alt="Gold accent" />
+  <img src="Assets/21.jpg" width="18%" alt="Pink accent" />
+  <img src="Assets/20.jpg" width="18%" alt="Teal accent" />
+  <img src="Assets/19.jpg" width="18%" alt="Gold accent" />
+  <img src="Assets/43.jpg" width="18%" alt="multi-Timer Options" />
 </p>
 
 <p align="center">
@@ -88,9 +89,10 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 </p>
 
 <p align="center">
-  <img src="Assets/35.jpg" width="30%" alt="Clock settings" />
-  <img src="Assets/33.jpg" width="30%" alt="New alarm" />
-  <img src="Assets/36.jpg" width="30%" alt="Alarm appearance options" />
+  <img src="Assets/42.jpg" width="15%" alt="Clock settings" />
+  <img src="Assets/44.jpg" width="15%" alt="New alarm" />
+  <img src="Assets/36.jpg" width="15%" alt="Alarm appearance options" />
+  <img src="Assets/40.jpg" width="15%" alt="Add Multi-Timer" />
 </p>
 
 <p align="center">
