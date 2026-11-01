@@ -104,7 +104,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 
 ### Interactive Background Engine
 
-* **Built-in ambient styles:**
+* **Built-in Backgrounds:**
   * Dark Midnight Gradient and Pure AMOLED Black
   * Warm Sunrise and Dynamic Fluid Gradient
   * Starfield Particle Drift
@@ -130,8 +130,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 ---
 
 ## Nowbar and Live Activities
-
-* **Floating heads-up pill:** Real-time countdown and stopwatch counters rendered on the Nowbar.
+Real-time countdown and stopwatch counters rendered on the Nowbar.
 * **Accent color adaptation:** Nowbar automatically adopts the app’s accent color.
 * **Controls:**
   * Stopwatch: Lap, Stop, resume, or cancel
