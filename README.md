@@ -66,9 +66,9 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 
 <p align="center">
   <img src="Assets/7.jpg" width="15%" alt="Alarms, light theme" />
-  <img src="Assets/8.jpg" width="15%" alt="World clock, light theme" />
+  <img src="Assets/46.jpg" width="15%" alt="World clock, light theme" />
   <img src="Assets/9.jpg" width="15%" alt="Stopwatch, light theme" />
-  <img src="Assets/10.jpg" width="15%" alt="Timer, light theme" />
+  <img src="Assets/45.jpg" width="15%" alt="Timer, light theme" />
   <img src="Assets/27.jpg" width="15%" alt="Recycle bin" />
   <img src="Assets/23.jpg" width="15%" alt="Recycle bin selection" />
 </p>
