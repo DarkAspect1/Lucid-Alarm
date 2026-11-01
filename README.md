@@ -107,7 +107,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 * **Built-in ambient styles:**
   * Dark Midnight Gradient and Pure AMOLED Black
   * Warm Sunrise and Dynamic Fluid Gradient
-  * Starfield Particle Drift (physics-based particle layers)
+  * Starfield Particle Drift
   * Interactive Mesh Gradient and Interactive Aurora Borealis
   * Interactive Fireflies and Solid Color Palette
 * **Custom media:**
@@ -117,7 +117,7 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 
 ### Coloring and Element Control
 
-* **Color selection:** A 24-preset curated grid, or a full HSV spectrum with hex input (`#RRGGBB`).
+* **Color selection:** Choose from colors presets or a full HSV spectrum with hex input (`#RRGGBB`).
 * **Color and gradient options for:**
   * Clock
   * Date display
@@ -132,11 +132,11 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
 ## Nowbar and Live Activities
 
 * **Floating heads-up pill:** Real-time countdown and stopwatch counters rendered on the Nowbar.
-* **Accent color adaptation:** The Nowbar automatically adopts the app’s accent color, so the floating pill and its controls always match your chosen theme.
-* **In-place controls without launching the app:**
+* **Accent color adaptation:** Nowbar automatically adopts the app’s accent color.
+* **Controls:**
   * Stopwatch: Lap, Stop, resume, or cancel
   * Timer: Pause, Resume, and Cancel
-* **Multi-instance stacking:** The stopwatch and timer can run simultaneously in stacked floating capsules.
+* **Multi-instance:** The stopwatch and timer can run simultaneously.
 
 ---
 
@@ -169,7 +169,6 @@ The capability of Lucid Clock is its alarm personalization engine, configurable 
   * Toggle on or off
   * Move to recycle bin
 * **Drag-and-drop reordering:** hold an alarm's selection box and drag it to a new position. Reordering only starts from the selection box, so you never move an alarm by accident.
-* **Two-column alarm groups:** Groups render in a two-column grid (`groups.chunked(2)`) with live alarm counts, outline status icons (`Alarm` / `AlarmOff`), and bulk group switches.
 * **Filtering and sorting:**
   * Status filter: All, Turned On, or Turned Off
   * Day filter: Restrict alarms to specific days of the week
