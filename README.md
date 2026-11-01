@@ -29,7 +29,7 @@
 
   <p align="center">
     <b>
-      <a href="#Screenshots">Screenshots</a> &nbsp;|&nbsp;
+      <a href="#Pictures">Pictures</a> &nbsp;|&nbsp;
       <a href="#features">Features</a> &nbsp;|&nbsp;
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
@@ -53,50 +53,19 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 
 ---
 
-## Screenshots
+## Pictures
 
 <p align="center">
-  <img src="Assets/1.jpg" width="15%" alt="Alarms" />
-  <img src="Assets/25.jpg" width="15%" alt="World clock" />
-  <img src="Assets/3.jpg" width="15%" alt="Stopwatch" />
-  <img src="Assets/4.jpg" width="15%" alt="Stopwatch laps" />
-  <img src="Assets/41.jpg" width="15%" alt="Timer" />
-  <img src="Assets/47.jpg" width="15%" alt="Timer running" />
-</p>
-
-<p align="center">
-  <img src="Assets/7.jpg" width="15%" alt="Alarms, light theme" />
-  <img src="Assets/46.jpg" width="15%" alt="World clock, light theme" />
-  <img src="Assets/9.jpg" width="15%" alt="Stopwatch, light theme" />
-  <img src="Assets/45.jpg" width="15%" alt="Timer, light theme" />
-  <img src="Assets/27.jpg" width="15%" alt="Recycle bin" />
-  <img src="Assets/23.jpg" width="15%" alt="Recycle bin selection" />
-</p>
-
-<p align="center">
-  <img src="Assets/21.jpg" width="23%" alt="Pink accent" />
-  <img src="Assets/20.jpg" width="23%" alt="Teal accent" />
-  <img src="Assets/19.jpg" width="23%" alt="Gold accent" />
-  <img src="Assets/43.jpg" width="23%" alt="multi-Timer Options" />
-</p>
-
-<p align="center">
-  <img src="Assets/11.jpg" width="18%" alt="Ringing screen, vertical layout" />
-  <img src="Assets/12.jpg" width="18%" alt="Ringing screen, horizontal layout" />
-  <img src="Assets/32.jpg" width="18%" alt="Dismiss button styling" />
-  <img src="Assets/31.jpg" width="18%" alt="Snooze button styling" />
-  <img src="Assets/34.jpg" width="18%" alt="Background style" />
-</p>
-
-<p align="center">
-  <img src="Assets/42.jpg" width="23%" alt="Clock settings" />
-  <img src="Assets/44.jpg" width="23%" alt="New alarm" />
-  <img src="Assets/36.jpg" width="23%" alt="Alarm appearance options" />
-  <img src="Assets/40.jpg" width="23%" alt="Add Multi-Timer" />
-</p>
-
-<p align="center">
-  <img src="Assets/30.jpg" width="90%" alt="Alarm toast" />
+  <img src="assets/01-alarms-and-toast.jpg" width="100%" alt="Alarms with groups, batch actions, and toast confirmation" />
+  <img src="assets/02-alarm-customization.jpg" width="100%" alt="Ringing screen customization" />
+  <img src="assets/03-scheduling.jpg" width="100%" alt="Alarm scheduling and multi-week repeat" />
+  <img src="assets/04-multi-timer.jpg" width="100%" alt="Multi timer" />
+  <img src="assets/05-stopwatch.jpg" width="100%" alt="Stopwatch with laps" />
+  <img src="assets/06-world-clock.jpg" width="100%" alt="World clock" />
+  <img src="assets/07-accent-colors.jpg" width="100%" alt="Accent color theming" />
+  <img src="assets/08-light-and-dark.jpg" width="100%" alt="Light and dark themes" />
+  <img src="assets/09-recycle-bin.jpg" width="100%" alt="Recycle bin" />
+  <img src="assets/10-settings.jpg" width="100%" alt="Settings" />
 </p>
 
 ---
