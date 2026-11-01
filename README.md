@@ -37,7 +37,6 @@
       <a href="#alarm-options--notifications">Alarm Options & Notifications</a> &nbsp;|&nbsp;
       <a href="#Selection--Organization">Selection & Organization</a> &nbsp;|&nbsp;
       <a href="#backup-and-restore">Backup and Restore</a> &nbsp;|&nbsp;
-      <a href="#installation--build-requirements">Installation & Build Requirements</a> &nbsp;|&nbsp;
     </b>
   </p>
 
@@ -236,20 +235,3 @@ Configurations can be exported and restored at any time using a structured JSON 
   ]
 }
 ```
-
----
-
-| Area | Implementation |
-| :--- | :--- |
-| **UI framework** | 100% Jetpack Compose built on Material 3 base |
-| **State management** | Kotlin Coroutines, StateFlow, and Jetpack ViewModel |
-| **Persistence** | Room (alarms, recycle bin, groups) and Jetpack DataStore (preferences) |
-| **Minification** | R8 and ProGuard rules protecting Room entities and JSON serialization models |
-
----
-
-## Installation & Build Requirements
-
-* Android Studio Ladybug or Meerkat, or newer
-* JDK 17 or newer
-* Android SDK 34 or newer
