@@ -3,7 +3,7 @@
   <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="Lucid Clock App Icon" width="160" height="160" />
 
   # Lucid Alarm
-  ### A Fully customizable Alarm App for Android
+  ### A Fully customizable Alarm App
 
   <p align="center">
     <b>Deep Alarm Ringing Screen Customization • Animated Backgrounds • Custom Wallpapers</b><br/>
