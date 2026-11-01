@@ -61,7 +61,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
   <img src="Assets/3.jpg" width="15%" alt="Stopwatch" />
   <img src="Assets/4.jpg" width="15%" alt="Stopwatch laps" />
   <img src="Assets/41.jpg" width="15%" alt="Timer" />
-  <img src="Assets/6.jpg" width="15%" alt="Timer running" />
+  <img src="Assets/47.jpg" width="15%" alt="Timer running" />
 </p>
 
 <p align="center">
