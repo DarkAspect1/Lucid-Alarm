@@ -29,7 +29,7 @@
 
   <p align="center">
     <b>
-      <a href="#Pictures">Pictures</a> &nbsp;|&nbsp;
+      <a href="#gallery-preview">Gallery</a> &nbsp;|&nbsp;
       <a href="#features">Features</a> &nbsp;|&nbsp;
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
       <a href="#nowbar-and-live-activities">Nowbar</a> &nbsp;|&nbsp;
@@ -53,7 +53,7 @@ Everything adapts to the user's chosen accent color including Dark Mode Wallpape
 
 ---
 
-## Pictures
+## Gallery Preview
 
 <p align="center">
   <img src="assets/01-alarms-and-toast.jpg" width="100%" alt="Alarms with groups, batch actions, and toast confirmation" />
