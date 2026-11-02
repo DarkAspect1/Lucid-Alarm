@@ -30,7 +30,7 @@
       <a href="#gallery-preview">Gallery</a> &nbsp;|&nbsp;
       <a href="#features">Features</a> &nbsp;|&nbsp;
       <a href="#alarm-customization">Alarm Customization</a> &nbsp;|&nbsp;
-      <a href="#selection-and-organization">Organization</a> &nbsp;|&nbsp;
+      <a href="#selection-and-organization">Organization</a>
     </b>
   </p>
 
