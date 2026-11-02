@@ -31,7 +31,6 @@
       <a href="#features">Features</a> &nbsp;|&nbsp;
       <a href="#alarm-customization">Customization</a> &nbsp;|&nbsp;
       <a href="#selection-and-organization">Organization</a> &nbsp;|&nbsp;
-      <a href="#backup-and-restore">Backup and Restore</a>
     </b>
   </p>
 
