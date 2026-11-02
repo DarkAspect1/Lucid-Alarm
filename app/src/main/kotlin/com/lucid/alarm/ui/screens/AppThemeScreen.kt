@@ -249,7 +249,12 @@ fun AppThemeScreen(
                     ThemeMode.entries.forEachIndexed { index, mode ->
                         SegmentedButton(
                             selected = themeMode == mode,
-                            onClick = { scope.launch { settingsDataStore.setThemeMode(mode) } },
+                            onClick = {
+                                scope.launch {
+                                    settingsDataStore.setThemeMode(mode)
+                                    com.lucid.alarm.widget.WidgetUpdater.updateAllWidgets(com.lucid.alarm.AlarmApplication.instance)
+                                }
+                            },
                             shape = SegmentedButtonDefaults.itemShape(
                                 index = index,
                                 count = ThemeMode.entries.size
@@ -337,14 +342,12 @@ fun AppThemeScreen(
                                 .size(46.dp)
                                 .clip(CircleShape)
                                 .background(swatchColor)
-                                .border(
-                                    width = if (selected) 3.dp else 1.dp,
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.primary
+                                .then(
+                                    if (selected) {
+                                        Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                                     } else {
-                                        MaterialTheme.colorScheme.outlineVariant
-                                    },
-                                    shape = CircleShape
+                                        Modifier
+                                    }
                                 )
                                 .clickable {
                                     if (accent == AccentColor.CUSTOM) {
@@ -352,6 +355,7 @@ fun AppThemeScreen(
                                     } else {
                                         scope.launch {
                                             settingsDataStore.setAccentColor(accent)
+                                            com.lucid.alarm.widget.WidgetUpdater.updateAllWidgets(com.lucid.alarm.AlarmApplication.instance)
                                         }
                                     }
                                 },
@@ -463,14 +467,16 @@ fun AppThemeScreen(
                                 .size(52.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(swatchBrush)
-                                .border(
-                                    width = if (selected) 3.dp else 1.dp,
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.primary
+                                .then(
+                                    if (selected) {
+                                        Modifier.border(
+                                            3.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            RoundedCornerShape(16.dp)
+                                        )
                                     } else {
-                                        MaterialTheme.colorScheme.outlineVariant
-                                    },
-                                    shape = RoundedCornerShape(16.dp)
+                                        Modifier
+                                    }
                                 )
                                 .clickable {
                                     if (palette == BackgroundPalette.CUSTOM) {
@@ -670,6 +676,7 @@ fun AppThemeScreen(
 
                     settingsDataStore.setAccentCustomColor(argb)
                     settingsDataStore.setAccentColor(AccentColor.CUSTOM)
+                    com.lucid.alarm.widget.WidgetUpdater.updateAllWidgets(com.lucid.alarm.AlarmApplication.instance)
                 }
             }
         )
@@ -819,14 +826,12 @@ private fun PaletteSwatch(
             .size(42.dp)
             .clip(CircleShape)
             .background(color)
-            .border(
-                width = if (selected) 3.dp else 1.dp,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.primary
+            .then(
+                if (selected) {
+                    Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 } else {
-                    MaterialTheme.colorScheme.outlineVariant
-                },
-                shape = CircleShape
+                    Modifier
+                }
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center

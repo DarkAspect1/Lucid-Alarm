@@ -120,7 +120,7 @@
     <string name="snooze_x_mins">%1$d Min. schlummern</string>
     <string name="decrease_snooze">Schlummerzeit verringern</string>
     <string name="increase_snooze">Schlummerzeit erhöhen</string>
-    <string name="clock_settings">Uhreinstellungen</string>
+    <string name="clock_settings">Einstellungen</string>
     <string name="theme_mode">Design-Modus</string>
     <string name="theme_system">System</string>
     <string name="theme_dark">Dunkel</string>
@@ -205,10 +205,10 @@
     <string name="font_custom_file">Benutzerdefinierte Schriftartdatei</string>
     <string name="setting_alarm_appearance">Wecker-Erscheinungsbild</string>
     <string name="desc_alarm_appearance">Layout, Uhrenschriftart, Größe &amp; Farben anpassen</string>
-    <string name="section_audio_volume">Audio &amp; Lautstärkerichtlinie</string>
+    <string name="section_audio_volume">Weckereinstellungen</string>
     <string name="setting_vibrate_alerts">Wecker-Vibration</string>
     <string name="desc_vibrate_alerts">Gerät vibrieren lassen, während Töne abgespielt werden</string>
-    <string name="setting_volume_policy">Lautstärkerichtlinie</string>
+    <string name="setting_volume_policy">Wecker-Lautstärke</string>
     <string name="volume_policy_unified">Einheitlich</string>
     <string name="volume_policy_per_alarm">Pro Wecker</string>
     <string name="volume_policy_per_timer">Pro Timer</string>
@@ -219,7 +219,7 @@
     <string name="vibration_policy_per_timer">Pro Timer</string>
     <string name="desc_vibration_per_alarm">Vibration wird für jeden Alarm separat konfiguriert.</string>
     <string name="desc_vibration_per_timer">Vibration wird für jeden Timer separat konfiguriert.</string>
-    <string name="setting_timer_volume_policy">Timer-Lautstärkerichtlinie</string>
+    <string name="setting_timer_volume_policy">Timer-Lautstärke</string>
     <string name="setting_timer_unified_volume">Einheitliche Timer-Lautstärke</string>
     <string name="timer_volume">Timer-Lautstärke</string>
     <string name="setting_unified_volume">Einheitliche Weckerlautstärke</string>
@@ -233,7 +233,7 @@
     <string name="awake_check_title">Wachheitsprüfung</string>
     <string name="desc_awake_check">Nach dem Beenden bestätigen, dass Sie wach sind</string>
     <string name="awake_check_delay_min">%1$d Min.</string>
-    <string name="section_timer_stopwatch">Timer &amp; Stoppuhr</string>
+    <string name="section_timer_stopwatch">Timer-Einstellungen</string>
     <string name="desc_timer_vibration">Vibrieren, wenn der Timer abläuft</string>
     <string name="section_data_storage">Daten &amp; Speicher</string>
     <string name="setting_backup_restore">Sicherung &amp; Wiederherstellung</string>
@@ -411,4 +411,20 @@
     <string name="dialog_delete_all_timers_msg">%1$d Timer werden dauerhaft gelöscht.</string>
     <string name="multi_timer">Mehrfach-Timer</string>
     <string name="timer_header_time_left">Verbleibende Zeit</string>
+    <string name="widget_next_alarm_title">Nächster Wecker</string>
+    <string name="widget_next_alarm_desc">Wecker</string>
+    <string name="widget_timer_title">Timer</string>
+    <string name="widget_timer_desc">Timer</string>
+    <string name="widget_stopwatch_title">Stoppuhr</string>
+    <string name="widget_stopwatch_desc">Stoppuhr</string>
+    <string name="widget_world_clock_title">Weltuhr</string>
+    <string name="widget_world_clock_desc">Weltuhr</string>
+    <string name="widget_no_alarms">Keine aktiven Wecker</string>
+    <string name="widget_no_other_alarms">Keine weiteren Wecker</string>
+    <string name="widget_no_timers">Kein Timer aktiv</string>
+    <string name="widget_no_laps">Keine Runden erfasst</string>
+    <string name="widget_lap_prefix">Runde %1$d</string>
+    <string name="widget_action_lap">Runde</string>
+    <string name="widget_rings_in">Klingelt in %1$s</string>
+    <string name="widget_timer_preset_min">%1$dm</string>
 </resources>

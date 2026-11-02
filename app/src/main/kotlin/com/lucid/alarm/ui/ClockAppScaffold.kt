@@ -166,6 +166,8 @@ fun ClockAppScaffold(
     LaunchedEffect(navRequest) {
         val request = navRequest ?: return@LaunchedEffect
         val target = when (request.first) {
+            NowBarNotification.INITIAL_TAB_ALARMS -> ClockTab.ALARMS
+            NowBarNotification.INITIAL_TAB_WORLD_CLOCK -> ClockTab.WORLD_CLOCK
             NowBarNotification.INITIAL_TAB_TIMER -> ClockTab.TIMER
             NowBarNotification.INITIAL_TAB_STOPWATCH -> ClockTab.STOPWATCH
             else -> null
@@ -371,12 +373,10 @@ fun ClockAppScaffold(
                     removeLeadingZero = removeLeadingZero,
                     onBack = { showMultiTimer = false },
                     onOpenSettings = {
-                        showMultiTimer = false
                         showSettings = true
                         settingsSubScreen = SettingsSubScreen.MAIN
                     },
                     onOpenRecycleBin = {
-                        showMultiTimer = false
                         showTimerRecycleBin = true
                     },
                     onOpenTimer = { timer ->

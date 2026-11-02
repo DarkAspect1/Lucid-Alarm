@@ -120,7 +120,7 @@
     <string name="snooze_x_mins">Posponer %1$d min</string>
     <string name="decrease_snooze">Disminuir posponer</string>
     <string name="increase_snooze">Aumentar posponer</string>
-    <string name="clock_settings">Ajustes del reloj</string>
+    <string name="clock_settings">Ajustes</string>
     <string name="theme_mode">Modo de tema</string>
     <string name="theme_system">Sistema</string>
     <string name="theme_dark">Oscuro</string>
@@ -205,10 +205,10 @@
     <string name="font_custom_file">Archivo de fuente personalizado</string>
     <string name="setting_alarm_appearance">Aspecto de la alarma</string>
     <string name="desc_alarm_appearance">Personaliza diseño, fuente del reloj, tamaño y colores</string>
-    <string name="section_audio_volume">Audio y Política de volumen</string>
+    <string name="section_audio_volume">Ajustes de alarma</string>
     <string name="setting_vibrate_alerts">Vibración de alarmas</string>
     <string name="desc_vibrate_alerts">Hacer vibrar el dispositivo mientras suenan las alertas</string>
-    <string name="setting_volume_policy">Política de volumen</string>
+    <string name="setting_volume_policy">Volumen de la alarma</string>
     <string name="volume_policy_unified">Unificado</string>
     <string name="volume_policy_per_alarm">Por alarma</string>
     <string name="volume_policy_per_timer">Por temporizador</string>
@@ -219,7 +219,7 @@
     <string name="vibration_policy_per_timer">Por temporizador</string>
     <string name="desc_vibration_per_alarm">La vibración se configura por separado para cada alarma.</string>
     <string name="desc_vibration_per_timer">La vibración se configura por separado para cada temporizador.</string>
-    <string name="setting_timer_volume_policy">Política de volumen del temporizador</string>
+    <string name="setting_timer_volume_policy">Volumen del temporizador</string>
     <string name="setting_timer_unified_volume">Volumen unificado del temporizador</string>
     <string name="timer_volume">Volumen del temporizador</string>
     <string name="setting_unified_volume">Volumen unificado de alarma</string>
@@ -233,7 +233,7 @@
     <string name="awake_check_title">Comprobación de despierto</string>
     <string name="desc_awake_check">Confirma que estás despierto tras desactivar</string>
     <string name="awake_check_delay_min">%1$d min</string>
-    <string name="section_timer_stopwatch">Temporizador y Cronómetro</string>
+    <string name="section_timer_stopwatch">Ajustes del temporizador</string>
     <string name="desc_timer_vibration">Vibrar cuando finalice el temporizador</string>
     <string name="section_data_storage">Datos y Almacenamiento</string>
     <string name="setting_backup_restore">Copia de seguridad y restauración</string>
@@ -411,4 +411,20 @@
     <string name="dialog_delete_all_timers_msg">Se eliminarán permanentemente %1$d temporizadores.</string>
     <string name="multi_timer">Temporizadores múltiples</string>
     <string name="timer_header_time_left">Tiempo restante</string>
+    <string name="widget_next_alarm_title">Próxima alarma</string>
+    <string name="widget_next_alarm_desc">Alarmas</string>
+    <string name="widget_timer_title">Temporizador</string>
+    <string name="widget_timer_desc">Temporizador</string>
+    <string name="widget_stopwatch_title">Cronómetro</string>
+    <string name="widget_stopwatch_desc">Cronómetro</string>
+    <string name="widget_world_clock_title">Reloj mundial</string>
+    <string name="widget_world_clock_desc">Reloj mundial</string>
+    <string name="widget_no_alarms">No hay alarmas activas</string>
+    <string name="widget_no_other_alarms">No hay otras alarmas</string>
+    <string name="widget_no_timers">No hay temporizador activo</string>
+    <string name="widget_no_laps">No hay vueltas registradas</string>
+    <string name="widget_lap_prefix">Vuelta %1$d</string>
+    <string name="widget_action_lap">Vuelta</string>
+    <string name="widget_rings_in">Suena en %1$s</string>
+    <string name="widget_timer_preset_min">%1$dm</string>
 </resources>

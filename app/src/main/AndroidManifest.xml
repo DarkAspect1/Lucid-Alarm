@@ -168,6 +168,85 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="timer_and_stopwatch" />
         </service>
+
+        <receiver
+            android:name=".widget.NextAlarmWidgetProvider"
+            android:label="@string/tab_alarms"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="com.lucid.alarm.widget.TOGGLE_ALARM" />
+                <action android:name="com.lucid.alarm.widget.CYCLE_ALARM" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_next_alarm_info" />
+        </receiver>
+
+        <service
+            android:name=".widget.NextAlarmRemoteViewsService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
+        <receiver
+            android:name=".widget.TimerWidgetProvider"
+            android:label="@string/tab_timer"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="com.lucid.alarm.widget.TIMER_TOGGLE" />
+                <action android:name="com.lucid.alarm.widget.TIMER_RESET" />
+                <action android:name="com.lucid.alarm.widget.TIMER_START_PRESET" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_timer_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.StopwatchWidgetProvider"
+            android:label="@string/tab_stopwatch"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="com.lucid.alarm.widget.STOPWATCH_TOGGLE" />
+                <action android:name="com.lucid.alarm.widget.STOPWATCH_LAP" />
+                <action android:name="com.lucid.alarm.widget.STOPWATCH_RESET" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stopwatch_info" />
+        </receiver>
+
+        <service
+            android:name=".widget.StopwatchLapsRemoteViewsService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
+        <receiver
+            android:name=".widget.WorldClockWidgetProvider"
+            android:label="@string/tab_world_clock"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_world_clock_info" />
+        </receiver>
+
+        <service
+            android:name=".widget.WorldClockRemoteViewsService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
     </application>
 
 </manifest>

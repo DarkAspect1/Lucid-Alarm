@@ -16,6 +16,9 @@
 -keep public class * extends android.content.BroadcastReceiver
 -keep public class * extends android.app.Activity
 -keep public class * extends android.app.Application
+-keep class * extends android.widget.RemoteViewsService { *; }
+-keep class * implements android.widget.RemoteViewsService$RemoteViewsFactory { *; }
+-keep class com.lucid.alarm.widget.** { *; }
 
 -keep class com.lucid.alarm.ui.components.** { *; }
 -keep class com.lucid.alarm.ui.screens.** { *; }

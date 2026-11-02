@@ -18,6 +18,9 @@ fun BackgroundPalette.toColor(): Color = Color(argb)
 fun onColorFor(color: Color): Color =
     if (color.luminance() > 0.40f) Color(0xFF14171A) else Color.White
 
+fun onAccentFabIconColor(color: Color): Color =
+    if (color.luminance() > 0.55f) Color(0xFF111318) else Color.White
+
 private val LightOnSurface = Color(0xFF111318)
 
 private val LightOnSurfaceVariant = Color(0xFF4B5563)

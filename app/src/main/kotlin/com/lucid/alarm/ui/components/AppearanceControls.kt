@@ -168,14 +168,12 @@ fun ColorSwatchRow(
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.18f))
-                    .border(
-                        width = if (inherited) 3.dp else 1.dp,
-                        color = if (inherited) {
-                            MaterialTheme.colorScheme.primary
+                    .then(
+                        if (inherited) {
+                            Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         } else {
-                            MaterialTheme.colorScheme.outlineVariant
-                        },
-                        shape = CircleShape
+                            Modifier
+                        }
                     )
                     .clickable { onInherit() },
                 contentAlignment = Alignment.Center
@@ -191,14 +189,12 @@ fun ColorSwatchRow(
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(swatch)
-                    .border(
-                        width = if (isSelected) 3.dp else 1.dp,
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
+                    .then(
+                        if (isSelected) {
+                            Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         } else {
-                            MaterialTheme.colorScheme.outlineVariant
-                        },
-                        shape = CircleShape
+                            Modifier
+                        }
                     )
                     .clickable { onSelect(argb) },
                 contentAlignment = Alignment.Center
@@ -233,14 +229,12 @@ fun ColorSwatchRow(
                 .clip(CircleShape)
                 .background(if (isCustom) Color(selected) else Color.Unspecified)
                 .then(if (isCustom) Modifier else Modifier.background(rainbow))
-                .border(
-                    width = if (isCustom) 3.dp else 1.dp,
-                    color = if (isCustom) {
-                        MaterialTheme.colorScheme.primary
+                .then(
+                    if (isCustom) {
+                        Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     } else {
-                        MaterialTheme.colorScheme.outlineVariant
-                    },
-                    shape = CircleShape
+                        Modifier
+                    }
                 )
                 .clickable { showPicker = true },
             contentAlignment = Alignment.Center
@@ -358,11 +352,6 @@ fun CustomColorPickerDialog(
                             .size(width = 54.dp, height = 38.dp)
                             .clip(RoundedCornerShape(999.dp))
                             .background(current)
-                            .border(
-                                width = 1.dp,
-                                color = if (isLight) Color.Black.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.18f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
                     )
 
                     Box(

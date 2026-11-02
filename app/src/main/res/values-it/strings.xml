@@ -120,7 +120,7 @@
     <string name="snooze_x_mins">Posticipa di %1$d min</string>
     <string name="decrease_snooze">Diminuisci snooze</string>
     <string name="increase_snooze">Aumenta snooze</string>
-    <string name="clock_settings">Impostazioni orologio</string>
+    <string name="clock_settings">Impostazioni</string>
     <string name="theme_mode">Modalità tema</string>
     <string name="theme_system">Sistema</string>
     <string name="theme_dark">Scuro</string>
@@ -205,10 +205,10 @@
     <string name="font_custom_file">File carattere personalizzato</string>
     <string name="setting_alarm_appearance">Aspetto sveglia</string>
     <string name="desc_alarm_appearance">Personalizza layout, carattere dell\'orologio, dimensione e colori</string>
-    <string name="section_audio_volume">Audio e Criterio volume</string>
+    <string name="section_audio_volume">Impostazioni sveglia</string>
     <string name="setting_vibrate_alerts">Vibrazione sveglie</string>
     <string name="desc_vibrate_alerts">Vibra il dispositivo mentre suonano gli avvisi</string>
-    <string name="setting_volume_policy">Criterio del volume</string>
+    <string name="setting_volume_policy">Volume della sveglia</string>
     <string name="volume_policy_unified">Unificato</string>
     <string name="volume_policy_per_alarm">Per ciascuna sveglia</string>
     <string name="volume_policy_per_timer">Per ciascun timer</string>
@@ -219,7 +219,7 @@
     <string name="vibration_policy_per_timer">Per timer</string>
     <string name="desc_vibration_per_alarm">La vibrazione è configurata separatamente per ciascuna sveglia.</string>
     <string name="desc_vibration_per_timer">La vibrazione è configurata separatamente per ciascun timer.</string>
-    <string name="setting_timer_volume_policy">Criterio del volume del timer</string>
+    <string name="setting_timer_volume_policy">Volume del timer</string>
     <string name="setting_timer_unified_volume">Volume unificato del timer</string>
     <string name="timer_volume">Volume del timer</string>
     <string name="setting_unified_volume">Volume unificato delle sveglie</string>
@@ -233,7 +233,7 @@
     <string name="awake_check_title">Controllo sveglio</string>
     <string name="desc_awake_check">Conferma di essere sveglio dopo aver disattivato</string>
     <string name="awake_check_delay_min">%1$d min</string>
-    <string name="section_timer_stopwatch">Timer e Cronometro</string>
+    <string name="section_timer_stopwatch">Impostazioni timer</string>
     <string name="desc_timer_vibration">Vibra al termine del timer</string>
     <string name="section_data_storage">Dati e Archiviazione</string>
     <string name="setting_backup_restore">Backup e ripristino</string>
@@ -411,4 +411,20 @@
     <string name="dialog_delete_all_timers_msg">%1$d timer verranno eliminati definitivamente.</string>
     <string name="multi_timer">Timer multipli</string>
     <string name="timer_header_time_left">Tempo rimanente</string>
+    <string name="widget_next_alarm_title">Prossima sveglia</string>
+    <string name="widget_next_alarm_desc">Sveglie</string>
+    <string name="widget_timer_title">Timer</string>
+    <string name="widget_timer_desc">Timer</string>
+    <string name="widget_stopwatch_title">Cronometro</string>
+    <string name="widget_stopwatch_desc">Cronometro</string>
+    <string name="widget_world_clock_title">Orologio mondiale</string>
+    <string name="widget_world_clock_desc">Orologio mondiale</string>
+    <string name="widget_no_alarms">Nessuna sveglia attiva</string>
+    <string name="widget_no_other_alarms">Nessun\'altra sveglia</string>
+    <string name="widget_no_timers">Nessun timer attivo</string>
+    <string name="widget_no_laps">Nessun giro registrato</string>
+    <string name="widget_lap_prefix">Giro %1$d</string>
+    <string name="widget_action_lap">Giro</string>
+    <string name="widget_rings_in">Suona tra %1$s</string>
+    <string name="widget_timer_preset_min">%1$dm</string>
 </resources>

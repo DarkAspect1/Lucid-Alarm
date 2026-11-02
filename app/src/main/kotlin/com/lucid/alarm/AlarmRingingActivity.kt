@@ -680,13 +680,14 @@ fun AlarmRingingScreen(
             ) {
                 Spacer(modifier = Modifier.weight(1f))
 
-                if (alarmLabel.isNotBlank()) {
+                val displayLabel = if (alarmLabel.equals("Are you awake?", ignoreCase = true)) "" else alarmLabel
+                if (displayLabel.isNotBlank()) {
                     Surface(
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                         color = Color.White.copy(alpha = 0.12f)
                     ) {
                         Text(
-                            text = alarmLabel,
+                            text = displayLabel,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = fontFamily,
                                 fontWeight = FontWeight.SemiBold

@@ -12,6 +12,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.lucid.alarm.widget.WidgetThemeHelper
+import com.lucid.alarm.widget.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -851,6 +853,8 @@ class SettingsDataStore(private val context: Context) {
             }
             prefs[key] = color.name
         }
+        WidgetThemeHelper.invalidateCache()
+        WidgetUpdater.updateAllWidgets(context)
     }
 
     suspend fun setAccentCustomColor(argb: Long) {
@@ -861,6 +865,8 @@ class SettingsDataStore(private val context: Context) {
                 argb
             )
         }
+        WidgetThemeHelper.invalidateCache()
+        WidgetUpdater.updateAllWidgets(context)
     }
 
     suspend fun setBackgroundCustomColor(argb: Long) {
@@ -894,6 +900,8 @@ class SettingsDataStore(private val context: Context) {
         context.settingsDataStore.edit {
             it.editActiveColor(KEY_DARK_ALARM_CARD_COLOR, KEY_LIGHT_ALARM_CARD_COLOR, argb)
         }
+        WidgetThemeHelper.invalidateCache()
+        WidgetUpdater.updateAllWidgets(context)
     }
 
     suspend fun setWorldClockCardColor(argb: Long) {
@@ -908,6 +916,8 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setThemeMode(mode: ThemeMode) {
         context.settingsDataStore.edit { it[KEY_THEME_MODE] = mode.name }
+        WidgetThemeHelper.invalidateCache()
+        WidgetUpdater.updateAllWidgets(context)
     }
 
     suspend fun setBackgroundPalette(palette: BackgroundPalette) {
@@ -965,6 +975,7 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setTimeFormat(format: TimeFormat) {
         context.settingsDataStore.edit { it[KEY_TIME_FORMAT] = format.name }
+        WidgetUpdater.updateAllWidgets(context)
     }
 
     suspend fun setVolumePolicy(policy: VolumePolicy) {
@@ -1422,6 +1433,7 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setAppLanguage(language: String) {
         context.settingsDataStore.edit { it[KEY_APP_LANGUAGE] = language }
+        WidgetUpdater.updateAllWidgets(context)
     }
 
     suspend fun setAlarmGroupOrder(order: List<String>) {
@@ -1438,6 +1450,7 @@ class SettingsDataStore(private val context: Context) {
                 prefs[KEY_WORLD_CLOCK_ZONES] = (current + zoneId).joinToString("|")
             }
         }
+        WidgetUpdater.updateWorldClockWidgets(context)
     }
 
     suspend fun removeWorldClockZone(zoneId: String) {
@@ -1448,16 +1461,19 @@ class SettingsDataStore(private val context: Context) {
                 ?: emptyList()
             prefs[KEY_WORLD_CLOCK_ZONES] = current.filterNot { it == zoneId }.joinToString("|")
         }
+        WidgetUpdater.updateWorldClockWidgets(context)
     }
 
     suspend fun setWorldClockZones(zoneIds: List<String>) {
         context.settingsDataStore.edit { prefs ->
             prefs[KEY_WORLD_CLOCK_ZONES] = zoneIds.filter { it.isNotBlank() }.joinToString("|")
         }
+        WidgetUpdater.updateWorldClockWidgets(context)
     }
 
     suspend fun setWorldClockSort(mode: WorldClockSortMode) {
         context.settingsDataStore.edit { it[KEY_WORLD_CLOCK_SORT] = mode.name }
+        WidgetUpdater.updateWorldClockWidgets(context)
     }
 
     suspend fun dumpPreferences(): List<Triple<String, String, String>> {

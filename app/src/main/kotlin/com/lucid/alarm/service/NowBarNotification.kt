@@ -151,6 +151,8 @@ class NowBarNotification(private val context: Context) {
 
         const val EXTRA_INITIAL_TAB = "INITIAL_TAB"
 
+        const val INITIAL_TAB_ALARMS = "ALARMS"
+        const val INITIAL_TAB_WORLD_CLOCK = "WORLD_CLOCK"
         const val INITIAL_TAB_TIMER = "TIMER"
         const val INITIAL_TAB_STOPWATCH = "STOPWATCH"
 

@@ -113,7 +113,7 @@ import com.lucid.alarm.ui.components.edgeFadeMask
 import com.lucid.alarm.ui.viewmodel.WorldClockViewModel
 import com.lucid.alarm.ui.amPmSuffix
 import com.lucid.alarm.ui.formatHourMinute
-import com.lucid.alarm.ui.theme.onColorFor
+import com.lucid.alarm.ui.theme.onAccentFabIconColor
 import com.lucid.alarm.ui.WorldClockLocalization
 import com.lucid.alarm.ui.WorldCity
 import android.content.Context
@@ -558,7 +558,7 @@ fun WorldClockScreen(
                     showAddDialog = true
                 },
                 containerColor = accentColor,
-                contentColor = onColorFor(accentColor),
+                contentColor = onAccentFabIconColor(accentColor),
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp)
             ) {

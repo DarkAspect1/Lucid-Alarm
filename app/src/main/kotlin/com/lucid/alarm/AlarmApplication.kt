@@ -8,6 +8,12 @@ import com.lucid.alarm.repository.WorldClockRepository
 import com.lucid.alarm.service.AlarmAudioService
 
 class AlarmApplication : Application() {
+    companion object {
+        lateinit var instance: AlarmApplication
+            private set
+        val isInitialized: Boolean get() = ::instance.isInitialized
+    }
+
     val database by lazy { AppDatabase.getDatabase(this) }
     val repository by lazy { AlarmRepository(database.alarmDao()) }
     val worldClockRepository by lazy { WorldClockRepository(database.zoneDao()) }
@@ -15,6 +21,7 @@ class AlarmApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         AlarmAudioService.initSilentAlarmChannels(this)
     }
 }

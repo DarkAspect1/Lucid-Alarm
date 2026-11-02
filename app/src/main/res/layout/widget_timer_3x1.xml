@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget_frosted_dark"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="14dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="8dp">
+
+    <ImageView
+        android:id="@+id/timer_ring_image"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:contentDescription="@string/widget_timer_title"
+        android:scaleType="fitCenter" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
+
+        <Chronometer
+            android:id="@+id/timer_chronometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:countDown="true"
+            android:fontFeatureSettings="tnum"
+            android:textColor="#FFFFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/timer_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFeatureSettings="tnum"
+            android:textColor="#FFFFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/timer_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#FFE2E8F0"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/timer_controls_row"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/timer_reset_btn"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/action_reset"
+            android:scaleType="fitCenter" />
+
+        <ImageView
+            android:id="@+id/timer_play_pause_btn"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:contentDescription="@string/action_pause"
+            android:scaleType="fitCenter" />
+    </LinearLayout>
+</LinearLayout>

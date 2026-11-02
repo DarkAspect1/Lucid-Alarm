@@ -53,6 +53,17 @@ class TimerRepository(private val timerDao: TimerDao) {
             timerDao.updateTimerState(id, remainingMillis, endTimestamp, isRunning, isPaused)
         }
 
+    suspend fun updateTimerDurationAndState(
+        id: Long,
+        durationMillis: Long,
+        remainingMillis: Long,
+        endTimestamp: Long,
+        isRunning: Boolean,
+        isPaused: Boolean
+    ) = withContext(Dispatchers.IO) {
+        timerDao.updateTimerDurationAndState(id, durationMillis, remainingMillis, endTimestamp, isRunning, isPaused)
+    }
+
     suspend fun softDelete(ids: List<Long>, deletedAt: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
         timerDao.softDelete(ids, deletedAt)
     }

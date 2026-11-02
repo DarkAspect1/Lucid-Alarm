@@ -125,7 +125,7 @@ import com.lucid.alarm.ui.components.SelectionBarContainer
 import com.lucid.alarm.ui.components.SelectionCheckbox
 import com.lucid.alarm.ui.components.SelectionIconButton
 import com.lucid.alarm.ui.components.edgeFadeMask
-import com.lucid.alarm.ui.theme.onColorFor
+import com.lucid.alarm.ui.theme.onAccentFabIconColor
 import com.lucid.alarm.ui.viewmodel.TimerViewModel
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -522,7 +522,7 @@ fun MultiTimerScreen(
                 SmallFloatingActionButton(
                     onClick = { showAddSheet = true },
                     containerColor = accent,
-                    contentColor = onColorFor(accent),
+                    contentColor = onAccentFabIconColor(accent),
                     shape = CircleShape,
                     modifier = Modifier.size(48.dp)
                 ) {

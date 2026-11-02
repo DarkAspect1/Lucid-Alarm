@@ -8,7 +8,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -475,7 +474,6 @@ fun InteractiveColorPickerRow(
                     .size(44.dp)
                     .clip(CircleShape)
                     .background(color)
-                    .border(2.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
                     .pointerInput(active.size, index) {
                         detectTapGestures(
                             onTap = { editingIndex = index },
@@ -493,7 +491,7 @@ fun InteractiveColorPickerRow(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .border(2.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                     .clickable { addingNew = true },
                 contentAlignment = Alignment.Center
             ) {

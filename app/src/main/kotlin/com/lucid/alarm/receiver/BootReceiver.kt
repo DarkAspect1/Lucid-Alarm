@@ -9,6 +9,7 @@ import android.os.UserManager
 import android.util.Log
 import com.lucid.alarm.AlarmApplication
 import com.lucid.alarm.data.prefs.SettingsDataStore
+import com.lucid.alarm.widget.WidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -68,6 +69,7 @@ class BootReceiver : BroadcastReceiver() {
                             Log.e("BootReceiver", "Unable to reschedule alarm ${alarm.id} for $action", e)
                         }
                 }
+                WidgetUpdater.updateAllWidgets(context.applicationContext)
             } finally {
                 pendingResult.finish()
                 if (wakeLock.isHeld) {

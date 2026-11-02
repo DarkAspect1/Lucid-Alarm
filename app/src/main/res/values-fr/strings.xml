@@ -120,7 +120,7 @@
     <string name="snooze_x_mins">Répéter de %1$d min</string>
     <string name="decrease_snooze">Réduire la répétition</string>
     <string name="increase_snooze">Augmenter la répétition</string>
-    <string name="clock_settings">Paramètres de l\'horloge</string>
+    <string name="clock_settings">Paramètres</string>
     <string name="theme_mode">Mode du thème</string>
     <string name="theme_system">Système</string>
     <string name="theme_dark">Sombre</string>
@@ -205,10 +205,10 @@
     <string name="font_custom_file">Fichier de police personnalisé</string>
     <string name="setting_alarm_appearance">Apparence de l\'alarme</string>
     <string name="desc_alarm_appearance">Personnaliser la disposition, police de l\'horloge, taille et couleurs</string>
-    <string name="section_audio_volume">Audio et Politique de volume</string>
+    <string name="section_audio_volume">Paramètres de l\'alarme</string>
     <string name="setting_vibrate_alerts">Vibration des alarmes</string>
     <string name="desc_vibrate_alerts">Faire vibrer l\'appareil pendant les alertes</string>
-    <string name="setting_volume_policy">Politique de volume</string>
+    <string name="setting_volume_policy">Volume de l\'alarme</string>
     <string name="volume_policy_unified">Unifié</string>
     <string name="volume_policy_per_alarm">Par alarme</string>
     <string name="volume_policy_per_timer">Par minuteur</string>
@@ -219,7 +219,7 @@
     <string name="vibration_policy_per_timer">Par minuteur</string>
     <string name="desc_vibration_per_alarm">La vibration est configurée séparément pour chaque alarme.</string>
     <string name="desc_vibration_per_timer">La vibration est configurée séparément pour chaque minuteur.</string>
-    <string name="setting_timer_volume_policy">Politique de volume du minuteur</string>
+    <string name="setting_timer_volume_policy">Volume du minuteur</string>
     <string name="setting_timer_unified_volume">Volume unifié du minuteur</string>
     <string name="timer_volume">Volume du minuteur</string>
     <string name="setting_unified_volume">Volume unifié des alarmes</string>
@@ -233,7 +233,7 @@
     <string name="awake_check_title">Vérification du réveil</string>
     <string name="desc_awake_check">Confirmer que vous êtes réveillé après désactivation</string>
     <string name="awake_check_delay_min">%1$d min</string>
-    <string name="section_timer_stopwatch">Minuteur et Chronomètre</string>
+    <string name="section_timer_stopwatch">Paramètres du minuteur</string>
     <string name="desc_timer_vibration">Vibrer à la fin du minuteur</string>
     <string name="section_data_storage">Données et Stockage</string>
     <string name="setting_backup_restore">Sauvegarde et restauration</string>
@@ -411,4 +411,20 @@
     <string name="dialog_delete_all_timers_msg">%1$d minuteurs seront définitivement supprimés.</string>
     <string name="multi_timer">Minuteurs multiples</string>
     <string name="timer_header_time_left">Temps restant</string>
+    <string name="widget_next_alarm_title">Prochaine alarme</string>
+    <string name="widget_next_alarm_desc">Alarmes</string>
+    <string name="widget_timer_title">Minuteur</string>
+    <string name="widget_timer_desc">Minuteur</string>
+    <string name="widget_stopwatch_title">Chronomètre</string>
+    <string name="widget_stopwatch_desc">Chronomètre</string>
+    <string name="widget_world_clock_title">Horloge mondiale</string>
+    <string name="widget_world_clock_desc">Horloge mondiale</string>
+    <string name="widget_no_alarms">Aucune alarme active</string>
+    <string name="widget_no_other_alarms">Aucune autre alarme</string>
+    <string name="widget_no_timers">Aucun minuteur en cours</string>
+    <string name="widget_no_laps">Aucun tour enregistré</string>
+    <string name="widget_lap_prefix">Tour %1$d</string>
+    <string name="widget_action_lap">Tour</string>
+    <string name="widget_rings_in">Sonne dans %1$s</string>
+    <string name="widget_timer_preset_min">%1$dm</string>
 </resources>

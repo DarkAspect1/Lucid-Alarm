@@ -224,7 +224,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 val serviceIntent = Intent(context, AlarmAudioService::class.java).apply {
                     action = AlarmAudioService.ACTION_START_ALARM
                     putExtra(EXTRA_ALARM_ID, alarmId)
-                    putExtra(EXTRA_ALARM_LABEL, alarm?.label.orEmpty().ifBlank { "Are you awake?" })
+                    putExtra(EXTRA_ALARM_LABEL, alarm?.label.orEmpty())
                     putExtra(EXTRA_ALARM_HOUR, alarm?.hour ?: -1)
                     putExtra(EXTRA_ALARM_MINUTE, alarm?.minute ?: -1)
                     putExtra(EXTRA_ALARM_VOLUME, 1.0f)
@@ -250,7 +250,7 @@ class AlarmReceiver : BroadcastReceiver() {
                         Intent.FLAG_ACTIVITY_SINGLE_TOP or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP
                     putExtra(EXTRA_ALARM_ID, alarmId)
-                    putExtra(EXTRA_ALARM_LABEL, alarm?.label.orEmpty().ifBlank { "Are you awake?" })
+                    putExtra(EXTRA_ALARM_LABEL, alarm?.label.orEmpty())
                     putExtra(EXTRA_ALARM_HOUR, alarm?.hour ?: -1)
                     putExtra(EXTRA_ALARM_MINUTE, alarm?.minute ?: -1)
                     putExtra(EXTRA_FORCE_MAX_VOLUME, true)

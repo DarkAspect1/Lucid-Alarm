@@ -465,7 +465,12 @@ class TimerService : Service() {
             cancelTimerAlarm()
             return
         }
-        val newLeft = (state.secondsLeft + deltaSeconds).coerceAtLeast(0)
+        val currentSecondsLeft = if (state.running) {
+            ((state.endRealtime - SystemClock.elapsedRealtime()).coerceAtLeast(0L) + 999L) / 1000L
+        } else {
+            state.secondsLeft.toLong()
+        }
+        val newLeft = (currentSecondsLeft.toInt() + deltaSeconds).coerceAtLeast(0)
         val newTotal = (state.totalSeconds + deltaSeconds).coerceAtLeast(0)
         val end = if (state.running) {
             SystemClock.elapsedRealtime() + newLeft * 1000L
@@ -477,6 +482,7 @@ class TimerService : Service() {
         } else {
             0L
         }
+        lastPausedPostedTimerIds.remove(state.timerId)
         TimerStopwatchManager.setTimer(
             running = state.running,
             totalSeconds = newTotal,
@@ -486,11 +492,25 @@ class TimerService : Service() {
             label = state.label,
             endTimestamp = endTs
         )
+        if (state.timerId != 0L) {
+            scope.launch(Dispatchers.IO) {
+                repository.updateTimerDurationAndState(
+                    id = state.timerId,
+                    durationMillis = newTotal * 1000L,
+                    remainingMillis = newLeft * 1000L,
+                    endTimestamp = endTs,
+                    isRunning = state.running,
+                    isPaused = !state.running
+                )
+            }
+        }
         if (state.running) {
             scheduleTimerAlarm(end)
         } else {
             cancelTimerAlarm()
         }
+        promoteToForeground(buildNotification(preferences))
+        startLoops()
     }
 
     private fun extendExpiredTimer(deltaSeconds: Int) {

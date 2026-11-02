@@ -1,6 +1,8 @@
 package com.lucid.alarm.service
 
 import android.os.SystemClock
+import com.lucid.alarm.AlarmApplication
+import com.lucid.alarm.widget.WidgetUpdater
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,6 +85,7 @@ object TimerStopwatchManager {
                 timerId = timerId
             )
         }
+        notifyTimerWidgets()
     }
 
     fun clearTimerRinging(timerId: Long) {
@@ -90,6 +93,7 @@ object TimerStopwatchManager {
         if (_timer.value.timerId == timerId) {
             _timer.value = _timer.value.copy(ringing = false, finished = false)
         }
+        notifyTimerWidgets()
     }
 
     fun clearAllRinging() {
@@ -97,6 +101,7 @@ object TimerStopwatchManager {
         if (_timer.value.ringing) {
             _timer.value = _timer.value.copy(ringing = false, finished = false)
         }
+        notifyTimerWidgets()
     }
 
     fun updateActiveTimersLive(map: Map<Long, ActiveTimerLiveState>) {
@@ -125,6 +130,7 @@ object TimerStopwatchManager {
             label = label,
             endTimestamp = endTimestamp
         )
+        notifyTimerWidgets()
     }
 
     fun markTimerRinging() {
@@ -137,6 +143,7 @@ object TimerStopwatchManager {
             ringing = true,
             endTimestamp = 0L
         )
+        notifyTimerWidgets()
     }
 
     fun updateTimerSecondsLeft(secondsLeft: Int) {
@@ -156,11 +163,13 @@ object TimerStopwatchManager {
             elapsedMillis = elapsedMillis,
             laps = laps
         )
+        notifyStopwatchWidgets()
     }
 
     fun addStopwatchLap(lap: Long) {
         val current = _stopwatch.value
         _stopwatch.value = current.copy(laps = listOf(lap) + current.laps)
+        notifyStopwatchWidgets()
     }
 
     fun resetAll() {
@@ -168,5 +177,23 @@ object TimerStopwatchManager {
         _stopwatch.value = StopwatchSessionState()
         _ringingTimerIds.value = emptySet()
         _activeTimersLive.value = emptyMap()
+        notifyTimerWidgets()
+        notifyStopwatchWidgets()
+    }
+
+    private fun notifyTimerWidgets() {
+        runCatching {
+            if (AlarmApplication.isInitialized) {
+                WidgetUpdater.updateTimerWidgets(AlarmApplication.instance)
+            }
+        }
+    }
+
+    private fun notifyStopwatchWidgets() {
+        runCatching {
+            if (AlarmApplication.isInitialized) {
+                WidgetUpdater.updateStopwatchWidgets(AlarmApplication.instance)
+            }
+        }
     }
 }

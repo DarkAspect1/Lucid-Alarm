@@ -120,7 +120,7 @@
     <string name="snooze_x_mins">غفوة %1$d دقائق</string>
     <string name="decrease_snooze">تقليل مدة الغفوة</string>
     <string name="increase_snooze">زيادة مدة الغفوة</string>
-    <string name="clock_settings">إعدادات الساعة</string>
+    <string name="clock_settings">الإعدادات</string>
     <string name="theme_mode">وضع المظهر</string>
     <string name="theme_system">النظام</string>
     <string name="theme_dark">داكن</string>
@@ -205,10 +205,10 @@
     <string name="font_custom_file">ملف خط مخصص</string>
     <string name="setting_alarm_appearance">مظهر المنبه</string>
     <string name="desc_alarm_appearance">تخصيص التخطيط وخط الساعة والحجم والألوان</string>
-    <string name="section_audio_volume">سياسة الصوت ومستوى الصوت</string>
+    <string name="section_audio_volume">إعدادات المنبه</string>
     <string name="setting_vibrate_alerts">اهتزاز المنبهات</string>
     <string name="desc_vibrate_alerts">اهتزاز الجهاز أثناء صدور التنبيهات</string>
-    <string name="setting_volume_policy">سياسة مستوى الصوت</string>
+    <string name="setting_volume_policy">مستوى صوت المنبه</string>
     <string name="volume_policy_unified">موحد</string>
     <string name="volume_policy_per_alarm">لكل منبه على حدة</string>
     <string name="volume_policy_per_timer">لكل مؤقت على حدة</string>
@@ -219,7 +219,7 @@
     <string name="vibration_policy_per_timer">لكل مؤقت</string>
     <string name="desc_vibration_per_alarm">يتم ضبط الاهتزاز بشكل منفصل لكل منبه.</string>
     <string name="desc_vibration_per_timer">يتم ضبط الاهتزاز بشكل منفصل لكل مؤقت.</string>
-    <string name="setting_timer_volume_policy">سياسة مستوى صوت المؤقت</string>
+    <string name="setting_timer_volume_policy">مستوى صوت المؤقت</string>
     <string name="setting_timer_unified_volume">مستوى صوت المؤقت الموحد</string>
     <string name="timer_volume">مستوى صوت المؤقت</string>
     <string name="setting_unified_volume">مستوى صوت المنبه الموحد</string>
@@ -233,7 +233,7 @@
     <string name="awake_check_title">فحص الاستيقاظ</string>
     <string name="desc_awake_check">تأكيد استيقاظك بعد إيقاف المنبه</string>
     <string name="awake_check_delay_min">%1$d دقيقة</string>
-    <string name="section_timer_stopwatch">المؤقت وساعة الإيقاف</string>
+    <string name="section_timer_stopwatch">إعدادات المؤقت</string>
     <string name="desc_timer_vibration">الاهتزاز عند انتهاء المؤقت</string>
     <string name="section_data_storage">البيانات والتخزين</string>
     <string name="setting_backup_restore">النسخ الاحتياطي والاستعادة</string>
@@ -411,4 +411,20 @@
     <string name="dialog_delete_all_timers_msg">سيتم حذف %1$d مؤقتات نهائياً.</string>
     <string name="multi_timer">مؤقتات متعددة</string>
     <string name="timer_header_time_left">الوقت المتبقي</string>
+    <string name="widget_next_alarm_title">المنبه القادم</string>
+    <string name="widget_next_alarm_desc">المنبهات</string>
+    <string name="widget_timer_title">المؤقت</string>
+    <string name="widget_timer_desc">المؤقت</string>
+    <string name="widget_stopwatch_title">ساعة الإيقاف</string>
+    <string name="widget_stopwatch_desc">ساعة الإيقاف</string>
+    <string name="widget_world_clock_title">ساعة العالم</string>
+    <string name="widget_world_clock_desc">ساعة العالم</string>
+    <string name="widget_no_alarms">لا توجد منبهات نشطة</string>
+    <string name="widget_no_other_alarms">لا توجد منبهات أخرى</string>
+    <string name="widget_no_timers">لا يوجد مؤقت قيد التشغيل</string>
+    <string name="widget_no_laps">لا توجد دورات مسجلة</string>
+    <string name="widget_lap_prefix">دورة %1$d</string>
+    <string name="widget_action_lap">دورة</string>
+    <string name="widget_rings_in">يرن خلال %1$s</string>
+    <string name="widget_timer_preset_min">%1$dد</string>
 </resources>

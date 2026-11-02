@@ -131,7 +131,7 @@ import com.lucid.alarm.ui.components.SelectionChipShape
 import com.lucid.alarm.ui.components.SelectionBarContainer
 import com.lucid.alarm.ui.components.SelectionIconButton
 import com.lucid.alarm.ui.components.selectedChipColors
-import com.lucid.alarm.ui.theme.onColorFor
+import com.lucid.alarm.ui.theme.onAccentFabIconColor
 import com.lucid.alarm.ui.viewmodel.AlarmViewModel
 import com.lucid.alarm.util.TimeLeftFormatter
 import java.text.SimpleDateFormat
@@ -747,7 +747,7 @@ fun MainAlarmsScreen(
                     showEditSheet = true
                 },
                 containerColor = accentColor,
-                contentColor = onColorFor(accentColor),
+                contentColor = onAccentFabIconColor(accentColor),
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp)
             ) {

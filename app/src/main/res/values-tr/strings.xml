@@ -120,7 +120,7 @@
     <string name="snooze_x_mins">%1$d dk ertele</string>
     <string name="decrease_snooze">Ertelemeyi azalt</string>
     <string name="increase_snooze">Ertelemeyi artır</string>
-    <string name="clock_settings">Saat ayarları</string>
+    <string name="clock_settings">Ayarlar</string>
     <string name="theme_mode">Tema modu</string>
     <string name="theme_system">Sistem</string>
     <string name="theme_dark">Koyu</string>
@@ -205,10 +205,10 @@
     <string name="font_custom_file">Özel Yazı Tipi Dosyası</string>
     <string name="setting_alarm_appearance">Alarm görünümü</string>
     <string name="desc_alarm_appearance">Düzeni, saat yazı tipini, boyutu ve renkleri özelleştirin</string>
-    <string name="section_audio_volume">Ses ve Ses Düzeyi Politikası</string>
+    <string name="section_audio_volume">Alarm ayarları</string>
     <string name="setting_vibrate_alerts">Alarm Titreşimi</string>
     <string name="desc_vibrate_alerts">Uyarılar çalarken cihazı titret</string>
-    <string name="setting_volume_policy">Ses düzeyi politikası</string>
+    <string name="setting_volume_policy">Alarm ses düzeyi</string>
     <string name="volume_policy_unified">Birleşik</string>
     <string name="volume_policy_per_alarm">Alarm başına</string>
     <string name="volume_policy_per_timer">Zamanlayıcı başına</string>
@@ -219,7 +219,7 @@
     <string name="vibration_policy_per_timer">Zamanlayıcı başına</string>
     <string name="desc_vibration_per_alarm">Titreşim her alarm için ayrı ayrı yapılandırılır.</string>
     <string name="desc_vibration_per_timer">Titreşim her zamanlayıcı için ayrı ayrı yapılandırılır.</string>
-    <string name="setting_timer_volume_policy">Zamanlayıcı ses düzeyi politikası</string>
+    <string name="setting_timer_volume_policy">Zamanlayıcı ses düzeyi</string>
     <string name="setting_timer_unified_volume">Birleşik zamanlayıcı sesi</string>
     <string name="timer_volume">Zamanlayıcı sesi</string>
     <string name="setting_unified_volume">Birleşik alarm sesi</string>
@@ -233,7 +233,7 @@
     <string name="awake_check_title">Uyanıklık Kontrolü</string>
     <string name="desc_awake_check">Kapatıldıktan sonra uyandığınızı onaylayın</string>
     <string name="awake_check_delay_min">%1$d dk</string>
-    <string name="section_timer_stopwatch">Zamanlayıcı ve Kronometre</string>
+    <string name="section_timer_stopwatch">Zamanlayıcı ayarları</string>
     <string name="desc_timer_vibration">Zamanlayıcı bittiğinde titret</string>
     <string name="section_data_storage">Veri ve Depolama</string>
     <string name="setting_backup_restore">Yedekleme ve geri yükleme</string>
@@ -411,4 +411,20 @@
     <string name="dialog_delete_all_timers_msg">%1$d zamanlayıcı kalıcı olarak silinecek.</string>
     <string name="multi_timer">Çoklu zamanlayıcı</string>
     <string name="timer_header_time_left">Kalan süre</string>
+    <string name="widget_next_alarm_title">Sonraki Alarm</string>
+    <string name="widget_next_alarm_desc">Alarmlar</string>
+    <string name="widget_timer_title">Zamanlayıcı</string>
+    <string name="widget_timer_desc">Zamanlayıcı</string>
+    <string name="widget_stopwatch_title">Kronometre</string>
+    <string name="widget_stopwatch_desc">Kronometre</string>
+    <string name="widget_world_clock_title">Dünya Saati</string>
+    <string name="widget_world_clock_desc">Dünya Saati</string>
+    <string name="widget_no_alarms">Aktif alarm yok</string>
+    <string name="widget_no_other_alarms">Başka alarm yok</string>
+    <string name="widget_no_timers">Çalışan zamanlayıcı yok</string>
+    <string name="widget_no_laps">Kayıtlı tur yok</string>
+    <string name="widget_lap_prefix">Tur %1$d</string>
+    <string name="widget_action_lap">Tur</string>
+    <string name="widget_rings_in">%1$s sonra çalacak</string>
+    <string name="widget_timer_preset_min">%1$ddk</string>
 </resources>

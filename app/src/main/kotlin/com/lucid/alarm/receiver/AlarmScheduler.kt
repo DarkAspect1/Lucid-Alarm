@@ -12,6 +12,7 @@ import android.util.Log
 import com.lucid.alarm.MainActivity
 import com.lucid.alarm.data.AlarmEntity
 import com.lucid.alarm.service.AlarmAudioService
+import com.lucid.alarm.widget.WidgetUpdater
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -110,6 +111,7 @@ class AlarmScheduler(private val context: Context) {
             } else {
                 cancelUpcoming(alarm.id)
             }
+            WidgetUpdater.updateNextAlarmWidgets(context)
         }.onFailure { e ->
             Log.e(TAG, "Unable to schedule alarm ${alarm.id}", e)
         }
@@ -149,6 +151,7 @@ class AlarmScheduler(private val context: Context) {
             pendingIntent = buildSnoozePendingIntent(alarm, snoozeCount),
             triggerAtMillis = triggerAtMillis
         )
+        WidgetUpdater.updateNextAlarmWidgets(context)
     }
 
     fun scheduleAwakeCheckStage1(alarmId: Int, triggerAtMillis: Long) {
@@ -236,6 +239,7 @@ class AlarmScheduler(private val context: Context) {
         cancelPendingIntent(alarmId * 10 + OFFSET_RING_SHOW)
         cancelUpcoming(alarmId)
         cancelAllAuxiliaryTimers(alarmId)
+        WidgetUpdater.updateNextAlarmWidgets(context)
     }
 
     fun cancelAllAuxiliaryTimers(alarmId: Int) {

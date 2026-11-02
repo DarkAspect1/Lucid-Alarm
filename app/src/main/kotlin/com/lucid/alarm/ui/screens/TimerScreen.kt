@@ -175,8 +175,12 @@ fun TimerScreen(
 
     val showDialView = counting && !userDismissedDial
 
-    BackHandler(enabled = showDialView && timerState.timerId != 0L) {
-        onOpenMultiTimer()
+    BackHandler(enabled = showDialView) {
+        if (timerState.timerId != 0L) {
+            onOpenMultiTimer()
+        } else {
+            userDismissedDial = true
+        }
     }
 
     val neutralColor = if (isLight) Color(0xFF9CA3AF) else Color(0xFF6B7280)
@@ -342,66 +346,103 @@ fun TimerScreen(
                         }
                     }
 
-                    Row(
+                    Column(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                            .padding(start = 36.dp, end = 36.dp, bottom = 148.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(bottom = 148.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (isRinging) {
-                            RoundActionButton(
-                                label = stringResource(R.string.action_dismiss),
-                                color = redColor,
-                                isLight = isLight
+                        if (!isRinging) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                             ) {
-                                TimerService.dismiss(context)
-                                userDismissedDial = false
-                            }
-                            RoundActionButton(
-                                label = stringResource(R.string.timer_add_1_min),
-                                color = accent,
-                                isLight = isLight
-                            ) { TimerService.addOneMinute(context) }
-                        } else {
-                            RoundActionButton(
-                                label = stringResource(R.string.action_reset),
-                                color = neutralColor,
-                                isLight = isLight
-                            ) {
-                                if (timerState.timerId != 0L) {
-                                    val currentCard = activeTimers.firstOrNull { it.id == timerState.timerId }
-                                    if (currentCard != null) {
-                                        timerViewModel.resetTimerCard(currentCard)
+                                listOf(
+                                    "00:10:00" to 600,
+                                    "00:15:00" to 900,
+                                    "00:30:00" to 1800
+                                ).forEach { (label, total) ->
+                                    Box(
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .clip(RoundedCornerShape(50))
+                                            .background(
+                                                if (isLight) Color(0xFFF3F4F6) else accent.copy(alpha = 0.16f)
+                                            )
+                                            .clickable {
+                                                TimerService.adjust(context, total)
+                                            }
+                                            .padding(horizontal = 14.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(label, color = textColor, fontSize = 13.sp)
                                     }
-                                    TimerService.stopMultiTimer(context, timerState.timerId)
-                                    val remainingRunning = activeTimers.filter { it.isRunning && it.id != timerState.timerId }
-                                    if (remainingRunning.isNotEmpty()) {
-                                        val next = remainingRunning.first()
-                                        val rem = (next.endTimestamp - liveNowMillis).coerceAtLeast(0L)
-                                        val sec = ((rem + 999L) / 1000L).toInt()
-                                        val tot = (next.durationMillis / 1000L).toInt()
-                                        TimerService.focusTimer(context, next.id, next.label, sec, tot)
-                                    } else {
-                                        userDismissedDial = false
-                                    }
-                                } else {
-                                    TimerService.cancel(context)
-                                    userDismissedDial = false
                                 }
                             }
-                            val startLabel = if (isRunning) {
-                                stringResource(R.string.action_pause)
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 36.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isRinging) {
+                                RoundActionButton(
+                                    label = stringResource(R.string.action_dismiss),
+                                    color = redColor,
+                                    isLight = isLight
+                                ) {
+                                    TimerService.dismiss(context)
+                                    userDismissedDial = false
+                                }
+                                RoundActionButton(
+                                    label = stringResource(R.string.timer_add_1_min),
+                                    color = accent,
+                                    isLight = isLight
+                                ) { TimerService.addOneMinute(context) }
                             } else {
-                                stringResource(R.string.action_resume)
-                            }
-                            RoundActionButton(
-                                label = startLabel,
-                                color = accent,
-                                isLight = isLight
-                            ) {
-                                if (isRunning) TimerService.pause(context) else TimerService.resume(context)
+                                RoundActionButton(
+                                    label = stringResource(R.string.action_reset),
+                                    color = neutralColor,
+                                    isLight = isLight
+                                ) {
+                                    if (timerState.timerId != 0L) {
+                                        val currentCard = activeTimers.firstOrNull { it.id == timerState.timerId }
+                                        if (currentCard != null) {
+                                            timerViewModel.resetTimerCard(currentCard)
+                                        }
+                                        TimerService.stopMultiTimer(context, timerState.timerId)
+                                        val remainingRunning = activeTimers.filter { it.isRunning && it.id != timerState.timerId }
+                                        if (remainingRunning.isNotEmpty()) {
+                                            val next = remainingRunning.first()
+                                            val rem = (next.endTimestamp - liveNowMillis).coerceAtLeast(0L)
+                                            val sec = ((rem + 999L) / 1000L).toInt()
+                                            val tot = (next.durationMillis / 1000L).toInt()
+                                            TimerService.focusTimer(context, next.id, next.label, sec, tot)
+                                        } else {
+                                            userDismissedDial = false
+                                        }
+                                    } else {
+                                        TimerService.cancel(context)
+                                        userDismissedDial = false
+                                    }
+                                }
+                                val startLabel = if (isRunning) {
+                                    stringResource(R.string.action_pause)
+                                } else {
+                                    stringResource(R.string.action_resume)
+                                }
+                                RoundActionButton(
+                                    label = startLabel,
+                                    color = accent,
+                                    isLight = isLight
+                                ) {
+                                    if (isRunning) TimerService.pause(context) else TimerService.resume(context)
+                                }
                             }
                         }
                     }
@@ -467,9 +508,14 @@ fun TimerScreen(
                                         if (isLight) Color(0xFFF3F4F6) else accent.copy(alpha = 0.16f)
                                     )
                                     .clickable {
-                                        selectedHours = total / 3600
-                                        selectedMinutes = (total % 3600) / 60
-                                        selectedSeconds = total % 60
+                                        if (counting) {
+                                            TimerService.adjust(context, total)
+                                            userDismissedDial = false
+                                        } else {
+                                            selectedHours = total / 3600
+                                            selectedMinutes = (total % 3600) / 60
+                                            selectedSeconds = total % 60
+                                        }
                                     }
                                     .padding(horizontal = 14.dp),
                                 contentAlignment = Alignment.Center

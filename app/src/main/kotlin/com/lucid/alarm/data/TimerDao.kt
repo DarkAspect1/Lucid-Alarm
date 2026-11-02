@@ -58,6 +58,9 @@ interface TimerDao {
     @Query("UPDATE timers SET remainingMillis = :remainingMillis, endTimestamp = :endTimestamp, isRunning = :isRunning, isPaused = :isPaused WHERE id = :id")
     fun updateTimerState(id: Long, remainingMillis: Long, endTimestamp: Long, isRunning: Boolean, isPaused: Boolean)
 
+    @Query("UPDATE timers SET durationMillis = :durationMillis, remainingMillis = :remainingMillis, endTimestamp = :endTimestamp, isRunning = :isRunning, isPaused = :isPaused WHERE id = :id")
+    fun updateTimerDurationAndState(id: Long, durationMillis: Long, remainingMillis: Long, endTimestamp: Long, isRunning: Boolean, isPaused: Boolean)
+
     @Query("UPDATE timers SET orderIndex = :orderIndex WHERE id = :id")
     fun updateOrderIndex(id: Long, orderIndex: Int)
 }

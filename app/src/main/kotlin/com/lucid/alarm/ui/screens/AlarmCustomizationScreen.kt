@@ -1096,6 +1096,24 @@ fun AlarmCustomizationScreen(
                     onDirection = { clockGradientDir = it }
                 )
 
+                Text(
+                    text = stringResource(R.string.appearance_clock_size),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = stringResource(R.string.appearance_clock_size_desc_per_alarm),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Slider(
+                    value = clockFontSize,
+                    onValueChange = { clockFontSize = it },
+                    onValueChangeFinished = {
+                        scope.launch { settingsDataStore.setClockFontSize(clockFontSize) }
+                    },
+                    valueRange = SettingsDataStore.CLOCK_FONT_MIN..SettingsDataStore.CLOCK_FONT_MAX
+                )
+
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 4.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)

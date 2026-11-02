@@ -13,10 +13,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.AnimationState
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -39,6 +36,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -79,7 +77,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,7 +87,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -353,39 +349,10 @@ fun SettingsScreen(
     val cardShape = RoundedCornerShape(26.dp)
     val listState = rememberLazyListState()
 
-    var isScrollingUp by remember { mutableStateOf(false) }
-    var prevIndex by remember { mutableIntStateOf(listState.firstVisibleItemIndex) }
-    var prevOffset by remember { mutableIntStateOf(listState.firstVisibleItemScrollOffset) }
-
-    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
-        val curIndex = listState.firstVisibleItemIndex
-        val curOffset = listState.firstVisibleItemScrollOffset
-        if (curIndex < prevIndex || (curIndex == prevIndex && curOffset < prevOffset)) {
-            isScrollingUp = true
-        } else if (curIndex > prevIndex || (curIndex == prevIndex && curOffset > prevOffset)) {
-            isScrollingUp = false
-        }
-        prevIndex = curIndex
-        prevOffset = curOffset
-    }
-
     val showScrollToTop by remember {
         derivedStateOf {
-            val pastThreshold = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 220
-            pastThreshold && (!listState.isScrollInProgress || isScrollingUp)
+            !listState.isScrollInProgress && (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 220)
         }
-    }
-
-    val itemHeights = remember { mutableMapOf<Int, Int>() }
-    val spacingPx = with(LocalDensity.current) { 16.dp.roundToPx() }
-
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-            .collect { visibleItems ->
-                for (item in visibleItems) {
-                    itemHeights[item.index] = item.size
-                }
-            }
     }
 
     val showFloatingBack by remember {
@@ -575,6 +542,7 @@ fun SettingsScreen(
                                         settingsDataStore.setTimeFormat(
                                             if (is24) TimeFormat.TWENTY_FOUR_HOUR else TimeFormat.TWELVE_HOUR
                                         )
+                                        com.lucid.alarm.widget.WidgetUpdater.updateAllWidgets(context.applicationContext)
                                     }
                                 }
                             )
@@ -606,7 +574,10 @@ fun SettingsScreen(
                             Switch(
                                 checked = removeLeadingZero,
                                 onCheckedChange = { checked ->
-                                    scope.launch { settingsDataStore.setRemoveLeadingZero(checked) }
+                                    scope.launch {
+                                        settingsDataStore.setRemoveLeadingZero(checked)
+                                        com.lucid.alarm.widget.WidgetUpdater.updateAllWidgets(context.applicationContext)
+                                    }
                                 }
                             )
                         }
@@ -959,6 +930,7 @@ fun SettingsScreen(
                                                                 localeManager?.applicationLocales = android.os.LocaleList.forLanguageTags(code)
                                                             }
                                                         }
+                                                        com.lucid.alarm.widget.WidgetUpdater.updateAllWidgets(context.applicationContext)
                                                         delay(50)
                                                         context.findActivity()?.recreate()
                                                     }
@@ -1184,10 +1156,14 @@ fun SettingsScreen(
                                     maxLines = 1
                                 )
                             }
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(50))
+                                    .background(if (isLight) Color(0xFFF3F4F6) else Color(0xFF282830))
+                                    .padding(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 VolumePolicy.entries.forEach { policy ->
                                     val isSelected = volumePolicy == policy
@@ -1195,7 +1171,7 @@ fun SettingsScreen(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clip(RoundedCornerShape(50))
-                                            .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                            .background(if (isSelected) accentColor else Color.Transparent)
                                             .clickable {
                                                 scope.launch { settingsDataStore.setVolumePolicy(policy) }
                                             }
@@ -1599,10 +1575,14 @@ fun SettingsScreen(
                                         maxLines = 1
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(10.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(50))
+                                        .background(if (isLight) Color(0xFFF3F4F6) else Color(0xFF282830))
+                                        .padding(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     TimerVolumePolicy.entries.forEach { policy ->
                                         val isSelected = timerVolumePolicy == policy
@@ -1610,7 +1590,7 @@ fun SettingsScreen(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clip(RoundedCornerShape(50))
-                                                .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                                .background(if (isSelected) accentColor else Color.Transparent)
                                                 .clickable {
                                                     scope.launch { settingsDataStore.setTimerVolumePolicy(policy) }
                                                 }
@@ -2026,40 +2006,15 @@ fun SettingsScreen(
             exit = fadeOut(animationSpec = tween(150)) + scaleOut(animationSpec = tween(150)),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 96.dp)
                 .zIndex(5f)
         ) {
             Surface(
                 onClick = {
                     scope.launch {
                         if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) return@launch
-                        val totalDistance = run {
-                            var dist = listState.firstVisibleItemScrollOffset.toFloat()
-                            val visible = listState.layoutInfo.visibleItemsInfo
-                            val avgHeight = if (visible.isNotEmpty()) visible.map { it.size }.average().toFloat() else 800f
-                            dist + listState.firstVisibleItemIndex * avgHeight + 1000f
-                        }
-                        var prev = 0f
-                        listState.scroll {
-                            AnimationState(0f).animateTo(
-                                targetValue = totalDistance,
-                                sequentialAnimation = false,
-                                animationSpec = tween(
-                                    durationMillis = 350,
-                                    easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
-                                )
-                            ) {
-                                val delta = value - prev
-                                prev = value
-                                scrollBy(-delta)
-                                if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) {
-                                    cancelAnimation()
-                                }
-                            }
-                        }
-                        if (listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0) {
-                            listState.scrollToItem(0, 0)
-                        }
+                        listState.animateScrollToItem(0)
                     }
                 },
                 shape = CircleShape,

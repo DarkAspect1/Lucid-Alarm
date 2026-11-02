@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget_frosted_dark"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="14dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="8dp">
+
+    <LinearLayout
+        android:id="@+id/city_col_1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/city_name_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextClock
+            android:id="@+id/city_clock_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFeatureSettings="tnum"
+            android:format12Hour="h:mm a"
+            android:format24Hour="HH:mm"
+            android:textColor="#FFFFFFFF"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/city_offset_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#FFE2E8F0"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/city_divider"
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_widget_divider_dark"
+        android:contentDescription="@null" />
+
+    <LinearLayout
+        android:id="@+id/city_col_2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/city_name_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextClock
+            android:id="@+id/city_clock_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFeatureSettings="tnum"
+            android:format12Hour="h:mm a"
+            android:format24Hour="HH:mm"
+            android:textColor="#FFFFFFFF"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/city_offset_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#FFE2E8F0"
+            android:textSize="10sp" />
+    </LinearLayout>
+</LinearLayout>
