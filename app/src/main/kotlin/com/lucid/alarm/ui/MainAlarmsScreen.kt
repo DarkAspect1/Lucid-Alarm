@@ -1411,10 +1411,10 @@ private fun UniformChip(
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
-    val chipBg = when {
-        selected -> MaterialTheme.colorScheme.primary
-        isLight -> Color(0x1F000000)
-        else -> MaterialTheme.colorScheme.surfaceVariant
+    val chipBg = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
     Row(
         modifier = modifier
@@ -1784,6 +1784,7 @@ private fun GroupAssignmentDialog(
                                 groupName = group
                             },
                             shape = SelectionChipShape,
+                            border = null,
                             colors = selectedChipColors(),
                             label = { Text(if (group == AlarmEntity.DEFAULT_GROUP) stringResource(R.string.group_general) else group) }
                         )

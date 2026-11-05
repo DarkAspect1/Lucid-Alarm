@@ -14,6 +14,7 @@ object WidgetUpdater {
         updateTimerWidgets(context)
         updateStopwatchWidgets(context)
         updateWorldClockWidgets(context)
+        ClockWidgetUpdater.updateAllClockWidgets(context)
     }
 
     fun updateNextAlarmWidgets(context: Context) {

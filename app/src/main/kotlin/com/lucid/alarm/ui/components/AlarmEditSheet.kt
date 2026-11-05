@@ -407,20 +407,16 @@ fun AlarmEditSheet(
                 )
 
                 Column {
+                    val unselectedDayBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     Text(stringResource(R.string.repeat), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
                         REPEAT_DAYS.forEach { day ->
                             val selected = selectedDays.contains(day.calendarConstant)
-                            val dayBg = when {
-                                selected -> MaterialTheme.colorScheme.primary
-                                isLight -> Color(0x1F000000)
-                                else -> MaterialTheme.colorScheme.surfaceVariant
-                            }
+                            val dayBg = if (selected) MaterialTheme.colorScheme.primary else unselectedDayBg
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -474,8 +470,8 @@ fun AlarmEditSheet(
                                 Box {
                                     Surface(
                                         onClick = { showWeekIntervalMenu = true },
-                                        shape = RoundedCornerShape(14.dp),
-                                        color = if (isLight) Color(0x14000000) else Color(0x26FFFFFF)
+                                        shape = SelectionChipShape,
+                                        color = unselectedDayBg
                                     ) {
                                         Row(
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -546,7 +542,7 @@ fun AlarmEditSheet(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(CircleShape)
-                                        .background(if (isLight) Color(0x0D000000) else Color(0x1AFFFFFF))
+                                        .background(unselectedDayBg)
                                         .padding(3.dp),
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
@@ -618,6 +614,7 @@ fun AlarmEditSheet(
                                      selected = groupName == group,
                                      onClick = { groupName = group },
                                      shape = SelectionChipShape,
+                                     border = null,
                                      colors = selectedChipColors(),
                                      label = { Text(if (group == AlarmEntity.DEFAULT_GROUP) stringResource(R.string.group_general) else group) }
                                  )
@@ -672,6 +669,7 @@ fun AlarmEditSheet(
                                      selected = vibrationPattern == preset.name,
                                      onClick = { vibrationPattern = preset.name },
                                      shape = SelectionChipShape,
+                                     border = null,
                                      colors = selectedChipColors(),
                                      label = {
                                          Text(
@@ -708,6 +706,7 @@ fun AlarmEditSheet(
                                  selected = snoozeMinutes == minutes,
                                  onClick = { snoozeMinutes = minutes },
                                  shape = SelectionChipShape,
+                                 border = null,
                                  colors = selectedChipColors(),
                                  label = {
                                      Text(if (minutes == 0) stringResource(R.string.language_system_default) else stringResource(R.string.min_short_x, minutes))
@@ -729,6 +728,7 @@ fun AlarmEditSheet(
                                  selected = snoozeLimit == limit,
                                  onClick = { snoozeLimit = limit },
                                  shape = SelectionChipShape,
+                                 border = null,
                                  colors = selectedChipColors(),
                                  label = { Text(text) }
                              )
@@ -1010,17 +1010,26 @@ fun AlarmEditSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             focusManager.clearFocus()
                             onDismiss()
                         },
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        elevation = null,
+                        border = null,
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(24.dp)
+                            .height(48.dp)
                     ) {
-                        Text(stringResource(R.string.action_cancel))
+                        Text(
+                            text = stringResource(R.string.action_cancel),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     Button(
                         onClick = {

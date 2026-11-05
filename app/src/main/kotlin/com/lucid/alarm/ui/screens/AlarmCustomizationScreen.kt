@@ -2,6 +2,9 @@ package com.lucid.alarm.ui.screens
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.Typeface
 import com.lucid.alarm.util.findActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -30,7 +33,13 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.res.stringResource
 import com.lucid.alarm.R
 import com.lucid.alarm.ui.localizedLabel
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import com.lucid.alarm.ui.formatHour
+import com.lucid.alarm.ui.formatHourMinute
+import com.lucid.alarm.ui.amPmSuffix
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.size
@@ -55,7 +64,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -493,6 +501,40 @@ fun AlarmCustomizationScreen(
             modifier = Modifier
                 .fillMaxSize()
         ) {
+            val density = LocalDensity.current.density
+            val exactClockSize = remember(
+                nowCalendar, clockStyle, clockFontSize, clockScale, is24Hour,
+                removeLeadingZero, showAmPm, clockFont, clockCustomFontPath, density
+            ) {
+                measureExactClockBounds(
+                    context = context,
+                    calendar = nowCalendar,
+                    style = clockStyle,
+                    fontSizeSp = clockFontSize,
+                    scale = clockScale,
+                    is24Hour = is24Hour,
+                    removeLeadingZero = removeLeadingZero,
+                    showAmPm = showAmPm,
+                    clockFont = clockFont,
+                    customFontPath = clockCustomFontPath,
+                    density = density
+                )
+            }
+
+            val exactDateSize = remember(
+                nowCalendar, dateFont, clockFont, clockCustomFontPath,
+                dateCustomFontPath, dateScaleLocal, density
+            ) {
+                measureExactDateBounds(
+                    calendar = nowCalendar,
+                    dateFont = dateFont,
+                    clockFont = clockFont,
+                    clockCustomFontPath = clockCustomFontPath,
+                    dateCustomFontPath = dateCustomFontPath,
+                    scale = dateScaleLocal,
+                    density = density
+                )
+            }
 
             Box(
                 modifier = Modifier
@@ -512,7 +554,6 @@ fun AlarmCustomizationScreen(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    val handleRadius = (22f * clockScale).dp
                     AlarmClockBox(
                         calendar = nowCalendar,
                         style = clockStyle,
@@ -564,33 +605,43 @@ fun AlarmCustomizationScreen(
                             }
                     )
 
+                    val pad = 4f * density
+                    val clkHandleW = exactClockSize.width + pad * 2f
+                    val clkHandleH = exactClockSize.height + pad * 2f
                     Box(
                         modifier = Modifier
-                            .align(AbsoluteAlignment.BottomRight)
-                            .size(handleRadius * 2f)
-                            .pointerInput(Unit) {
-                                detectDragGestures(
-                                    onDragStart = { resizeStart() },
-                                    onDragEnd = { resizeEnd() },
-                                    onDragCancel = { resizeEnd() }
-                                ) { change, dragAmount ->
-                                    change.consume()
-                                    resizeDelta(dragAmount.x, dragAmount.y)
-                                }
-                            }
+                            .size((clkHandleW / density).dp, (clkHandleH / density).dp)
+                            .align(Alignment.Center)
                     ) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val stroke = 4.dp.toPx()
-                            val radius = handleRadius.toPx()
-                            drawArc(
-                                color = Color.White,
-                                startAngle = 0f,
-                                sweepAngle = 90f,
-                                useCenter = false,
-                                topLeft = Offset.Zero,
-                                size = Size(radius * 2f, radius * 2f),
-                                style = Stroke(width = stroke, cap = StrokeCap.Round)
-                            )
+                        val handleRadius = (20f * clockScale).dp.coerceIn(16.dp, 36.dp)
+                        Box(
+                            modifier = Modifier
+                                .align(AbsoluteAlignment.BottomRight)
+                                .size(handleRadius * 2f)
+                                .pointerInput(Unit) {
+                                    detectDragGestures(
+                                        onDragStart = { resizeStart() },
+                                        onDragEnd = { resizeEnd() },
+                                        onDragCancel = { resizeEnd() }
+                                    ) { change, dragAmount ->
+                                        change.consume()
+                                        resizeDelta(dragAmount.x, dragAmount.y)
+                                    }
+                                }
+                        ) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val stroke = 4.dp.toPx()
+                                val radius = handleRadius.toPx()
+                                drawArc(
+                                    color = Color.White,
+                                    startAngle = 0f,
+                                    sweepAngle = 90f,
+                                    useCenter = false,
+                                    topLeft = Offset.Zero,
+                                    size = Size(radius * 2f, radius * 2f),
+                                    style = Stroke(width = stroke, cap = StrokeCap.Round)
+                                )
+                            }
                         }
                     }
                 }
@@ -663,33 +714,44 @@ fun AlarmCustomizationScreen(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                         )
 
+                        val padX = 16f * density
+                        val padY = 10f * density
+                        val dtHandleW = exactDateSize.width + padX * 2f
+                        val dtHandleH = exactDateSize.height + padY * 2f
                         Box(
                             modifier = Modifier
-                                .align(AbsoluteAlignment.BottomRight)
-                                .size(24.dp)
-                                .pointerInput(Unit) {
-                                    detectDragGestures(
-                                        onDragStart = { dateResizeStart() },
-                                        onDragEnd = { dateResizeEnd() },
-                                        onDragCancel = { dateResizeEnd() }
-                                    ) { change, dragAmount ->
-                                        change.consume()
-                                        dateResizeDelta(dragAmount.x, dragAmount.y)
-                                    }
-                                }
+                                .size((dtHandleW / density).dp, (dtHandleH / density).dp)
+                                .align(Alignment.Center)
                         ) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val stroke = 3.dp.toPx()
-                                val radius = 12.dp.toPx()
-                                drawArc(
-                                    color = Color.White,
-                                    startAngle = 0f,
-                                    sweepAngle = 90f,
-                                    useCenter = false,
-                                    topLeft = Offset.Zero,
-                                    size = Size(radius * 2f, radius * 2f),
-                                    style = Stroke(width = stroke, cap = StrokeCap.Round)
-                                )
+                            val handleRadius = (10f * dateScaleLocal.coerceIn(0.6f, 2.5f)).dp.coerceIn(8.dp, 18.dp)
+                            Box(
+                                modifier = Modifier
+                                    .align(AbsoluteAlignment.BottomRight)
+                                    .size(handleRadius * 2f)
+                                    .pointerInput(Unit) {
+                                        detectDragGestures(
+                                            onDragStart = { dateResizeStart() },
+                                            onDragEnd = { dateResizeEnd() },
+                                            onDragCancel = { dateResizeEnd() }
+                                        ) { change, dragAmount ->
+                                            change.consume()
+                                            dateResizeDelta(dragAmount.x, dragAmount.y)
+                                        }
+                                    }
+                            ) {
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    val stroke = 2.5f.dp.toPx()
+                                    val radius = handleRadius.toPx()
+                                    drawArc(
+                                        color = Color.White,
+                                        startAngle = 0f,
+                                        sweepAngle = 90f,
+                                        useCenter = false,
+                                        topLeft = Offset.Zero,
+                                        size = Size(radius * 2f, radius * 2f),
+                                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                                    )
+                                }
                             }
                         }
                     }
@@ -763,11 +825,16 @@ fun AlarmCustomizationScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                OutlinedButton(
+                Button(
                     onClick = { showBackgroundSheet = true },
-                    shape = RoundedCornerShape(999.dp)
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    elevation = null
                 ) {
-                    Text(stringResource(R.string.appearance_background), color = Color.White)
+                    Text(stringResource(R.string.appearance_background), color = MaterialTheme.colorScheme.onPrimary)
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
@@ -936,6 +1003,7 @@ fun AlarmCustomizationScreen(
                             FilterChip(
                                 selected = background == style,
                                 colors = selectedChipColors(),
+                                border = null,
                                 shape = SelectionChipShape,
                                 onClick = {
                                     background = style
@@ -1030,6 +1098,7 @@ fun AlarmCustomizationScreen(
                         FilterChip(
                             selected = clockStyle == style,
                             colors = selectedChipColors(),
+                            border = null,
                             shape = SelectionChipShape,
                             onClick = {
                                 if (clockStyle != style) {
@@ -1055,6 +1124,7 @@ fun AlarmCustomizationScreen(
                         FilterChip(
                             selected = clockFont == font,
                             colors = selectedChipColors(),
+                            border = null,
                             shape = SelectionChipShape,
                             onClick = {
                                 clockFont = font
@@ -1065,23 +1135,6 @@ fun AlarmCustomizationScreen(
                             label = { Text(font.localizedLabel()) }
                         )
                     }
-                }
-                if (clockFont == RingingClockFont.CUSTOM_FILE) {
-                    OutlinedButton(
-                        onClick = { pickClockFont() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.appearance_font_file_picker))
-                    }
-                    Text(
-                        text = if (FontManager.hasCustomFont(clockCustomFontPath)) {
-                            stringResource(R.string.appearance_custom_font_loaded)
-                        } else {
-                            stringResource(R.string.appearance_no_custom_font)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
 
                 AppearanceColorEditor(
@@ -1183,6 +1236,7 @@ fun AlarmCustomizationScreen(
                             FilterChip(
                                 selected = dateFont == font,
                                 colors = selectedChipColors(),
+                                border = null,
                                 shape = SelectionChipShape,
                                 onClick = {
                                     dateFont = font
@@ -1193,23 +1247,6 @@ fun AlarmCustomizationScreen(
                                 label = { Text(font.localizedLabel()) }
                             )
                         }
-                    }
-                    if (dateFont == ClockDateFont.CUSTOM_FILE) {
-                        OutlinedButton(
-                            onClick = { pickDateFont() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.appearance_date_font_file_picker))
-                        }
-                        Text(
-                            text = if (FontManager.hasCustomFont(dateCustomFontPath)) {
-                                stringResource(R.string.appearance_custom_date_font_loaded)
-                            } else {
-                                stringResource(R.string.appearance_no_custom_date_font)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                     AppearanceColorEditor(
                         title = stringResource(R.string.appearance_date_color),
@@ -1272,6 +1309,7 @@ fun AlarmCustomizationScreen(
                         FilterChip(
                             selected = dismissFont == font,
                             colors = selectedChipColors(),
+                            border = null,
                             shape = SelectionChipShape,
                             onClick = {
                                 dismissFont = font
@@ -1282,23 +1320,6 @@ fun AlarmCustomizationScreen(
                             label = { Text(font.localizedLabel()) }
                         )
                     }
-                }
-                if (dismissFont == RingingClockFont.CUSTOM_FILE) {
-                    OutlinedButton(
-                        onClick = { pickDismissFont() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.appearance_font_file_picker))
-                    }
-                    Text(
-                        text = if (FontManager.hasCustomFont(dismissCustomFontPath)) {
-                            stringResource(R.string.appearance_custom_dismiss_font_loaded)
-                        } else {
-                            stringResource(R.string.appearance_no_custom_font)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
                 Text(stringResource(R.string.appearance_container_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
@@ -1339,6 +1360,7 @@ fun AlarmCustomizationScreen(
                         FilterChip(
                             selected = snoozeFont == font,
                             colors = selectedChipColors(),
+                            border = null,
                             shape = SelectionChipShape,
                             onClick = {
                                 snoozeFont = font
@@ -1349,23 +1371,6 @@ fun AlarmCustomizationScreen(
                             label = { Text(font.localizedLabel()) }
                         )
                     }
-                }
-                if (snoozeFont == RingingClockFont.CUSTOM_FILE) {
-                    OutlinedButton(
-                        onClick = { pickSnoozeFont() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.appearance_font_file_picker))
-                    }
-                    Text(
-                        text = if (FontManager.hasCustomFont(snoozeCustomFontPath)) {
-                            stringResource(R.string.appearance_custom_snooze_font_loaded)
-                        } else {
-                            stringResource(R.string.appearance_no_custom_font)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
                 Text(stringResource(R.string.appearance_container_color), style = MaterialTheme.typography.titleMedium)
                 ColorSwatchRow(
@@ -1454,4 +1459,122 @@ private fun SnoozeStepper(
             modifier = Modifier.size(20.dp)
         )
     }
+}
+
+internal fun measureExactClockBounds(
+    context: android.content.Context,
+    calendar: java.util.Calendar,
+    style: RingingClockStyle,
+    fontSizeSp: Float,
+    scale: Float,
+    is24Hour: Boolean,
+    removeLeadingZero: Boolean,
+    showAmPm: Boolean,
+    clockFont: RingingClockFont,
+    customFontPath: String?,
+    density: Float
+): Size {
+    val effectiveSizePx = fontSizeSp * scale * density
+    if (style.isAnalog) {
+        val diameterPx = 150f * scale * density
+        return Size(diameterPx, diameterPx)
+    }
+
+    val tf = if (clockFont == RingingClockFont.CUSTOM_FILE && !customFontPath.isNullOrBlank()) {
+        val f = File(customFontPath)
+        if (f.exists()) runCatching { Typeface.createFromFile(f) }.getOrNull() else null
+    } else {
+        when (clockFont) {
+            RingingClockFont.SYSTEM_DEFAULT -> Typeface.DEFAULT
+            RingingClockFont.SERIF -> Typeface.SERIF
+            RingingClockFont.CURSIVE -> runCatching { Typeface.create("cursive", Typeface.NORMAL) }.getOrDefault(Typeface.DEFAULT)
+            RingingClockFont.CUSTOM_FILE -> Typeface.DEFAULT
+        }
+    } ?: Typeface.DEFAULT
+
+    val isBold = style.isBold
+    val finalTf = if (isBold) Typeface.create(tf, Typeface.BOLD) else tf
+
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = effectiveSizePx
+        typeface = finalTf
+    }
+
+    val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+    val minute = calendar.get(java.util.Calendar.MINUTE)
+
+    if (style.isVertical) {
+        val hStr = formatHour(hour, is24Hour, removeLeadingZero)
+        val mStr = String.format(Locale.US, "%02d", minute)
+        val hBounds = Rect()
+        val mBounds = Rect()
+        paint.getTextBounds(hStr, 0, hStr.length, hBounds)
+        paint.getTextBounds(mStr, 0, mStr.length, mBounds)
+        val hW = paint.measureText(hStr)
+        val mW = paint.measureText(mStr)
+        val gap = effectiveSizePx * 0.10f
+        val w = maxOf(hW, mW)
+        val h = hBounds.height().toFloat() + gap + mBounds.height().toFloat()
+        return Size(w, h)
+    } else {
+        val timeStr = formatHourMinute(hour, minute, is24Hour, removeLeadingZero)
+        val tBounds = Rect()
+        paint.getTextBounds(timeStr, 0, timeStr.length, tBounds)
+        val tW = paint.measureText(timeStr)
+        val amPmStr = if (showAmPm) amPmSuffix(hour, is24Hour, context) else ""
+        val amPmW = if (amPmStr.isNotEmpty()) {
+            val aPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = effectiveSizePx * 0.28f
+                typeface = tf
+            }
+            aPaint.measureText(amPmStr) + (8f * density)
+        } else 0f
+        return Size(tW + amPmW, tBounds.height().toFloat())
+    }
+}
+
+internal fun measureExactDateBounds(
+    calendar: java.util.Calendar,
+    dateFont: ClockDateFont,
+    clockFont: RingingClockFont,
+    clockCustomFontPath: String?,
+    dateCustomFontPath: String?,
+    scale: Float,
+    density: Float
+): Size {
+    val dateStr = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date())
+    val tf = when (dateFont) {
+        ClockDateFont.MATCH_CLOCK -> {
+            if (clockFont == RingingClockFont.CUSTOM_FILE && !clockCustomFontPath.isNullOrBlank()) {
+                val f = File(clockCustomFontPath)
+                if (f.exists()) runCatching { Typeface.createFromFile(f) }.getOrNull() else null
+            } else {
+                when (clockFont) {
+                    RingingClockFont.SYSTEM_DEFAULT -> Typeface.DEFAULT
+                    RingingClockFont.SERIF -> Typeface.SERIF
+                    RingingClockFont.CURSIVE -> runCatching { Typeface.create("cursive", Typeface.NORMAL) }.getOrDefault(Typeface.DEFAULT)
+                    RingingClockFont.CUSTOM_FILE -> Typeface.DEFAULT
+                }
+            } ?: Typeface.DEFAULT
+        }
+        ClockDateFont.SYSTEM_DEFAULT -> Typeface.DEFAULT
+        ClockDateFont.SERIF -> Typeface.SERIF
+        ClockDateFont.CURSIVE -> runCatching { Typeface.create("cursive", Typeface.NORMAL) }.getOrDefault(Typeface.DEFAULT)
+        ClockDateFont.CUSTOM_FILE -> {
+            if (!dateCustomFontPath.isNullOrBlank()) {
+                val f = File(dateCustomFontPath)
+                if (f.exists()) runCatching { Typeface.createFromFile(f) }.getOrNull() else null
+            } else null
+        }
+    } ?: Typeface.DEFAULT
+
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 18f * scale * density
+        typeface = tf
+    }
+    val bounds = Rect()
+    paint.getTextBounds(dateStr, 0, dateStr.length, bounds)
+    val w = paint.measureText(dateStr)
+    val h = bounds.height().toFloat()
+    return Size(w, h)
 }

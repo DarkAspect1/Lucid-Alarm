@@ -66,6 +66,7 @@ import com.lucid.alarm.data.prefs.TimerVibrationPattern
 import com.lucid.alarm.data.prefs.TimerVibrationPolicy
 import com.lucid.alarm.ui.localizedName
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -992,7 +993,7 @@ fun AddTimerBottomSheet(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(50))
-                                    .background(if (isSelected) accent else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                    .background(if (isSelected) accent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                     .clickable { timerVibrationPattern = pattern }
                                     .padding(vertical = 8.dp, horizontal = 2.dp),
                                 contentAlignment = Alignment.Center
@@ -1020,14 +1021,23 @@ fun AddTimerBottomSheet(
                     .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedButton(
+                Button(
                     onClick = onDismiss,
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    elevation = null,
+                    border = null,
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(24.dp)
+                        .height(48.dp)
                 ) {
-                    Text(stringResource(R.string.action_cancel))
+                    Text(
+                        text = stringResource(R.string.action_cancel),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 Button(

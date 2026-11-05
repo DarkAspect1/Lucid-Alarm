@@ -67,6 +67,9 @@ val SelectionChipShape = RoundedCornerShape(50)
 
 @Composable
 fun selectedChipColors(): SelectableChipColors = FilterChipDefaults.filterChipColors(
+    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
     selectedContainerColor = MaterialTheme.colorScheme.primary,
     selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
     selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
@@ -132,6 +135,7 @@ fun AppearanceColorEditor(
                             onClick = { onDirection(dir) },
                             label = { Text(dir.localizedLabel()) },
                             shape = SelectionChipShape,
+                            border = null,
                             colors = selectedChipColors()
                         )
             }

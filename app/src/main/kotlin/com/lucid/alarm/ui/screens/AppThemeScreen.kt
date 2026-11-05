@@ -398,6 +398,7 @@ fun AppThemeScreen(
                         FilterChip(
                             selected = appBackgroundStyle == style,
                             shape = SelectionChipShape,
+                            border = null,
                             colors = selectedChipColors(),
                             onClick = {
                                 scope.launch { settingsDataStore.setAppBackgroundStyle(style) }
@@ -636,6 +637,7 @@ fun AppThemeScreen(
                                 }
                             },
                             shape = SelectionChipShape,
+                            border = null,
                             label = { Text(style.label) },
                             colors = selectedChipColors()
                         )

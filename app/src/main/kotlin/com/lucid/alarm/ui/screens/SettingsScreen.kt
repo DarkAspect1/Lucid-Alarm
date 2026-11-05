@@ -493,7 +493,7 @@ fun SettingsScreen(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clip(RoundedCornerShape(50))
-                                            .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                            .background(if (isSelected) accentColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                             .clickable {
                                                 scope.launch { settingsDataStore.setThemeMode(mode) }
                                             }
@@ -1103,7 +1103,7 @@ fun SettingsScreen(
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .clip(RoundedCornerShape(50))
-                                                    .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                                    .background(if (isSelected) accentColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                                     .clickable {
                                                         scope.launch { settingsDataStore.setAlarmVibrationPreset(preset) }
                                                     }
@@ -1326,7 +1326,7 @@ fun SettingsScreen(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clip(RoundedCornerShape(50))
-                                            .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                            .background(if (isSelected) accentColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                             .clickable {
                                                 scope.launch { settingsDataStore.setRingingSnoozeMinutes(min) }
                                             }
@@ -1766,7 +1766,7 @@ fun SettingsScreen(
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .clip(RoundedCornerShape(50))
-                                                    .background(if (isSelected) accentColor else if (isLight) Color(0xFFE5E7EB) else Color(0xFF282830))
+                                                    .background(if (isSelected) accentColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                                     .clickable {
                                                         scope.launch { settingsDataStore.setTimerVibrationPattern(pattern) }
                                                     }
@@ -2121,7 +2121,7 @@ private fun CompactBackupPill(
     val pillBg = if (checked) {
         accentColor.copy(alpha = 0.16f)
     } else {
-        if (isLight) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.06f)
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
     val contentColor = if (checked) {
         accentColor
