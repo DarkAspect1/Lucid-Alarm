@@ -7,7 +7,7 @@
 
   <p align="center">
     <b>Deep Ringing Screen Customization • Animated Backgrounds • Custom Wallpapers and Fonts</b><br/>
-    <b>Multi-Week Scheduling • Wake Check • Multi Timers • Nowbar • World Clock</b><br/>
+    <b>Multi-Week Scheduling • Wake Check • Multi Timers • Nowbar • World Clock • Widgets</b><br/>
     <b>Alarm Groups • Recycle Bin • Seven Languages • JSON Backup and Restore</b>
   </p>
 
@@ -71,6 +71,7 @@ Lucid Alarm is open-source Android alarm app inspired by One UI clock app. The i
 | **Multi timers** | Run several timers at once. Each has its controls. |
 | **Nowbar** | Live stopwatch and timer pills with all controls. |
 | **Accent color theming** | Choose your accent color and everything adapts to it. |
+| **Widgets** | Alarm, Timer, Stopwatch, Worldclock, and a fully customizable clock widget: layouts, colors, gradients, and fonts with date and am/pm switches. Free Resize and Dragging. |
 | **Groups and recycle bin** | Organize alarms into groups, and deleted alarms go to recycle bin. |
 | **Upcoming alarm alerts** | Get a notification 1 to 60 minutes before an alarm, and dismiss or edit it from the notification. |
 | **Alarm set toast** | Turn on or create an alarm and a toast tells you how much time is left until it rings. |
