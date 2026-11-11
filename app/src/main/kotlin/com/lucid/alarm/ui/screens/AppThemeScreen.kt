@@ -582,7 +582,7 @@ fun AppThemeScreen(
                 Spacer(modifier = Modifier.height(10.dp))
                 ColorSwatchGrid(
                     selectedArgb = alarmCardColor,
-                    defaultColor = MaterialTheme.colorScheme.surfaceVariant,
+                    defaultColor = if (isLight) Color(0xFFFFFFFF) else MaterialTheme.colorScheme.surfaceVariant,
                     onSelectPreset = { argb ->
                         scope.launch { settingsDataStore.setAlarmCardColor(argb) }
                     },
@@ -602,7 +602,7 @@ fun AppThemeScreen(
                 Spacer(modifier = Modifier.height(10.dp))
                 ColorSwatchGrid(
                     selectedArgb = worldClockCardColor,
-                    defaultColor = MaterialTheme.colorScheme.surfaceVariant,
+                    defaultColor = if (isLight) Color(0xFFFFFFFF) else MaterialTheme.colorScheme.surfaceVariant,
                     onSelectPreset = { argb ->
                         scope.launch { settingsDataStore.setWorldClockCardColor(argb) }
                     },
@@ -735,6 +735,8 @@ fun AppThemeScreen(
         CustomColorPickerDialog(
             initialColor = if (alarmCardColor != 0L) {
                 alarmCardColor
+            } else if (isLight) {
+                0xFFFFFFFFL
             } else {
                 MaterialTheme.colorScheme.surfaceVariant.toArgb().toLong() and 0xFFFFFFFFL
             },
@@ -750,6 +752,8 @@ fun AppThemeScreen(
         CustomColorPickerDialog(
             initialColor = if (worldClockCardColor != 0L) {
                 worldClockCardColor
+            } else if (isLight) {
+                0xFFFFFFFFL
             } else {
                 MaterialTheme.colorScheme.surfaceVariant.toArgb().toLong() and 0xFFFFFFFFL
             },

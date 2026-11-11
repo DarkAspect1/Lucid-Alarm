@@ -18,10 +18,12 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -41,9 +43,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -62,9 +66,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -74,6 +80,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
@@ -90,6 +97,7 @@ import com.lucid.alarm.ui.formatClockDigits
 import com.lucid.alarm.ui.formatHour
 import kotlin.math.cos
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -653,8 +661,9 @@ fun ClockDateText(
     textBrush: Brush? = null,
     modifier: Modifier = Modifier
 ) {
-    val dateText = remember(calendar.get(java.util.Calendar.DAY_OF_YEAR)) {
-        java.text.SimpleDateFormat("EEEE, MMMM d", java.util.Locale.getDefault())
+    val locale = java.util.Locale.getDefault()
+    val dateText = remember(calendar.get(java.util.Calendar.DAY_OF_YEAR), locale) {
+        java.text.SimpleDateFormat("EEEE, MMMM d", locale)
             .format(java.util.Date())
     }
     Text(
@@ -664,6 +673,7 @@ fun ClockDateText(
             fontWeight = FontWeight.Medium,
             fontSize = fontSize,
             lineHeight = TextUnit.Unspecified,
+            platformStyle = PlatformTextStyle(includeFontPadding = false),
             brush = textBrush
         ),
         color = if (textBrush != null) Color.Unspecified else contentColor.copy(alpha = 0.85f),
@@ -671,6 +681,136 @@ fun ClockDateText(
         softWrap = false,
         modifier = modifier.wrapContentSize(Alignment.Center, unbounded = true)
     )
+}
+
+@Composable
+fun AlarmClockDateLayer(
+    calendar: java.util.Calendar,
+    clockStyle: RingingClockStyle,
+    clockFontFamily: FontFamily,
+    is24Hour: Boolean,
+    showAmPm: Boolean,
+    amPmFontFamily: FontFamily,
+    amPmBrush: Brush?,
+    clockColor: Color,
+    clockBrush: Brush?,
+    removeLeadingZero: Boolean,
+    clockFontSizeSp: Float,
+    clockScale: Float,
+    clockFont: RingingClockFont,
+    clockCustomFontPath: String,
+    clockOffsetX: Float,
+    clockOffsetY: Float,
+    dateVisible: Boolean,
+    dateFontFamily: FontFamily,
+    dateScale: Float,
+    dateColor: Color,
+    dateBrush: Brush?,
+    dateOffsetX: Float,
+    dateOffsetY: Float,
+    modifier: Modifier = Modifier,
+    clockInteractiveModifier: Modifier = Modifier,
+    dateInteractiveModifier: Modifier = Modifier,
+    onRootSizeChanged: (widthPx: Int, heightPx: Int) -> Unit = { _, _ -> },
+    onClockSizeChanged: (widthPx: Float, heightPx: Float) -> Unit = { _, _ -> },
+    onDateSizeChanged: (widthPx: Float, heightPx: Float) -> Unit = { _, _ -> },
+    clockOverlay: @Composable BoxScope.() -> Unit = {},
+    dateOverlay: @Composable BoxScope.() -> Unit = {}
+) {
+    val density = LocalDensity.current
+    val dateGapPx = remember(density) { with(density) { 14.dp.toPx() } }
+    var clockHeightPx by remember { mutableFloatStateOf(0f) }
+    var dateHeightPx by remember { mutableFloatStateOf(0f) }
+
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .onSizeChanged { size ->
+                onRootSizeChanged(size.width, size.height)
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .absoluteOffset {
+                    IntOffset(
+                        x = clockOffsetX.roundToInt(),
+                        y = clockOffsetY.roundToInt()
+                    )
+                }
+                .wrapContentSize(Alignment.Center, unbounded = true),
+            contentAlignment = Alignment.Center
+        ) {
+            AlarmClockBox(
+                calendar = calendar,
+                style = clockStyle,
+                fontFamily = clockFontFamily,
+                is24Hour = is24Hour,
+                showAmPm = showAmPm,
+                contentColor = clockColor,
+                textBrush = clockBrush,
+                amPmFontFamily = amPmFontFamily,
+                amPmBrush = amPmBrush,
+                removeLeadingZero = removeLeadingZero,
+                fontSize = (clockFontSizeSp * clockScale).sp,
+                autoFit = false,
+                showContainerBorder = false,
+                clockScale = clockScale,
+                clockFont = clockFont,
+                customFontPath = clockCustomFontPath,
+                modifier = Modifier
+                    .wrapContentSize(Alignment.Center, unbounded = true)
+                    .onSizeChanged { size ->
+                        val w = size.width.toFloat()
+                        val h = size.height.toFloat()
+                        clockHeightPx = h
+                        onClockSizeChanged(w, h)
+                    }
+                    .then(clockInteractiveModifier)
+            )
+            clockOverlay()
+        }
+
+        if (dateVisible) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .absoluteOffset {
+                        IntOffset(
+                            x = dateOffsetX.roundToInt(),
+                            y = (clockHeightPx / 2f + dateGapPx + dateHeightPx / 2f + dateOffsetY)
+                                .roundToInt()
+                        )
+                    }
+                    .wrapContentSize(Alignment.Center, unbounded = true),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.Center, unbounded = true)
+                        .onSizeChanged { size ->
+                            val w = size.width.toFloat()
+                            val h = size.height.toFloat()
+                            dateHeightPx = h
+                            onDateSizeChanged(w, h)
+                        }
+                        .then(dateInteractiveModifier),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ClockDateText(
+                        calendar = calendar,
+                        fontFamily = dateFontFamily,
+                        fontSize = (18f * dateScale).sp,
+                        contentColor = dateColor,
+                        textBrush = dateBrush,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    )
+                }
+                dateOverlay()
+            }
+        }
+    }
 }
 
 private fun clockDigitStyle(
@@ -1046,18 +1186,18 @@ fun RingingActionPill(
 fun SnoozePill(
     snoozeMinutes: Int,
     onSnooze: () -> Unit,
-    onMinus: () -> Unit,
-    onPlus: () -> Unit,
-    containerColor: Color = Color.White.copy(alpha = 0.10f),
-    contentColor: Color = Color.White,
+    onMinus: () -> Unit = {},
+    onPlus: () -> Unit = {},
+    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
     fontFamily: FontFamily? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(50))
             .background(containerColor)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
@@ -1075,8 +1215,9 @@ fun SnoozePill(
             ),
             color = contentColor,
             modifier = Modifier
+                .clip(RoundedCornerShape(50))
                 .clickable(onClick = onSnooze)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 20.dp, vertical = 10.dp)
         )
         RepeatIconButton(
             icon = Icons.Rounded.Add,
@@ -1098,13 +1239,15 @@ private fun RepeatIconButton(
         modifier = Modifier
             .size(40.dp)
             .clip(CircleShape)
+            .background(tint.copy(alpha = 0.12f))
             .holdToRepeat(onStep = onStep),
         contentAlignment = Alignment.Center
     ) {
-        androidx.compose.material3.Icon(
+        Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = tint
+            tint = tint.copy(alpha = 0.7f),
+            modifier = Modifier.size(20.dp)
         )
     }
 }

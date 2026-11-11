@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -18,19 +19,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,12 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -67,10 +65,9 @@ import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.receiver.AlarmReceiver
 import com.lucid.alarm.service.AlarmAudioService
 import com.lucid.alarm.ui.LocalAppFont
-import com.lucid.alarm.ui.components.AlarmClockBox
+import com.lucid.alarm.ui.components.AlarmClockDateLayer
 import com.lucid.alarm.ui.components.AlarmLockBackground
 import com.lucid.alarm.ui.components.AlarmLockPalette
-import com.lucid.alarm.ui.components.ClockDateText
 import com.lucid.alarm.ui.components.RingingActionPill
 import com.lucid.alarm.ui.components.SnoozePill
 import com.lucid.alarm.ui.components.clockTextBrush
@@ -79,10 +76,12 @@ import com.lucid.alarm.ui.components.resolveRingingFontFamily
 import com.lucid.alarm.ui.theme.LucidAlarmTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.Calendar
-import kotlin.math.roundToInt
+import java.util.Locale
 
 class AlarmRingingActivity : ComponentActivity() {
 
@@ -98,6 +97,34 @@ class AlarmRingingActivity : ComponentActivity() {
                 finishAndRemoveTask()
             }
         }
+    }
+
+    private fun getSystemLocale(): Locale {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            android.content.res.Resources.getSystem().configuration.locales[0]
+        } else {
+            @Suppress("DEPRECATION")
+            android.content.res.Resources.getSystem().configuration.locale
+        }
+    }
+
+    private fun resolveTargetLocale(langCode: String): Locale {
+        if (langCode.isBlank() || langCode.equals("system", ignoreCase = true)) {
+            return getSystemLocale()
+        }
+        return Locale.forLanguageTag(langCode)
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        val settings = SettingsDataStore(newBase)
+        val lang = runBlocking { settings.appLanguageFlow.first() }
+        val targetLocale = resolveTargetLocale(lang)
+        Locale.setDefault(targetLocale)
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(targetLocale)
+        config.setLayoutDirection(targetLocale)
+        val contextToAttach = newBase.createConfigurationContext(config)
+        super.attachBaseContext(contextToAttach)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,6 +154,17 @@ class AlarmRingingActivity : ComponentActivity() {
 
         applyIntent(intent)
         val settingsDataStore = SettingsDataStore(applicationContext)
+        val lang = runBlocking { settingsDataStore.appLanguageFlow.first() }
+        val targetLocale = resolveTargetLocale(lang)
+        Locale.setDefault(targetLocale)
+        val config = Configuration(resources.configuration)
+        config.setLocale(targetLocale)
+        config.setLayoutDirection(targetLocale)
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(config, resources.displayMetrics)
+
+        val isRtl = android.text.TextUtils.getLayoutDirectionFromLocale(targetLocale) == android.view.View.LAYOUT_DIRECTION_RTL
+        window.decorView.layoutDirection = if (isRtl) android.view.View.LAYOUT_DIRECTION_RTL else android.view.View.LAYOUT_DIRECTION_LTR
 
         setContent {
             LaunchedEffect(Unit) {
@@ -178,38 +216,49 @@ class AlarmRingingActivity : ComponentActivity() {
                 }
             }
 
-            LucidAlarmTheme(
-                accentColor = accentColor,
-                backgroundPalette = backgroundPalette,
-                appFontStyle = appFontStyle,
-                dark = darkTheme,
-                settingsDataStore = settingsDataStore
-            ) {
-                AlarmRingingScreen(
-                    alarmId = alarmId,
-                    alarmLabel = alarmLabel,
-                    snoozeCount = snoozeCount,
-                    snoozeLimit = snoozeLimit,
-                    settingsDataStore = settingsDataStore,
-                    onSnooze = { snoozeMinutes ->
-                        val snoozeIntent = Intent(this, AlarmAudioService::class.java).apply {
-                            action = AlarmAudioService.ACTION_SNOOZE_ALARM
-                            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
-                            putExtra(AlarmReceiver.EXTRA_SNOOZE_MINUTES, snoozeMinutes)
-                        }
-                        startService(snoozeIntent)
-                        finishAndRemoveTask()
-                    },
-                    onDismiss = {
-                        val stopIntent = Intent(this, AlarmAudioService::class.java).apply {
-                            action = AlarmAudioService.ACTION_STOP_ALARM
-                            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
-                            putExtra(AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE, isAwakeCheckActive)
-                        }
-                        startService(stopIntent)
-                        finishAndRemoveTask()
-                    }
+            val uiScale by settingsDataStore.uiScaleFlow.collectAsState(
+                initial = SettingsDataStore.DEFAULT_UI_SCALE
+            )
+            val baseDensity = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(
+                    density = baseDensity.density * uiScale,
+                    fontScale = baseDensity.fontScale * uiScale
                 )
+            ) {
+                LucidAlarmTheme(
+                    accentColor = accentColor,
+                    backgroundPalette = backgroundPalette,
+                    appFontStyle = appFontStyle,
+                    dark = darkTheme,
+                    settingsDataStore = settingsDataStore
+                ) {
+                    AlarmRingingScreen(
+                        alarmId = alarmId,
+                        alarmLabel = alarmLabel,
+                        snoozeCount = snoozeCount,
+                        snoozeLimit = snoozeLimit,
+                        settingsDataStore = settingsDataStore,
+                        onSnooze = { snoozeMinutes ->
+                            val snoozeIntent = Intent(this, AlarmAudioService::class.java).apply {
+                                action = AlarmAudioService.ACTION_SNOOZE_ALARM
+                                putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+                                putExtra(AlarmReceiver.EXTRA_SNOOZE_MINUTES, snoozeMinutes)
+                            }
+                            startService(snoozeIntent)
+                            finishAndRemoveTask()
+                        },
+                        onDismiss = {
+                            val stopIntent = Intent(this, AlarmAudioService::class.java).apply {
+                                action = AlarmAudioService.ACTION_STOP_ALARM
+                                putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+                                putExtra(AlarmReceiver.EXTRA_IS_AWAKE_CHECK_ACTIVE, isAwakeCheckActive)
+                            }
+                            startService(stopIntent)
+                            finishAndRemoveTask()
+                        }
+                    )
+                }
             }
         }
     }
@@ -578,10 +627,6 @@ fun AlarmRingingScreen(
         ?: globalSolidColor
     val solidColor = solidColorLong.takeIf { it != 0L }?.let { Color(it) }
 
-    var clockH by remember { mutableFloatStateOf(0f) }
-    var dateH by remember { mutableFloatStateOf(0f) }
-    val dateGapPx = with(LocalDensity.current) { 14.dp.toPx() }
-
     AlarmLockBackground(
         style = effectiveBackgroundStyle,
         imageUri = effectiveImageUri,
@@ -596,8 +641,6 @@ fun AlarmRingingScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
         ) {
             if (effectiveLabelVisible) {
                 Text(
@@ -610,71 +653,42 @@ fun AlarmRingingScreen(
                     color = clockColor,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
+                        .statusBarsPadding()
                         .padding(top = 28.dp)
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .absoluteOffset {
-                            IntOffset(effectiveOffsetX.roundToInt(), effectiveOffsetY.roundToInt())
-                        }
-                        .wrapContentSize(Alignment.Center, unbounded = true)
-                        .onSizeChanged { clockH = it.height.toFloat() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    AlarmClockBox(
-                        calendar = nowCalendar,
-                        style = effectiveClockStyle,
-                        fontFamily = fontFamily,
-                        is24Hour = is24Hour,
-                        showAmPm = effShowAmPm,
-                        amPmFontFamily = LocalAppFont.current,
-                        amPmBrush = null,
-                        contentColor = clockColor,
-                        textBrush = effectiveClockBrush,
-                        removeLeadingZero = effectiveRemoveLeadingZero,
-                        fontSize = (clockFontSize * clockScale).sp,
-                        autoFit = false,
-                        showContainerBorder = false,
-                        clockFont = effectiveClockFont,
-                        customFontPath = effectiveClockFontPath,
-                        clockScale = clockScale,
-                        modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true)
-                    )
-                }
-
-                if (effectiveDateVisible) {
-                    ClockDateText(
-                        calendar = nowCalendar,
-                        fontFamily = dateFontFamily,
-                        fontSize = (18f * effectiveDateScale).sp,
-                        contentColor = dateColorBase,
-                        textBrush = effectiveDateBrush,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .absoluteOffset {
-                                IntOffset(
-                                    effectiveDateOffsetX.roundToInt(),
-                                    (clockH / 2f + dateGapPx + dateH / 2f + effectiveDateOffsetY)
-                                        .roundToInt()
-                                )
-                            }
-                            .wrapContentSize(Alignment.Center, unbounded = true)
-                            .onSizeChanged { dateH = it.height.toFloat() }
-                    )
-                }
-            }
+            AlarmClockDateLayer(
+                calendar = nowCalendar,
+                clockStyle = effectiveClockStyle,
+                clockFontFamily = fontFamily,
+                is24Hour = is24Hour,
+                showAmPm = effShowAmPm,
+                amPmFontFamily = LocalAppFont.current,
+                amPmBrush = null,
+                clockColor = clockColor,
+                clockBrush = effectiveClockBrush,
+                removeLeadingZero = effectiveRemoveLeadingZero,
+                clockFontSizeSp = clockFontSize,
+                clockScale = clockScale,
+                clockFont = effectiveClockFont,
+                clockCustomFontPath = effectiveClockFontPath,
+                clockOffsetX = effectiveOffsetX,
+                clockOffsetY = effectiveOffsetY,
+                dateVisible = effectiveDateVisible,
+                dateFontFamily = dateFontFamily,
+                dateScale = effectiveDateScale,
+                dateColor = dateColorBase,
+                dateBrush = effectiveDateBrush,
+                dateOffsetX = effectiveDateOffsetX,
+                dateOffsetY = effectiveDateOffsetY
+            )
 
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxSize()
+                    .navigationBarsPadding()
                     .padding(horizontal = 28.dp, vertical = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -728,14 +742,14 @@ fun AlarmRingingScreen(
                         snoozeMinutes = snoozeMinutes,
                         onSnooze = { onSnooze(snoozeMinutes) },
                         containerColor = if (snoozeContainerColorLong != 0L) {
-                            Color(snoozeContainerColorLong.toInt())
+                            Color(snoozeContainerColorLong)
                         } else {
-                            Color.White.copy(alpha = 0.12f)
+                            MaterialTheme.colorScheme.secondaryContainer
                         },
                         contentColor = if (snoozeTextColorLong != 0L) {
-                            Color(snoozeTextColorLong.toInt())
+                            Color(snoozeTextColorLong)
                         } else {
-                            Color.White
+                            MaterialTheme.colorScheme.onSecondaryContainer
                         },
                         fontFamily = snoozeTypeface,
                         onMinus = {

@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -101,10 +102,11 @@ fun VerticalWheelTimePicker(
         onTimeChanged(selectedHour24, selectedMinute)
     }
 
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = if (isLight) Color(0xFFF2F3F6) else MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 2.dp
     ) {
         Box(

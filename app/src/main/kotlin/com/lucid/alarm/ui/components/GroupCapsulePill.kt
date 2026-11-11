@@ -82,6 +82,7 @@ fun GroupCapsulePill(
         val circleIconTint = when {
             selected && hasEnabled -> MaterialTheme.colorScheme.primary
             selected -> Color(0xFF484952)
+            hasEnabled -> MaterialTheme.colorScheme.onPrimary
             else -> Color.White
         }
         Column(modifier = Modifier.fillMaxWidth()) {

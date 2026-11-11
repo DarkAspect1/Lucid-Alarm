@@ -19,7 +19,7 @@ fun onColorFor(color: Color): Color =
     if (color.luminance() > 0.40f) Color(0xFF14171A) else Color.White
 
 fun onAccentFabIconColor(color: Color): Color =
-    if (color.luminance() > 0.55f) Color(0xFF111318) else Color.White
+    if (color.luminance() > 0.40f) Color(0xFF111318) else Color.White
 
 private val LightOnSurface = Color(0xFF111318)
 
@@ -137,7 +137,7 @@ private fun darkScheme(accentColor: Color, bg: Color): ColorScheme {
 
 private fun lightScheme(accentColor: Color): ColorScheme {
 
-    val onAccent = if (accentColor.luminance() > 0.6f) Color(0xFF111318) else Color.White
+    val onAccent = onColorFor(accentColor)
     return androidx.compose.material3.lightColorScheme(
         primary = accentColor,
         onPrimary = onAccent,
@@ -146,8 +146,8 @@ private fun lightScheme(accentColor: Color): ColorScheme {
         inversePrimary = accentColor,
         secondary = accentColor,
         onSecondary = onAccent,
-        secondaryContainer = accentColor,
-        onSecondaryContainer = onAccent,
+        secondaryContainer = Color(0xFF525866),
+        onSecondaryContainer = Color.White,
         tertiary = accentColor,
         onTertiary = onAccent,
         tertiaryContainer = accentColor,
@@ -157,16 +157,16 @@ private fun lightScheme(accentColor: Color): ColorScheme {
 
         surface = Color(0xFFFFFFFF),
         onSurface = LightOnSurface,
-        surfaceVariant = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0xFFC8CDD6),
         onSurfaceVariant = LightOnSurfaceVariant,
         surfaceContainerLowest = Color(0xFFFFFFFF),
         surfaceContainerLow = Color(0xFFFFFFFF),
         surfaceContainer = Color(0xFFFFFFFF),
-        surfaceContainerHigh = Color(0xFFFFFFFF),
-        surfaceContainerHighest = Color(0xFFFFFFFF),
+        surfaceContainerHigh = Color(0xFFE4E6EB),
+        surfaceContainerHighest = Color(0xFFD5D9E0),
         surfaceDim = Color(0xFFFFFFFF),
         surfaceBright = Color(0xFFFFFFFF),
-        surfaceTint = Color.Transparent,
+        surfaceTint = Color.White,
         inverseSurface = Color(0xFF111318),
         inverseOnSurface = Color(0xFFF9FAFB),
         outline = Color(0xFFE5E7EB),

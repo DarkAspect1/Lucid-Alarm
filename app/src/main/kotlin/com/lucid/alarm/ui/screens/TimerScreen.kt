@@ -368,7 +368,7 @@ fun TimerScreen(
                                             .height(36.dp)
                                             .clip(RoundedCornerShape(50))
                                             .background(
-                                                if (isLight) Color(0xFFF3F4F6) else accent.copy(alpha = 0.16f)
+                                                if (isLight) Color(0xFFE4E6EB) else accent.copy(alpha = 0.16f)
                                             )
                                             .clickable {
                                                 TimerService.adjust(context, total)
@@ -458,7 +458,7 @@ fun TimerScreen(
                     Surface(
                         onClick = onOpenMultiTimer,
                         shape = RoundedCornerShape(999.dp),
-                        color = if (isLight) Color(0xFFF3F4F6) else accent.copy(alpha = 0.16f),
+                        color = if (isLight) Color(0xFFE4E6EB) else accent.copy(alpha = 0.16f),
                         contentColor = if (isLight) textColor else accent,
                         tonalElevation = 0.dp,
                         shadowElevation = 0.dp
@@ -505,7 +505,7 @@ fun TimerScreen(
                                     .height(36.dp)
                                     .clip(RoundedCornerShape(50))
                                     .background(
-                                        if (isLight) Color(0xFFF3F4F6) else accent.copy(alpha = 0.16f)
+                                        if (isLight) Color(0xFFE4E6EB) else accent.copy(alpha = 0.16f)
                                     )
                                     .clickable {
                                         if (counting) {
@@ -567,18 +567,23 @@ fun TimerScreen(
                     .padding(start = 24.dp, bottom = 96.dp)
                     .zIndex(4f)
             ) {
-                SmallFloatingActionButton(
+                Surface(
                     onClick = onOpenSettings,
-                    containerColor = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
+                    color = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
                     contentColor = if (isLight) Color(0xFF1E1E1E) else Color.White,
                     shape = CircleShape,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 6.dp,
+                    border = null,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Settings,
-                        contentDescription = stringResource(R.string.clock_settings),
-                        modifier = Modifier.size(22.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = stringResource(R.string.clock_settings),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
         }

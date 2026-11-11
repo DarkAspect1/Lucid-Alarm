@@ -115,6 +115,7 @@ import com.lucid.alarm.ui.localizedLabel
 import com.lucid.alarm.ui.localizedName
 import com.lucid.alarm.ui.components.CustomColorPickerDialog
 import com.lucid.alarm.ui.components.FrostedBlurBox
+import com.lucid.alarm.ui.theme.onColorFor
 import com.lucid.alarm.ui.theme.toColor
 import com.lucid.alarm.util.findActivity
 import kotlinx.coroutines.delay
@@ -648,7 +649,7 @@ fun SettingsScreen(
                                                     Icon(
                                                         imageVector = Icons.Rounded.Check,
                                                         contentDescription = null,
-                                                        tint = Color.White,
+                                                        tint = onColorFor(accent.toColor()),
                                                         modifier = Modifier.size(20.dp)
                                                     )
                                                 }
@@ -1007,7 +1008,7 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(50))
-                                    .background(if (isLight) Color(0xFFF3F4F6) else Color(0xFF282830))
+                                    .background(if (isLight) Color(0xFFE4E6EB) else Color(0xFF282830))
                                     .padding(4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
@@ -1161,7 +1162,7 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(50))
-                                    .background(if (isLight) Color(0xFFF3F4F6) else Color(0xFF282830))
+                                    .background(if (isLight) Color(0xFFE4E6EB) else Color(0xFF282830))
                                     .padding(4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
@@ -1580,7 +1581,7 @@ fun SettingsScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(50))
-                                        .background(if (isLight) Color(0xFFF3F4F6) else Color(0xFF282830))
+                                        .background(if (isLight) Color(0xFFE4E6EB) else Color(0xFF282830))
                                         .padding(4.dp),
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
@@ -1670,7 +1671,7 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(50))
-                                    .background(if (isLight) Color(0xFFF3F4F6) else Color(0xFF282830))
+                                    .background(if (isLight) Color(0xFFE4E6EB) else Color(0xFF282830))
                                     .padding(4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {

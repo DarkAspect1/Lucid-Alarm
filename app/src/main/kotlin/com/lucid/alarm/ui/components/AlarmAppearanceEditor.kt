@@ -334,7 +334,6 @@ fun AlarmAppearanceEditor(
     var clockW by remember { mutableFloatStateOf(0f) }
     var clockH by remember { mutableFloatStateOf(0f) }
     var dateH by remember { mutableFloatStateOf(0f) }
-    var rootH by remember { mutableIntStateOf(0) }
     val globalClockScale by settingsDataStore.clockContainerScaleFlow.collectAsState(initial = 1f)
     var clockScale by remember { mutableFloatStateOf(globalClockScale) }
     var clockResizeBase by remember { mutableFloatStateOf(1f) }
@@ -685,76 +684,107 @@ fun AlarmAppearanceEditor(
                         )
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .onSizeChanged { rootH = it.height },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .absoluteOffset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                                .wrapContentSize(Alignment.Center, unbounded = true)
-                                .onSizeChanged {
-                                    clockW = it.width.toFloat()
-                                    clockH = it.height.toFloat()
-                                    boxWidth = clockW
-                                    boxHeight = clockH
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val handleRadius = (22f * clockScale).dp
-                            AlarmClockBox(
-                                calendar = nowCalendar,
-                                style = clockStyle,
-                                fontFamily = fontFamily,
-                                is24Hour = is24Hour,
-                                showAmPm = effShowAmPm,
-                                amPmFontFamily = LocalAppFont.current,
-                                amPmBrush = null,
-                                contentColor = effClockBase,
-                                textBrush = clockBrush,
-                                removeLeadingZero = globalRemoveLeadingZero,
-                                fontSize = (clockFontSize * clockScale).sp,
-                                autoFit = false,
-                                showContainerBorder = false,
-                                clockScale = clockScale,
-                                clockFont = effectiveClockFontEnum,
-                                customFontPath = effectiveClockFontPath,
-                                modifier = Modifier
-                                    .wrapContentSize(Alignment.Center, unbounded = true)
-                                    .pointerInput(Unit) {
-                                        detectTapGestures(onTap = { showClockSheet = true })
+                    AlarmClockDateLayer(
+                        calendar = nowCalendar,
+                        clockStyle = clockStyle,
+                        clockFontFamily = fontFamily,
+                        is24Hour = is24Hour,
+                        showAmPm = effShowAmPm,
+                        amPmFontFamily = LocalAppFont.current,
+                        amPmBrush = null,
+                        clockColor = effClockBase,
+                        clockBrush = clockBrush,
+                        removeLeadingZero = globalRemoveLeadingZero,
+                        clockFontSizeSp = clockFontSize,
+                        clockScale = clockScale,
+                        clockFont = effectiveClockFontEnum,
+                        clockCustomFontPath = effectiveClockFontPath,
+                        clockOffsetX = offsetX,
+                        clockOffsetY = offsetY,
+                        dateVisible = dateVisible,
+                        dateFontFamily = dateFontFamily,
+                        dateScale = dateScale,
+                        dateColor = effDateBase,
+                        dateBrush = dateBrush,
+                        dateOffsetX = dateOffsetX,
+                        dateOffsetY = dateOffsetY,
+                        onClockSizeChanged = { w, h ->
+                            clockW = w
+                            clockH = h
+                            boxWidth = w
+                            boxHeight = h
+                        },
+                        onDateSizeChanged = { _, h ->
+                            dateH = h
+                        },
+                        clockInteractiveModifier = Modifier
+                            .pointerInput(Unit) {
+                                detectTapGestures(onTap = { showClockSheet = true })
+                            }
+                            .pointerInput(Unit) {
+                                detectDragGestures(
+                                    onDragStart = {
+                                        isDragging = true
+                                        snapX = false
+                                        snapY = false
+                                    },
+                                    onDragEnd = {
+                                        if (snapX) offsetX = 0f
+                                        if (snapY) offsetY = 0f
+                                        isDragging = false
+                                        snapX = false
+                                        snapY = false
+                                    },
+                                    onDragCancel = {
+                                        isDragging = false
+                                        snapX = false
+                                        snapY = false
                                     }
-                                    .pointerInput(Unit) {
-                                        detectDragGestures(
-                                            onDragStart = {
-                                                isDragging = true
-                                                snapX = false
-                                                snapY = false
-                                            },
-                                            onDragEnd = {
-                                                if (snapX) offsetX = 0f
-                                                if (snapY) offsetY = 0f
-                                                isDragging = false
-                                                snapX = false
-                                                snapY = false
-                                            },
-                                            onDragCancel = {
-                                                isDragging = false
-                                                snapX = false
-                                                snapY = false
-                                            }
-                                        ) { change, dragAmount ->
-                                            change.consume()
-                                            offsetX += dragAmount.x
-                                            offsetY += dragAmount.y
-                                            snapX = abs(offsetX) < snapThresholdPx
-                                            snapY = abs(offsetY) < snapThresholdPx
+                                ) { change, dragAmount ->
+                                    change.consume()
+                                    offsetX += dragAmount.x
+                                    offsetY += dragAmount.y
+                                    snapX = abs(offsetX) < snapThresholdPx
+                                    snapY = abs(offsetY) < snapThresholdPx
+                                }
+                            },
+                        dateInteractiveModifier = Modifier
+                            .pointerInput(Unit) {
+                                detectTapGestures(onTap = { showClockSheet = true })
+                            }
+                            .pointerInput(Unit) {
+                                detectDragGestures(
+                                    onDragStart = {
+                                        isDraggingDate = true
+                                        dateSnapX = false
+                                        dateSnapY = false
+                                    },
+                                    onDragEnd = {
+                                        if (dateSnapX) dateOffsetX = 0f
+                                        if (dateSnapY) {
+                                            dateOffsetY =
+                                                -(clockH / 2f + dateGapPx + dateH / 2f)
                                         }
+                                        isDraggingDate = false
+                                        dateSnapX = false
+                                        dateSnapY = false
+                                    },
+                                    onDragCancel = {
+                                        isDraggingDate = false
+                                        dateSnapX = false
+                                        dateSnapY = false
                                     }
-                            )
-
+                                ) { change, dragAmount ->
+                                    change.consume()
+                                    dateOffsetX += dragAmount.x
+                                    dateOffsetY += dragAmount.y
+                                    dateSnapX = abs(dateOffsetX) < snapThresholdPx
+                                    dateSnapY = abs(
+                                        clockH / 2f + dateGapPx + dateH / 2f + dateOffsetY
+                                    ) < snapThresholdPx
+                                }
+                            },
+                        clockOverlay = {
                             val pad = 4f * density.density
                             val clkHandleW = exactClockSize.width + pad * 2f
                             val clkHandleH = exactClockSize.height + pad * 2f
@@ -798,118 +828,55 @@ fun AlarmAppearanceEditor(
                                     }
                                 }
                             }
-                        }
-
-                        if (dateVisible) {
+                        },
+                        dateOverlay = {
+                            val padX = 16f * density.density
+                            val padY = 10f * density.density
+                            val dtHandleW = exactDateSize.width + padX * 2f
+                            val dtHandleH = exactDateSize.height + padY * 2f
                             Box(
                                 modifier = Modifier
+                                    .size((dtHandleW / density.density).dp, (dtHandleH / density.density).dp)
                                     .align(Alignment.Center)
-                                    .absoluteOffset {
-                                        IntOffset(
-                                            dateOffsetX.roundToInt(),
-                                            (clockH / 2f + dateGapPx + dateH / 2f + dateOffsetY)
-                                                .roundToInt()
-                                        )
-                                    }
-                                    .wrapContentSize(Alignment.Center, unbounded = true)
-                                    .onSizeChanged { dateH = it.height.toFloat() }
-                                    .pointerInput(Unit) {
-                                        detectTapGestures(onTap = { showClockSheet = true })
-                                    }
-                                    .pointerInput(Unit) {
-                                        detectDragGestures(
-                                            onDragStart = {
-                                                isDraggingDate = true
-                                                dateSnapX = false
-                                                dateSnapY = false
-                                            },
-                                            onDragEnd = {
-                                                if (dateSnapX) dateOffsetX = 0f
-                                                if (dateSnapY) {
-                                                    dateOffsetY =
-                                                        -(clockH / 2f + dateGapPx + dateH / 2f)
-                                                }
-                                                isDraggingDate = false
-                                                dateSnapX = false
-                                                dateSnapY = false
-                                            },
-                                            onDragCancel = {
-                                                isDraggingDate = false
-                                                dateSnapX = false
-                                                dateSnapY = false
-                                            }
-                                        ) { change, dragAmount ->
-                                            change.consume()
-                                            dateOffsetX += dragAmount.x
-                                            dateOffsetY += dragAmount.y
-                                            dateSnapX = abs(dateOffsetX) < snapThresholdPx
-                                            dateSnapY = abs(
-                                                clockH / 2f + dateGapPx + dateH / 2f + dateOffsetY
-                                            ) < snapThresholdPx
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
                             ) {
-                                ClockDateText(
-                                    calendar = nowCalendar,
-                                    fontFamily = dateFontFamily,
-                                    fontSize = (18f * dateScale).sp,
-                                    contentColor = effDateBase,
-                                    textBrush = dateBrush,
-                                    modifier = Modifier.padding(
-                                        horizontal = 14.dp,
-                                        vertical = 8.dp
-                                    )
-                                )
-
-                                val padX = 16f * density.density
-                                val padY = 10f * density.density
-                                val dtHandleW = exactDateSize.width + padX * 2f
-                                val dtHandleH = exactDateSize.height + padY * 2f
+                                val handleRadius = (10f * dateScale.coerceIn(0.6f, 2.5f)).dp.coerceIn(8.dp, 18.dp)
                                 Box(
                                     modifier = Modifier
-                                        .size((dtHandleW / density.density).dp, (dtHandleH / density.density).dp)
-                                        .align(Alignment.Center)
-                                ) {
-                                    val handleRadius = (10f * dateScale.coerceIn(0.6f, 2.5f)).dp.coerceIn(8.dp, 18.dp)
-                                    Box(
-                                        modifier = Modifier
-                                            .align(AbsoluteAlignment.BottomRight)
-                                            .size(handleRadius * 2f)
-                                            .pointerInput(Unit) {
-                                                detectDragGestures(
-                                                    onDragStart = {
-                                                        dateResizeBase = dateScale
-                                                        dateResizeAccum = 0f
-                                                    }
-                                                ) { change, dragAmount ->
-                                                    change.consume()
-                                                    dateResizeAccum +=
-                                                        (dragAmount.x + dragAmount.y) / 2f
-                                                    val ref = with(density) { 160.dp.toPx() }
-                                                    dateScale = (dateResizeBase * (1f + dateResizeAccum / ref))
-                                                        .coerceAtLeast(SettingsDataStore.DATE_SCALE_MIN)
+                                        .align(AbsoluteAlignment.BottomRight)
+                                        .size(handleRadius * 2f)
+                                        .pointerInput(Unit) {
+                                            detectDragGestures(
+                                                onDragStart = {
+                                                    dateResizeBase = dateScale
+                                                    dateResizeAccum = 0f
                                                 }
+                                            ) { change, dragAmount ->
+                                                change.consume()
+                                                dateResizeAccum +=
+                                                    (dragAmount.x + dragAmount.y) / 2f
+                                                val ref = with(density) { 160.dp.toPx() }
+                                                dateScale = (dateResizeBase * (1f + dateResizeAccum / ref))
+                                                    .coerceAtLeast(SettingsDataStore.DATE_SCALE_MIN)
                                             }
-                                    ) {
-                                        Canvas(modifier = Modifier.fillMaxSize()) {
-                                            val stroke = 2.5f.dp.toPx()
-                                            val radius = handleRadius.toPx()
-                                            drawArc(
-                                                color = Color.White,
-                                                startAngle = 0f,
-                                                sweepAngle = 90f,
-                                                useCenter = false,
-                                                topLeft = Offset.Zero,
-                                                size = Size(radius * 2f, radius * 2f),
-                                                style = Stroke(width = stroke, cap = StrokeCap.Round)
-                                            )
                                         }
+                                ) {
+                                    Canvas(modifier = Modifier.fillMaxSize()) {
+                                        val stroke = 2.5f.dp.toPx()
+                                        val radius = handleRadius.toPx()
+                                        drawArc(
+                                            color = Color.White,
+                                            startAngle = 0f,
+                                            sweepAngle = 90f,
+                                            useCenter = false,
+                                            topLeft = Offset.Zero,
+                                            size = Size(radius * 2f, radius * 2f),
+                                            style = Stroke(width = stroke, cap = StrokeCap.Round)
+                                        )
                                     }
                                 }
                             }
                         }
-                    }
+                    )
 
                     if ((isDragging && (snapX || snapY)) ||
                         (isDraggingDate && (dateSnapX || dateSnapY))
@@ -1093,7 +1060,7 @@ fun AlarmAppearanceEditor(
                             onClick = { showDismissSheet = true }
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        PreviewSnoozePill(
+                        SnoozePill(
                             snoozeMinutes = snoozeMinutes,
                             containerColor = if (effSnoozeContainerColorLong != 0L) {
                                 Color(effSnoozeContainerColorLong)
@@ -1386,8 +1353,13 @@ fun AlarmAppearanceEditor(
                 if (ovShowAmPm != null) {
                     Button(
                         onClick = { ovShowAmPm = null },
-                        colors = ButtonDefaults.filledTonalButtonColors(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
                         elevation = null,
+                        border = null,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(stringResource(R.string.appearance_inherit_global))
@@ -1592,70 +1564,6 @@ private fun PreviewDismissPill(
                 fontFamily = fontFamily,
                 fontWeight = FontWeight.SemiBold
             )
-        )
-    }
-}
-
-@Composable
-private fun PreviewSnoozePill(
-    snoozeMinutes: Int,
-    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
-    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
-    fontFamily: FontFamily? = null,
-    onSnooze: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(containerColor)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        PreviewSnoozeStepper(
-            icon = Icons.Rounded.Remove,
-            contentDescription = stringResource(R.string.decrease_snooze),
-            tint = contentColor
-        )
-        Text(
-            text = stringResource(R.string.snooze_x_mins, snoozeMinutes),
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = fontFamily,
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = contentColor,
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .clickable(onClick = onSnooze)
-                .padding(horizontal = 20.dp, vertical = 10.dp)
-        )
-        PreviewSnoozeStepper(
-            icon = Icons.Rounded.Add,
-            contentDescription = stringResource(R.string.increase_snooze),
-            tint = contentColor
-        )
-    }
-}
-
-@Composable
-private fun PreviewSnoozeStepper(
-    icon: ImageVector,
-    contentDescription: String,
-    tint: Color
-) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(tint.copy(alpha = 0.12f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = tint.copy(alpha = 0.7f),
-            modifier = Modifier.size(20.dp)
         )
     }
 }

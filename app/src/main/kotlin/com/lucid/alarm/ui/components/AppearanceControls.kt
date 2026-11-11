@@ -160,6 +160,7 @@ fun ColorSwatchRow(
     onInherit: () -> Unit = {}
 ) {
 
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val presets = remember { AccentColor.entries.filter { it != AccentColor.CUSTOM }.map { it.argb } }
     val options = remember(presets) { listOf(0L) + presets }
     val isCustom = !inherited && selected != 0L && selected !in presets
@@ -171,7 +172,7 @@ fun ColorSwatchRow(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.18f))
+                    .background(if (isLight) Color(0xFFE4E6EB) else Color.White.copy(alpha = 0.18f))
                     .then(
                         if (inherited) {
                             Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
@@ -182,7 +183,11 @@ fun ColorSwatchRow(
                     .clickable { onInherit() },
                 contentAlignment = Alignment.Center
             ) {
-                Text("A", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "A",
+                    color = if (isLight) Color(0xFF111318) else Color.White,
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
         options.forEach { argb ->
@@ -430,7 +435,7 @@ fun CustomColorPickerDialog(
                         colors = SliderDefaults.colors(
                             thumbColor = current,
                             activeTrackColor = accentColor,
-                            inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            inactiveTrackColor = if (isLight) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
                     )
 
@@ -461,7 +466,7 @@ fun CustomColorPickerDialog(
                         colors = SliderDefaults.colors(
                             thumbColor = current,
                             activeTrackColor = accentColor,
-                            inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            inactiveTrackColor = if (isLight) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
                     )
 
@@ -492,7 +497,7 @@ fun CustomColorPickerDialog(
                         colors = SliderDefaults.colors(
                             thumbColor = current,
                             activeTrackColor = accentColor,
-                            inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            inactiveTrackColor = if (isLight) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                         )
                     )
                 }
@@ -509,7 +514,7 @@ fun CustomColorPickerDialog(
                             .height(40.dp)
                             .clip(RoundedCornerShape(50))
                             .background(
-                                if (isLight) Color.Black.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.08f)
+                                if (isLight) Color(0xFFE4E6EB) else Color.White.copy(alpha = 0.08f)
                             )
                             .clickable { onDismiss() },
                         contentAlignment = Alignment.Center

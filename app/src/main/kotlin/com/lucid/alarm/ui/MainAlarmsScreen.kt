@@ -804,20 +804,25 @@ fun MainAlarmsScreen(
                 .zIndex(4f)
         ) {
             Box {
-                SmallFloatingActionButton(
+                Surface(
                     onClick = {
                         showOverflowMenu = true
                     },
-                    containerColor = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
+                    color = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2D35),
                     contentColor = if (isLight) Color(0xFF1E1E1E) else Color.White,
                     shape = CircleShape,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 6.dp,
+                    border = null,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.MoreVert,
-                        contentDescription = stringResource(R.string.action_more_options),
-                        modifier = Modifier.size(22.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(R.string.action_more_options),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
                 AppDropdownMenu(
                     expanded = showOverflowMenu,
