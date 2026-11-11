@@ -8,10 +8,6 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -121,6 +117,8 @@ import com.lucid.alarm.data.prefs.SettingsDataStore
 import com.lucid.alarm.data.prefs.TimerVolumePolicy
 import com.lucid.alarm.ui.components.AppDropdownMenu
 import com.lucid.alarm.ui.components.AppMenuItem
+import com.lucid.alarm.ui.components.FloatingButtonEnterTransition
+import com.lucid.alarm.ui.components.FloatingButtonExitTransition
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.components.SelectionBarContainer
 import com.lucid.alarm.ui.components.SelectionCheckbox
@@ -442,8 +440,8 @@ fun MultiTimerScreen(
 
         AnimatedVisibility(
             visible = showScrollToTop && !selectionMode,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -512,8 +510,8 @@ fun MultiTimerScreen(
         } else {
             AnimatedVisibility(
                 visible = true,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut(),
+                enter = FloatingButtonEnterTransition,
+                exit = FloatingButtonExitTransition,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
@@ -537,8 +535,8 @@ fun MultiTimerScreen(
 
             AnimatedVisibility(
                 visible = true,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut(),
+                enter = FloatingButtonEnterTransition,
+                exit = FloatingButtonExitTransition,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .navigationBarsPadding()

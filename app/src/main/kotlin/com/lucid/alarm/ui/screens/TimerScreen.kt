@@ -4,10 +4,6 @@ import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -86,6 +82,8 @@ import com.lucid.alarm.service.TimerSessionState
 import com.lucid.alarm.service.TimerStopwatchManager
 import com.lucid.alarm.ui.components.AppDropdownMenu
 import com.lucid.alarm.ui.components.AppMenuItem
+import com.lucid.alarm.ui.components.FloatingButtonEnterTransition
+import com.lucid.alarm.ui.components.FloatingButtonExitTransition
 import com.lucid.alarm.ui.components.NumberWheel
 import com.lucid.alarm.ui.components.edgeFadeMask
 import com.lucid.alarm.ui.components.wheelScrollIndex
@@ -559,8 +557,8 @@ fun TimerScreen(
         if (!showDialView) {
             AnimatedVisibility(
                 visible = barsVisible,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut(),
+                enter = FloatingButtonEnterTransition,
+                exit = FloatingButtonExitTransition,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .navigationBarsPadding()

@@ -3,10 +3,6 @@ package com.lucid.alarm.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -72,6 +68,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.lucid.alarm.R
 import com.lucid.alarm.data.TimerEntity
+import com.lucid.alarm.ui.components.FloatingButtonEnterTransition
+import com.lucid.alarm.ui.components.FloatingButtonExitTransition
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.components.SelectionCheckbox
 import com.lucid.alarm.ui.components.edgeFadeMask
@@ -254,8 +252,8 @@ fun TimerRecycleBinScreen(
 
         AnimatedVisibility(
             visible = showScrollToTop && !selectionMode,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()

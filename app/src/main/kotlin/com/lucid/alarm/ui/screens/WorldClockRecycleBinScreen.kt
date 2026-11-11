@@ -3,10 +3,6 @@ package com.lucid.alarm.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -75,6 +71,8 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalContext
 import com.lucid.alarm.ui.amPmSuffix
 import com.lucid.alarm.ui.WorldClockLocalization
+import com.lucid.alarm.ui.components.FloatingButtonEnterTransition
+import com.lucid.alarm.ui.components.FloatingButtonExitTransition
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.components.SelectionCheckbox
 import com.lucid.alarm.ui.components.edgeFadeMask
@@ -272,8 +270,8 @@ fun WorldClockRecycleBinScreen(
 
         AnimatedVisibility(
             visible = showScrollToTop && !selectionMode,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()

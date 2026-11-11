@@ -15,10 +15,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -114,6 +110,8 @@ import com.lucid.alarm.ui.FontManager
 import com.lucid.alarm.ui.localizedLabel
 import com.lucid.alarm.ui.localizedName
 import com.lucid.alarm.ui.components.CustomColorPickerDialog
+import com.lucid.alarm.ui.components.FloatingButtonEnterTransition
+import com.lucid.alarm.ui.components.FloatingButtonExitTransition
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.theme.onColorFor
 import com.lucid.alarm.ui.theme.toColor
@@ -2003,8 +2001,8 @@ fun SettingsScreen(
 
         AnimatedVisibility(
             visible = showScrollToTop,
-            enter = fadeIn(animationSpec = tween(150)) + scaleIn(animationSpec = tween(150)),
-            exit = fadeOut(animationSpec = tween(150)) + scaleOut(animationSpec = tween(150)),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()

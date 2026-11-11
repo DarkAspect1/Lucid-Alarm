@@ -8,12 +8,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -126,6 +120,10 @@ import com.lucid.alarm.ui.components.AlarmCard
 import com.lucid.alarm.ui.components.AlarmEditSheet
 import com.lucid.alarm.ui.components.AppDropdownMenu
 import com.lucid.alarm.ui.components.AppMenuItem
+import com.lucid.alarm.ui.components.FloatingBarEnterTransition
+import com.lucid.alarm.ui.components.FloatingBarExitTransition
+import com.lucid.alarm.ui.components.FloatingButtonEnterTransition
+import com.lucid.alarm.ui.components.FloatingButtonExitTransition
 import com.lucid.alarm.ui.components.edgeFadeMask
 import com.lucid.alarm.ui.components.SelectionChipShape
 import com.lucid.alarm.ui.components.SelectionBarContainer
@@ -641,13 +639,13 @@ fun MainAlarmsScreen(
 
         AnimatedVisibility(
             visible = selectionMode,
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutVertically { it } + fadeOut(),
+            enter = FloatingBarEnterTransition,
+            exit = FloatingBarExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(2f)
-                .padding(horizontal = 6.dp, vertical = 20.dp)
         ) {
+            Box(modifier = Modifier.padding(horizontal = 6.dp, vertical = 20.dp)) {
             val groupAlarmIds = alarms
                 .filter { it.groupName in selectedGroupNames }
                 .map { it.id }
@@ -728,12 +726,13 @@ fun MainAlarmsScreen(
                     selectedGroupNames = emptySet()
                 }
             )
+            }
         }
 
         AnimatedVisibility(
             visible = !selectionMode && barsVisible,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
@@ -761,8 +760,8 @@ fun MainAlarmsScreen(
 
         AnimatedVisibility(
             visible = showScrollToTop && !selectionMode && barsVisible,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -795,8 +794,8 @@ fun MainAlarmsScreen(
 
         AnimatedVisibility(
             visible = !selectionMode && barsVisible,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .navigationBarsPadding()

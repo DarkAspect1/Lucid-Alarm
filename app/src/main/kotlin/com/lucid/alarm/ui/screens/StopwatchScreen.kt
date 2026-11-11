@@ -2,10 +2,6 @@ package com.lucid.alarm.ui.screens
 
 import android.os.SystemClock
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -72,6 +68,8 @@ import androidx.compose.ui.zIndex
 import com.lucid.alarm.R
 import com.lucid.alarm.service.StopwatchService
 import com.lucid.alarm.service.StopwatchSessionState
+import com.lucid.alarm.ui.components.FloatingButtonEnterTransition
+import com.lucid.alarm.ui.components.FloatingButtonExitTransition
 import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
@@ -377,8 +375,8 @@ fun StopwatchScreen(
         val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
         AnimatedVisibility(
             visible = barsVisible,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .navigationBarsPadding()

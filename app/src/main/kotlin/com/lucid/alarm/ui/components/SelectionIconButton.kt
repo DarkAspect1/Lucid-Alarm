@@ -1,9 +1,6 @@
 package com.lucid.alarm.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -59,8 +56,8 @@ fun SelectionBarContainer(
     ) {
         AnimatedVisibility(
             visible = tooltipTitle != null,
-            enter = fadeIn(animationSpec = tween(120)),
-            exit = fadeOut(animationSpec = tween(180)),
+            enter = FloatingTooltipEnterTransition,
+            exit = FloatingTooltipExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(10f)

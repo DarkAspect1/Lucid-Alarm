@@ -4,12 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -105,6 +99,10 @@ import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.data.prefs.WorldClockSortMode
 import com.lucid.alarm.ui.components.AppDropdownMenu
 import com.lucid.alarm.ui.components.AppMenuItem
+import com.lucid.alarm.ui.components.FloatingBarEnterTransition
+import com.lucid.alarm.ui.components.FloatingBarExitTransition
+import com.lucid.alarm.ui.components.FloatingButtonEnterTransition
+import com.lucid.alarm.ui.components.FloatingButtonExitTransition
 import com.lucid.alarm.ui.components.FrostedBlurBox
 import com.lucid.alarm.ui.components.SelectionBarContainer
 import com.lucid.alarm.ui.components.SelectionCheckbox
@@ -511,13 +509,13 @@ fun WorldClockScreen(
 
         AnimatedVisibility(
             visible = selectionActive,
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutVertically { it } + fadeOut(),
+            enter = FloatingBarEnterTransition,
+            exit = FloatingBarExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(2f)
-                .padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
+            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)) {
             WorldClockSelectionBar(
                 selectedCount = selectedZones.size,
                 allSelected = renderZones.isNotEmpty() &&
@@ -540,12 +538,13 @@ fun WorldClockScreen(
                     selectedZones = emptySet()
                 }
             )
+            }
         }
 
         AnimatedVisibility(
             visible = !selectionActive && barsVisible,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
@@ -572,8 +571,8 @@ fun WorldClockScreen(
 
         AnimatedVisibility(
             visible = showScrollToTop && !selectionActive && barsVisible,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -607,8 +606,8 @@ fun WorldClockScreen(
 
         AnimatedVisibility(
             visible = !selectionActive && barsVisible,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
+            enter = FloatingButtonEnterTransition,
+            exit = FloatingButtonExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .navigationBarsPadding()

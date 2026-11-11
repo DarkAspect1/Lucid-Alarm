@@ -10,8 +10,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -85,6 +83,10 @@ import com.lucid.alarm.data.prefs.TimeFormat
 import com.lucid.alarm.service.NowBarNotification
 import com.lucid.alarm.service.TimerStopwatchManager
 import com.lucid.alarm.service.TimerService
+import com.lucid.alarm.ui.components.FloatingBarEnterTransition
+import com.lucid.alarm.ui.components.FloatingBarExitTransition
+import com.lucid.alarm.ui.components.FloatingTooltipEnterTransition
+import com.lucid.alarm.ui.components.FloatingTooltipExitTransition
 import com.lucid.alarm.ui.screens.AlarmCustomizationScreen
 import com.lucid.alarm.ui.screens.AppThemeScreen
 import com.lucid.alarm.ui.screens.MultiTimerScreen
@@ -461,8 +463,8 @@ fun ClockAppScaffold(
                         (currentTab == ClockTab.TIMER && timerSelectionActive)
                 AnimatedVisibility(
                     visible = resolvedBarsVisible && !selectionHidesBar,
-                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(animationSpec = tween(180)),
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(animationSpec = tween(150)),
+                    enter = FloatingBarEnterTransition,
+                    exit = FloatingBarExitTransition,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .zIndex(2f)
@@ -560,8 +562,8 @@ fun FloatingPillBottomBar(
 
         AnimatedVisibility(
             visible = tooltipIndex != null,
-            enter = fadeIn(animationSpec = tween(120)),
-            exit = fadeOut(animationSpec = tween(180)),
+            enter = FloatingTooltipEnterTransition,
+            exit = FloatingTooltipExitTransition,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(10f)
